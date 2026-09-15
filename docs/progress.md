@@ -11,7 +11,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
 - Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
 - Faz 2 historical ingestion tasarımı: `docs/phase-2-historical-ingestion.md`
-- Güncel hedef: Matriks test erişimini gerçek endpoint sözleşmesine bağlayıp ilk gerçek BIST historical veri setini PostgreSQL/TimescaleDB'ye almak.
+- Faz 2 ücretsiz veri sağlayıcı stratejisi: `docs/phase-2-free-data-providers.md`
+- Güncel hedef: ücretsiz geliştirme provider'ları ile ilk gerçek BIST + fon historical veri akışını çalıştırmak.
 
 ## Tamamlananlar
 
@@ -83,10 +84,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Historical kayıtlar için PostgreSQL upsert (`ON CONFLICT DO UPDATE`) uygulandı.
 - [x] Ingestion transaction rollback davranışı eklendi.
 - [x] Historical ingestion orchestration testleri eklendi.
-- [x] Historical ingestion tasarımı `docs/phase-2-historical-ingestion.md` dosyasına işlendi.
 - [x] Matriks test erişimi için environment configuration katmanı oluşturuldu.
 - [x] Tek sembol historical API smoke-test scripti oluşturuldu.
-- [x] Matriks endpoint/header/payload bilgilerinin provider sözleşmesinden configuration ile alınması kararı netleştirildi.
+- [x] Ücretsiz BIST geliştirme provider'ı olarak yfinance adapterı oluşturuldu.
+- [x] Ücretsiz TEFAS fon provider'ı oluşturuldu.
+- [x] Ücretsiz provider testleri eklendi.
+- [x] Ücretsiz provider stratejisi `docs/phase-2-free-data-providers.md` dosyasına işlendi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -109,8 +112,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Historical upsert + transaction rollback davranışını oluştur
 - [x] Historical ingestion testlerini yaz
 - [x] Matriks test erişimi için config ve smoke-test harness'ını oluştur
-- [ ] Matriks gerçek API test erişimi ve endpoint sözleşmesini bağla
-- [ ] Tek BIST sembolü üzerinde historical API smoke test çalıştır
+- [x] Ücretsiz BIST development provider'ını oluştur
+- [x] Ücretsiz TEFAS fund provider'ını oluştur
+- [x] Ücretsiz provider testlerini oluştur
+- [ ] Tek BIST sembolü üzerinde yfinance historical smoke test çalıştır
+- [ ] TEFAS tek fon üzerinde historical smoke test çalıştır
 - [ ] PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz
 - [ ] Duplicate/upsert source provenance davranışını gerçek veriyle doğrula
 - [ ] Incremental update pipeline oluştur
@@ -120,13 +126,13 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Matriks test hesabı/endpoint bilgilerini gerçek provider sözleşmesinden `.env` değişkenlerine geçir.
-2. Tek BIST sembolü üzerinde historical API smoke test çalıştır.
-3. PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz.
+1. `THYAO` için yfinance historical smoke test çalıştır.
+2. Bir TEFAS fonu için historical smoke test çalıştır.
+3. İlk gerçek historical kayıtları PostgreSQL/TimescaleDB'ye yaz.
 4. Duplicate/upsert ve source provenance davranışını gerçek veriyle doğrula.
 5. Incremental update pipeline'ını oluştur.
 6. Missing/outlier/source-quality kontrollerini ve uçtan uca pipeline testlerini genişlet.
-7. Ticari lisans ve historical coverage konularını sağlayıcı görüşmesiyle kesinleştir.
+7. Gerektiğinde aynı interface üzerinden lisanslı provider'a geçişi koru.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
