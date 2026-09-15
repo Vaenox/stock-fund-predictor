@@ -1,148 +1,152 @@
 # Faz 2 — Veri Kaynakları Araştırması
 
-## Karar Özeti
+## Güncel Karar Özeti
 
-MVP için veri katmanı iki ayrı kaynak ailesi üzerine kurulacaktır:
+MVP veri katmanı iki ücretsiz kaynak üzerinde çalışacaktır:
 
-- **BIST hisseleri:** Öncelikli ticari veri sağlayıcı olarak Matriks Data değerlendirilecek.
-- **Türkiye yatırım fonları:** Öncelikli kaynak olarak TEFAS'ın resmi veri/API altyapısı değerlendirilecek.
-- **Alternatif BIST sağlayıcı:** Finnet Data Feed / Stock Expert API.
-- **Alternatif fon sağlayıcı:** Finnet Fund Expert API.
+- **BIST hisseleri:** `borsapy` → TradingView WebSocket tabanlı streaming.
+- **Türkiye yatırım fonları:** doğrudan **TEFAS resmi JSON API**.
+- **Historical/backfill yardımcı kaynağı:** ihtiyaç halinde `yfinance`.
+- **Premium opsiyonlar:** Matriks / Finnet provider katmanında tutulacak, ancak MVP'nin çalışması bunlara bağlı olmayacak.
 
-Uygulama sağlayıcıya doğrudan bağımlı olmayacak. `DataProvider` benzeri bir abstraction katmanı kullanılacak; böylece sağlayıcı değişimi veya ikinci kaynağın eklenmesi mümkün olacak.
+Bu seçimle hedefimiz tek bir sembol değil, **BIST hisse evreninin tamamını otomatik keşfedip toplu izlemek** ve fon tarafında TEFAS'tan geniş fon evrenini düzenli olarak güncellemektir.
 
-## 1. BIST Hisse Verisi
+## 1. BIST Hisse Verisi — borsapy
 
-### Matriks Data
+`borsapy`, BIST şirketlerini listeleme (`companies()`), çoklu hisse erişimi ve TradingView persistent WebSocket streaming desteği sağlıyor. Streaming katmanı quote ve intraday OHLCV/mum güncellemelerini callback/cached quote modeliyle sunuyor. Varsayılan TradingView BIST verisi yaklaşık 15 dakika gecikmeli; gerçek zamanlı BIST için TradingView hesabı ve ilgili BIST veri paketi gerekiyor.
 
-Matriks'in kurumsal veri servisleri REST API, XML Web Service ve MQTT/socket seçenekleri sunuyor. REST API tarafında BIST grafik/bar verileri ve çeşitli piyasa içerikleri sağlanıyor. Şirket ayrıca geçmiş ham veri ve grafik verileri sunduğunu belirtiyor.
+Kaynak: https://github.com/saidsurucu/borsapy
 
-Artıları:
-- BIST verisi için profesyonel ve yerel sağlayıcı.
-- REST API mevcut.
-- Grafik/bar ve geçmiş veri desteği.
-- BIST veri kaynağının Borsa İstanbul olduğu açıkça belirtiliyor.
-- Uygulama geliştirme kullanımına yönelik API servisi mevcut.
-
-Eksileri:
-- Fiyatlandırma veri kapsamına ve kullanım tipine göre teklif ile belirleniyor.
-- BIST lisans ücretleri ayrıca uygulanabiliyor.
-- Verilerin yeniden dağıtımına izin verilmiyor.
-
-### Finnet
-
-Finnet, web/mobile/SaaS uygulamalar için API ve Data Feed çözümleri sunuyor. Stock Expert API yanında Fund Expert API de bulunuyor.
-
-Artıları:
-- Uygulama entegrasyonu için tasarlanmış API ürünleri.
-- Hisse ve fon tarafını aynı sağlayıcı üzerinden çözme potansiyeli.
-- Kurumsal kullanım senaryolarına uygun.
-
-Eksileri:
-- Detaylı fiyatlandırma ve veri geçmişi kapsamı için sağlayıcıdan teklif alınması gerekiyor.
-
-### Karar
-
-**MVP BIST kaynağı olarak Matriks öncelikli adaydır.** Ancak satın alma öncesinde Finnet ile de teklif alınarak fiyat, tarihsel kapsam ve lisans koşulları karşılaştırılacaktır.
-
-## 2. Türkiye Yatırım Fonları
-
-### TEFAS
-
-TEFAS Türkiye yatırım fonları için temel referans kaynaktır. Güncel ekosistemde resmi TEFAS API altyapısı üzerinden fon bazlı fiyat geçmişi alınabilmektedir. 2026 itibarıyla eski bazı `fundturkey.com.tr` tarihsel endpointlerinin emekliye ayrıldığı ve yeni `tefas.gov.tr/api/funds/...` API'sinin kullanıldığı görülmektedir.
-
-Artıları:
-- Fon verisinin birincil/resmi kaynağı.
-- Fon kodu ve fiyat geçmişi için uygun.
-- Fon bazında tarihsel veri alınabiliyor.
-- Yatırım fonu kapsamı geniş.
-
-Dikkat edilmesi gerekenler:
-- API davranışı ve endpointleri zaman içinde değişebiliyor.
-- WAF/rate-limit ve erişim davranışı ingestion tasarımında hesaba katılmalı.
-- Üretim kullanımında güncel kullanım/lisans koşulları ayrıca doğrulanmalı.
-- Tek bir HTTP endpointine sıkı bağımlılık kurulmayacak.
-
-### SPK
-
-SPK tarafında fonlara ilişkin günlük portföy değerleri ve birim fiyat gibi bilgilerin görüntülenebildiği resmi veri kaynakları bulunuyor. SPK, fon verileri için ikincil doğrulama ve metadata kaynağı olarak değerlendirilecek.
-
-### Karar
-
-**MVP fon fiyat geçmişi için TEFAS birincil kaynak adayıdır. SPK ikincil doğrulama/metadata kaynağı olarak tutulacaktır.**
-
-## 3. Lisans ve Kullanım İlkeleri
-
-Borsa İstanbul, piyasa verilerinin lisanslı veri dağıtım kuruluşları üzerinden dağıtıldığını belirtiyor. Gösterimsiz kullanım ve veri dağıtımı için ayrıca lisans/sözleşme koşulları bulunabiliyor.
-
-Bu nedenle:
-
-- Public web sayfalarından scraping, üretim veri kaynağı olarak kullanılmayacak.
-- Lisanssız üçüncü taraf API'ler ana veri kaynağı kabul edilmeyecek.
-- Veri sağlayıcı sözleşmesi ve kullanım amacı netleşmeden production ingestion başlatılmayacak.
-- Backtest için kullanılan verinin kaynağı ve lisans bilgisi metadata olarak saklanacak.
-
-## 4. MVP Veri Sağlayıcı Mimarisi
+### MVP kullanım şekli
 
 ```text
-                +----------------------+
-                |    Data Provider     |
-                |      Interface       |
-                +----------+-----------+
-                           |
-          +----------------+----------------+
-          |                                 |
-+---------v---------+             +---------v---------+
-| BIST Stock Source |             | Fund Data Source  |
-| Matriks / Finnet  |             | TEFAS / SPK       |
-+---------+---------+             +---------+---------+
-          |                                 |
-          +----------------+----------------+
-                           |
-                    Normalization
-                           |
-                    Validation Layer
-                           |
-                    PostgreSQL / TSDB
+borsapy
+   ↓
+companies() → BIST sembol evreni
+   ↓
+TradingViewStream
+   ↓
+subscribe(all symbols)
+   ↓
+quote/candle callback
+   ↓
+Normalizer
+   ↓
+Validator
+   ↓
+Redis + PostgreSQL/TimescaleDB
 ```
 
-Provider katmanı en az şu işlemleri soyutlamalıdır:
+### Neden borsapy?
 
-- `list_symbols()`
+- Tek tek sembol seçmeye bağımlı değiliz.
+- BIST şirket evrenini keşfetme desteği var.
+- Persistent WebSocket ile sürekli quote akışı var.
+- 1m/5m/15m/30m/1h/... candle akışı alınabiliyor.
+- Python backend'e doğrudan oturuyor.
+- Provider abstraction sayesinde ileride Matriks/Finnet'e geçiş mümkün.
+
+### Önemli kısıt
+
+`borsapy` deposu kişisel/eğitim kullanımını hedeflediğini ve ticari kullanım için ayrı lisans gerektiğini belirtiyor. Bu nedenle ücretsiz provider seçimi **MVP / kişisel-geliştirme kullanımına** uygun kabul ediliyor; public/ticari ürün aşamasında lisanslama yeniden değerlendirilecek.
+
+## 2. Türkiye Yatırım Fonları — TEFAS
+
+Fon tarafında intraday tick verisi gerekmiyor. Fon birim fiyatı günlük oluştuğu için hedefimiz tüm uygun fonları düzenli aralıklarla çekmek ve açıklanan son fiyatı canonical veride güncel tutmak.
+
+Güncel açık kaynak istemciler, 2026'da yenilenen TEFAS sitesinin resmi JSON endpointlerini kullandığını ve authorization/login/API key gerekmediğini gösteriyor. Özellikle `fonGnlBlgSiraliGetir` fon bilgi/fiyat verisi için, `dagilimSiraliGetirT` ise portföy dağılımı için kullanılıyor. Uzun tarih aralıklarında rate-limit nedeniyle istekleri parçalara bölmek gerekiyor.
+
+Kaynaklar:
+- https://github.com/mirzazad/pytefas
+- https://github.com/eneshenderson/Tefas-API
+
+Projede fon adapterı doğrudan TEFAS JSON endpointlerini kullanacak şekilde tutulmuştur; böylece üçüncü taraf servisimizin uptime'ına bağımlı kalmayız.
+
+## 3. Historical / Backfill
+
+`yfinance` yalnızca historical/backfill ve veri karşılaştırması için yardımcı provider olarak tutulacaktır. Canlı BIST streaming'in ana kaynağı değildir.
+
+## 4. Premium Provider'lar
+
+Matriks ve Finnet tamamen kaldırılmıyor. Provider abstraction içinde opsiyonel premium adapter olarak kalabilirler.
+
+Avantajı:
+
+```text
+Ücretsiz MVP
+    ↓
+borsapy / TEFAS
+    ↓
+Aynı canonical model
+    ↓
+İleride premium provider
+    ↓
+Sadece adapter değişimi
+```
+
+## 5. Lisans ve Kullanım
+
+Borsa İstanbul piyasa verisinin lisanslı dağıtım yapısı bulunduğunu belirtiyor. Bu nedenle ücretsiz erişim ile **ticari yeniden dağıtım hakkı** birbirinden ayrı değerlendirilmelidir.
+
+MVP aşamasında:
+- Ücretsiz kaynaklarla kişisel/geliştirme kullanımına odaklanılacak.
+- Provider kullanım şartları repository dokümantasyonunda açık tutulacak.
+- Veri kaynağı/provenance canonical kayıtlarda tutulacak.
+- Public/ticari sunumdan önce veri lisansı ayrıca doğrulanacak.
+
+## 6. Güncel Provider Mimarisi
+
+```text
+                         Provider Layer
+                              │
+             ┌────────────────┴────────────────┐
+             │                                 │
+   BIST Stock Provider                  Fund Provider
+             │                                 │
+      borsapy / TV WS                    TEFAS JSON API
+             │                                 │
+             └────────────────┬────────────────┘
+                              ↓
+                         Normalizer
+                              ↓
+                         Validator
+                              ↓
+                  Redis + PostgreSQL/TSDB
+                              ↓
+                    Technical / ML Engine
+```
+
+## 7. Provider Sorumlulukları
+
+### BorsapyProvider
+
+- `list_symbols()` → tüm BIST şirket evreni
 - `get_symbol_metadata()`
-- `get_daily_history()`
+- `get_daily_history()` → historical/backfill
 - `get_latest_price()`
-- `get_fund_history()`
+- `connect_stream()`
+- `subscribe(symbols)`
+- `get_live_quote()`
+- `on_any_quote(callback)`
+- `disconnect_stream()`
 - `health_check()`
 
-## 5. Veri Saklama İlkeleri
+### TefasProvider
 
-Her normalize edilmiş kayıtta en az:
+- `list_symbols()` → güncel fon evreni
+- `get_symbol_metadata()`
+- `get_fund_history()`
+- `health_check()`
+- rate-limit/chunking yönetimi
 
-- provider
-- provider_symbol
-- canonical_symbol
-- asset_type
-- timestamp/date
-- source timestamp
-- ingestion timestamp
-- raw/source reference
+## 8. Faz 2 Güncel Sonraki Adımlar
 
-alanları tutulmalıdır.
-
-Böylece aynı verinin iki sağlayıcıdan gelmesi halinde karşılaştırma ve hata tespiti mümkün olacaktır.
-
-## 6. Faz 2 Sonraki Adım
-
-Kaynak araştırması tamamlandıktan sonra doğrudan ingestion koduna geçmeden önce:
-
-1. BIST OHLCV canonical schema
-2. Fon price/NAV canonical schema
-3. Asset/symbol master schema
-4. Provider configuration schema
-5. PostgreSQL/TimescaleDB migration
-6. Data quality rules
-
-tasarlanacaktır.
-
-> Not: Matriks/Finnet fiyat ve lisans teklifleri alınmadan ticari sağlayıcı seçimi kesinleştirilmiş sayılmayacaktır. Bu dokümandaki "öncelikli aday" ifadesi teknik değerlendirme sonucunu belirtir; ticari satın alma kararını değil.
+1. borsapy ile tüm BIST sembollerini keşfet ve symbol master'a aktar.
+2. TradingViewStream için toplu subscription yöneticisi oluştur.
+3. Live quote/candle eventlerini canonical canlı veri DTO'larına dönüştür.
+4. Redis pub/sub ile canlı akışı backend içinde dağıt.
+5. TEFAS günlük fon güncellemesini scheduled ingestion ile çalıştır.
+6. BIST live verisini TimescaleDB'de gerekli intraday tablolara yaz.
+7. Data-quality / staleness / reconnect kontrollerini ekle.
+8. Historical backfill ile live stream arasında aynı canonical symbol/provenance yapısını doğrula.
+9. Premium provider'ları yalnızca opsiyonel fallback olarak tut.
