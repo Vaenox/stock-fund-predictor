@@ -2,35 +2,75 @@
 
 ## Amaç
 
-MVP ve geliştirme aşamasında ücretli BIST veri sağlayıcısına bağımlı kalmadan hisse/fon veri akışını çalıştırmak.
+MVP ve geliştirme aşamasında ücretli BIST veri sağlayıcısına bağımlı kalmadan **tüm BIST hisse evrenini dinamik olarak izlemek** ve fonların açıklanan günlük fiyatlarını toplamak.
 
 ## Karar
 
-### BIST hisseleri — Yahoo Finance / yfinance
+### BIST hisseleri — borsapy / TradingView WebSocket
 
-- Yahoo Finance sembolü BIST için `.IS` ekiyle kullanılır; örneğin `THYAO` → `THYAO.IS`.
-- `yfinance` günlük historical OHLCV verisini Python tarafında almak için kullanılacak.
-- Bu provider geliştirme/kişisel kullanım için tasarlanmıştır.
-- Yahoo'nun mevcut kullanım kuralları nedeniyle kamuya açık ticari bir veri servisi veya yeniden dağıtım katmanı olarak kabul edilmeyecek.
-- Ürün ticari/public aşamaya geldiğinde lisanslı bir provider adapter'ı ile değiştirilecek.
+- BIST ana provider'ı artık `borsapy`dir.
+- `borsapy.companies()` ile BIST şirket evreni otomatik keşfedilecektir.
+- `borsapy.TradingViewStream()` persistent WebSocket ile quote ve intraday candle akışı sağlayacaktır.
+- MVP'de streaming katmanı tüm aktif BIST sembollerine toplu subscription uygulayacaktır.
+- Ücretsiz TradingView BIST verisinin varsayılan olarak yaklaşık 15 dakika gecikmeli olabildiği dikkate alınacaktır.
+- Gerçek zamanlı BIST kullanımının ayrıca TradingView hesabı/veri paketi gerektirdiği kabul edilecektir.
+- `yfinance` artık live provider değildir; yalnızca historical/backfill veya çapraz kontrol yardımcısıdır.
+- `borsapy` projesinin kendi repository notunda kişisel/eğitim kullanım sınırı bulunduğu için public/ticari ürün aşamasında lisans yeniden değerlendirilecektir.
 
-### Türkiye yatırım fonları — TEFAS
+### Türkiye yatırım fonları — TEFAS resmi JSON API
 
-- TEFAS'ın güncel fon veri sayfasının kullandığı JSON API uçları adapter içinde kullanılacak.
-- Kimlik doğrulama/API key gerektirmeyen güncel endpoint davranışı esas alınacak.
-- Tek çağrıda uzun tarih aralıkları için koruyucu 28 günlük chunking uygulanacak.
-- Provider katmanı fiyat, tarih, fon kodu ve fon adını canonical modele dönüştürecek.
-- Rate-limit ve endpoint değişiklikleri nedeniyle adapter kontrollü retry/validation ile kullanılacak.
+- Fon provider'ı doğrudan TEFAS'ın güncel JSON API uçlarını kullanacaktır.
+- Fon fiyatı gün içinde tick-by-tick değişmediği için WebSocket gerekli değildir.
+- Günlük açıklanan fiyatlar scheduled ingestion ile alınacaktır.
+- Uzun tarih aralıkları için chunking, rate-limit ve endpoint değişikliğine dayanıklılık korunacaktır.
+- Fon evreni `list_symbols()` ile toplu keşfedilebilecektir.
 
 ## Veri akışı
 
 ```text
-Yahoo Finance → Yahoo Adapter → Normalizer → Validator → PostgreSQL/TimescaleDB
-TEFAS         → TEFAS Adapter → Normalizer → Validator → PostgreSQL/TimescaleDB
+BIST:
+TradingView WebSocket
+        ↓
+     borsapy
+        ↓
+  Live Quote/Candle
+        ↓
+ Normalizer → Validator
+        ↓
+ Redis → TimescaleDB
+
+FON:
+TEFAS JSON API
+        ↓
+  TefasProvider
+        ↓
+ Daily Fund Price
+        ↓
+ Normalizer → Validator
+        ↓
+ PostgreSQL/TimescaleDB
+```
+
+## Provider rolleri
+
+```text
+BorsapyProvider
+- BIST symbol discovery
+- historical daily OHLCV
+- live quote
+- live candle
+- WebSocket subscription lifecycle
+
+TefasProvider
+- all fund discovery
+- current/daily fund data
+- historical fund prices
+- rate-limit/chunking
+
+MatriksRestProvider / future FinnetProvider
+- optional premium fallback
 ```
 
 ## Lisans / üretim notu
 
-Borsa İstanbul resmi piyasa verisini gerçek zamanlı, gecikmeli ve günsonu olarak lisanslı veri dağıtım kuruluşları üzerinden dağıtıyor. Bu nedenle ücretsiz geliştirme kaynağı ile üretim/ticari veri dağıtımı aynı kabul edilmeyecek.
-
-MVP'nin hedefi önce veri pipeline'ını ve modelleme altyapısını gerçek tarihsel veriyle çalıştırmak; daha sonra gereken lisanslı kaynak adapter'ını aynı interface'e takmak.
+Ücretsiz erişim teknik olarak mümkün olsa bile veri kaynağının kullanım şartları ticari yeniden dağıtım hakkı anlamına gelmez. MVP/geliştirme sürecinde provider kısıtları açıkça dokümante edilecek; public/ticari ürüne geçmeden önce veri lisansı yeniden doğrulanacaktır.
