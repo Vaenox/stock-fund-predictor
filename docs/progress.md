@@ -8,7 +8,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Son tamamlanan faz: **Faz 1 — Product Design / Ürün Tanımı**
 - Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
 - Faz 2 veri kaynakları araştırması: `docs/phase-2-data-sources.md`
-- Sonraki hedef: canonical veri şemalarını ve PostgreSQL/TimescaleDB yapısını tasarlamak.
+- Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
+- Sonraki hedef: PostgreSQL/TimescaleDB migration ve provider abstraction.
 
 ## Tamamlananlar
 
@@ -58,6 +59,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Öncelikli fon kaynağı olarak TEFAS belirlendi; SPK ikincil doğrulama kaynağı olarak kaydedildi.
 - [x] Provider abstraction yaklaşımı belirlendi.
 - [x] Araştırma `docs/phase-2-data-sources.md` dosyasına işlendi.
+- [x] Canonical asset, provider mapping, stock OHLCV ve fund daily price veri modeli tasarlandı.
+- [x] Veri kuralları ve temel bütünlük kuralları dokümante edildi.
+- [x] SQLAlchemy 2.x + PostgreSQL/psycopg 3 backend veri erişim yaklaşımı seçildi.
+- [x] İlk SQLAlchemy ORM modelleri oluşturuldu.
+- [x] İlk Pydantic canonical veri giriş şemaları oluşturuldu.
+- [x] Backend temel bağımlılıkları `backend/requirements.txt` içine eklendi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -65,9 +72,9 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Veri lisansı / kullanım koşulları için temel araştırmayı yap
 - [ ] Ticari sağlayıcı fiyat/teklif ve nihai lisans koşullarını doğrula
 - [ ] Historical data kapsamını kesinleştir
-- [ ] Hisse OHLCV canonical veri şemasını tasarla
-- [ ] Fon veri şemasını tasarla
-- [ ] Asset/symbol master şemasını tasarla
+- [x] Hisse OHLCV canonical veri şemasını tasarla
+- [x] Fon veri şemasını tasarla
+- [x] Asset/symbol master şemasını tasarla
 - [ ] PostgreSQL / TimescaleDB şemasını oluştur
 - [ ] Historical ingestion pipeline oluştur
 - [ ] Incremental update pipeline oluştur
@@ -78,12 +85,13 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Hisse ve fon canonical veri modellerini tasarla.
-2. Asset/symbol master yapısını oluştur.
-3. PostgreSQL/TimescaleDB migration tasarla.
+1. PostgreSQL/TimescaleDB migration altyapısını oluştur.
+2. `assets`, `asset_provider_mappings`, `stock_daily_bars` ve `fund_daily_prices` tablolarının migration'ını yaz.
+3. TimescaleDB hypertable kararını migration aşamasında uygula.
 4. Provider interface'i kodla.
-5. İlk provider adapter'ını oluştur.
-6. Historical ingestion pipeline'a geç.
+5. Normalizer + validator katmanını kodla.
+6. İlk provider adapter'ını oluştur.
+7. Historical ingestion pipeline'a geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
