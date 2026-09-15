@@ -7,7 +7,7 @@ from typing import Any, Callable
 
 import httpx
 
-from .base import MarketDataProvider, ProviderStockBar, ProviderSymbol
+from .base import MarketDataProvider, ProviderFundPrice, ProviderStockBar, ProviderSymbol
 
 
 class MatriksProviderError(RuntimeError):
@@ -24,16 +24,16 @@ class MatriksEndpointConfig:
 
 
 class MatriksRestProvider(MarketDataProvider):
-    """Matriks REST adapter with endpoint paths supplied from the purchased API contract.
+    """Matriks REST adapter with endpoint details supplied by configuration.
 
-    Matriks exposes REST services, but endpoint details and data scope depend on the
-    subscribed service. Paths therefore remain configuration rather than invented constants.
+    The exact service paths, authentication scheme and payload contract depend on the
+    subscribed Matriks API product, so the adapter does not invent provider constants.
     """
 
     def __init__(
         self,
         base_url: str,
-        api_key: str,
+        headers: dict[str, str],
         endpoints: MatriksEndpointConfig,
         *,
         timeout: float = 20.0,
@@ -41,7 +41,7 @@ class MatriksRestProvider(MarketDataProvider):
         request: Callable[..., httpx.Response] | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
-        self._api_key = api_key
+        self._headers = {"Accept": "application/json", **headers}
         self._endpoints = endpoints
         self._timeout = timeout
         self._client = client
@@ -53,13 +53,14 @@ class MatriksRestProvider(MarketDataProvider):
 
     def _request_json(self, path: str, **params: Any) -> Any:
         url = f"{self._base_url}/{path.lstrip('/')}"
-        headers = {"Authorization": f"Bearer {self._api_key}", "Accept": "application/json"}
         try:
             if self._request is not None:
-                response = self._request("GET", url, headers=headers, params=params, timeout=self._timeout)
+                response = self._request(
+                    "GET", url, headers=self._headers, params=params, timeout=self._timeout
+                )
             else:
                 client = self._client or httpx.Client(timeout=self._timeout)
-                response = client.get(url, headers=headers, params=params)
+                response = client.get(url, headers=self._headers, params=params)
             response.raise_for_status()
             return response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -107,10 +108,12 @@ class MatriksRestProvider(MarketDataProvider):
         return [self._parse_symbol(row) for row in rows]
 
     def get_symbol_metadata(self, provider_symbol: str) -> ProviderSymbol:
-        row = self._rows(
+        rows = self._rows(
             self._request_json(self._endpoints.metadata_path, symbol=provider_symbol)
-        )[0]
-        return self._parse_symbol(row)
+        )
+        if not rows:
+            raise MatriksProviderError(f"Matriks symbol not found: {provider_symbol}")
+        return self._parse_symbol(rows[0])
 
     def get_daily_history(
         self,
@@ -118,6 +121,8 @@ class MatriksRestProvider(MarketDataProvider):
         start_date: date,
         end_date: date,
     ) -> list[ProviderStockBar]:
+        if start_date > end_date:
+            raise ValueError("start_date cannot be after end_date")
         payload = self._request_json(
             self._endpoints.history_path,
             symbol=provider_symbol,
@@ -127,13 +132,22 @@ class MatriksRestProvider(MarketDataProvider):
         return [self._parse_bar(row, provider_symbol) for row in self._rows(payload)]
 
     def get_latest_price(self, provider_symbol: str) -> ProviderStockBar:
-        row = self._rows(
+        rows = self._rows(
             self._request_json(self._endpoints.latest_path, symbol=provider_symbol)
-        )[0]
-        return self._parse_bar(row, provider_symbol)
+        )
+        if not rows:
+            raise MatriksProviderError(f"Matriks latest price not found: {provider_symbol}")
+        return self._parse_bar(rows[0], provider_symbol)
 
-    def get_fund_history(self, provider_symbol: str, start_date: date, end_date: date):
-        raise NotImplementedError("Matriks fund adapter will be added after the subscribed fund API contract is confirmed")
+    def get_fund_history(
+        self,
+        provider_symbol: str,
+        start_date: date,
+        end_date: date,
+    ) -> list[ProviderFundPrice]:
+        raise NotImplementedError(
+            "Matriks fund adapter will be enabled after the subscribed fund API contract is confirmed"
+        )
 
     def health_check(self) -> bool:
         if not self._endpoints.health_path:
@@ -146,13 +160,21 @@ class MatriksRestProvider(MarketDataProvider):
 
     @classmethod
     def _parse_symbol(cls, row: dict[str, Any]) -> ProviderSymbol:
-        asset_type = str(row.get("asset_type", row.get("assetType", "STOCK"))).upper()
+        symbol = str(
+            cls._value(row, "provider_symbol", "providerSymbol", "symbol", "code")
+        )
+        canonical_symbol = str(
+            row.get(
+                "canonical_symbol",
+                row.get("canonicalSymbol", row.get("symbol", row.get("code", symbol))),
+            )
+        )
         return ProviderSymbol(
             provider="matriks",
-            provider_symbol=str(cls._value(row, "provider_symbol", "providerSymbol", "symbol", "code")),
-            canonical_symbol=str(row.get("canonical_symbol", row.get("canonicalSymbol", row.get("symbol", row.get("code"))))).upper(),
+            provider_symbol=symbol,
+            canonical_symbol=canonical_symbol.upper(),
             name=str(cls._value(row, "name", "title", "description")),
-            asset_type=asset_type,
+            asset_type=str(row.get("asset_type", row.get("assetType", "STOCK"))).upper(),
             isin=row.get("isin", row.get("ISIN")),
             exchange=row.get("exchange", row.get("exchangeCode", "BIST")),
             currency=str(row.get("currency", "TRY")).upper(),
@@ -160,25 +182,36 @@ class MatriksRestProvider(MarketDataProvider):
 
     @classmethod
     def _parse_bar(cls, row: dict[str, Any], provider_symbol: str) -> ProviderStockBar:
-        source_timestamp = row.get("source_timestamp", row.get("sourceTimestamp", row.get("timestamp")))
+        source_timestamp = row.get(
+            "source_timestamp", row.get("sourceTimestamp", row.get("timestamp"))
+        )
         parsed_timestamp: datetime | None = None
         if source_timestamp:
-            parsed_timestamp = datetime.fromisoformat(str(source_timestamp).replace("Z", "+00:00"))
+            try:
+                parsed_timestamp = datetime.fromisoformat(
+                    str(source_timestamp).replace("Z", "+00:00")
+                )
+            except ValueError as exc:
+                raise MatriksProviderError(
+                    f"Invalid source timestamp from Matriks: {source_timestamp!r}"
+                ) from exc
+
+        adjusted_value = row.get("adjusted_close", row.get("adjustedClose"))
+        volume_value = row.get("volume", row.get("Volume"))
+        turnover_value = row.get("turnover", row.get("Turnover"))
 
         return ProviderStockBar(
             provider_symbol=provider_symbol,
-            trading_date=cls._date(cls._value(row, "trading_date", "tradingDate", "date", "Date")),
+            trading_date=cls._date(
+                cls._value(row, "trading_date", "tradingDate", "date", "Date")
+            ),
             open=cls._decimal(cls._value(row, "open", "Open")),
             high=cls._decimal(cls._value(row, "high", "High")),
             low=cls._decimal(cls._value(row, "low", "Low")),
             close=cls._decimal(cls._value(row, "close", "Close")),
-            adjusted_close=(
-                cls._decimal(row["adjusted_close"])
-                if row.get("adjusted_close") is not None
-                else None
-            ),
-            volume=(cls._decimal(row["volume"]) if row.get("volume") is not None else None),
-            turnover=(cls._decimal(row["turnover"]) if row.get("turnover") is not None else None),
+            adjusted_close=(cls._decimal(adjusted_value) if adjusted_value is not None else None),
+            volume=(cls._decimal(volume_value) if volume_value is not None else None),
+            turnover=(cls._decimal(turnover_value) if turnover_value is not None else None),
             source_timestamp=parsed_timestamp,
             raw=row,
         )
