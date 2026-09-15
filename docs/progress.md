@@ -84,6 +84,9 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Ingestion transaction rollback davranışı eklendi.
 - [x] Historical ingestion orchestration testleri eklendi.
 - [x] Historical ingestion tasarımı `docs/phase-2-historical-ingestion.md` dosyasına işlendi.
+- [x] Matriks test erişimi için environment configuration katmanı oluşturuldu.
+- [x] Tek sembol historical API smoke-test scripti oluşturuldu.
+- [x] Matriks endpoint/header/payload bilgilerinin provider sözleşmesinden configuration ile alınması kararı netleştirildi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -105,6 +108,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Ingestion asset/mapping güvenlik kontrollerini oluştur
 - [x] Historical upsert + transaction rollback davranışını oluştur
 - [x] Historical ingestion testlerini yaz
+- [x] Matriks test erişimi için config ve smoke-test harness'ını oluştur
 - [ ] Matriks gerçek API test erişimi ve endpoint sözleşmesini bağla
 - [ ] Tek BIST sembolü üzerinde historical API smoke test çalıştır
 - [ ] PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz
@@ -116,7 +120,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Matriks API test erişimi + teknik dokümandaki gerçek endpoint/header/payload bilgilerini configuration'a geçir.
+1. Matriks test hesabı/endpoint bilgilerini gerçek provider sözleşmesinden `.env` değişkenlerine geçir.
 2. Tek BIST sembolü üzerinde historical API smoke test çalıştır.
 3. PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz.
 4. Duplicate/upsert ve source provenance davranışını gerçek veriyle doğrula.
