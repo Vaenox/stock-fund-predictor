@@ -4,9 +4,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Güncel Durum
 
-- Aktif faz: **Faz 1 — Product Design / Ürün Tanımı**
-- Son tamamlanan faz: **Proje iskeleti ve roadmap hazırlığı**
-- Sonraki hedef: Faz 1 ürün spesifikasyonunu netleştirip Faz 2 veri altyapısına geçmek.
+- Aktif faz: **Faz 2 — Data Infrastructure / Veri Altyapısı**
+- Son tamamlanan faz: **Faz 1 — Product Design / Ürün Tanımı**
+- Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
+- Sonraki hedef: BIST hisse ve Türkiye yatırım fonu verileri için güvenilir veri kaynaklarını ve veri şemasını belirlemek.
 
 ## Tamamlananlar
 
@@ -32,42 +33,49 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - `backend/tests` ve frontend tarafındaki dashboard, stocks, funds, predictions, portfolio, settings, components, lib, hooks, services ve types klasörleri oluşturuldu.
 - Boş klasörlerin Git tarafından korunması için `.gitkeep` dosyaları eklendi.
 
-## Faz 1 — Product Design
-
-### Alınan Ürün Kararları
+### Faz 1 — Product Design
 - İlk pazar: **BIST**.
 - İlk varlıklar: **BIST hisseleri + Türkiye'deki yatırım fonları**.
 - Gelecekte: NASDAQ/NYSE ve ETF desteği.
 - İlk tahmin ufku: **5 işlem günü**.
-- İlk ML hedefi: **5 işlem günü sonunda ileri getiri %3'ün üzerindeyse pozitif sınıf**.
+- İlk ML hedefi: **5 işlem günü ileri getiri > +3%**.
 - İlk model ailesi: **XGBoost**.
-- Kullanıcıya ana sinyal: **BUY / HOLD / SELL**.
-- Model olasılığı tek başına karar olarak kullanılmayacak; teknik skor ve risk skoru ile birlikte değerlendirilecek.
+- Ana kullanıcı sinyali: **BUY / HOLD / SELL**.
+- Model olasılığı; teknik skor ve risk skoru ile birlikte değerlendirilecek.
 - Öncelik sırası: **veri kalitesi → feature engineering → backtest doğruluğu → model performansı → UI**.
 - Gerçek para ile otomatik işlem başlangıç kapsamına alınmayacak; önce paper trading yapılacak.
+- MVP ekranları ve temel kullanıcı akışları tanımlandı.
+- ML ve backtest değerlendirme metrikleri belirlendi.
+- Look-ahead bias, data leakage, survivorship bias ve işlem maliyetleri için temel backtest kuralları tanımlandı.
+- Ayrıntılı ürün spesifikasyonu `docs/phase-1-product-spec.md` dosyasına eklendi.
 
-### Faz 1 Taskları
-- [x] Ürün kapsamını belirle
-- [x] İlk pazar ve varlık türlerini belirle
-- [x] Tahmin ufkunu belirle
-- [x] İlk ML hedefini belirle
-- [x] İlk model ailesini belirle
-- [x] BUY/HOLD/SELL sinyal yaklaşımını belirle
-- [x] Temel riskleri ve geliştirme önceliğini belirle
-- [ ] Ürün spesifikasyonunu ayrıntılı olarak yaz
-- [ ] Ekranların ve temel kullanıcı akışlarının kesinleştirilmesi
-- [ ] Faz 1 kabul kriterlerinin tamamlanması
+## Faz 2 — Data Infrastructure
+
+### Tasklar
+- [ ] BIST hisse veri kaynaklarını araştır ve seç
+- [ ] Türkiye yatırım fonu veri kaynaklarını araştır ve seç
+- [ ] Veri lisansı / kullanım koşullarını kontrol et
+- [ ] Historical data kapsamını belirle
+- [ ] Hisse OHLCV veri şemasını tasarla
+- [ ] Fon veri şemasını tasarla
+- [ ] PostgreSQL / TimescaleDB şemasını oluştur
+- [ ] Historical ingestion pipeline oluştur
+- [ ] Incremental update pipeline oluştur
+- [ ] Veri doğrulama kurallarını oluştur
+- [ ] Missing data / duplicate / outlier kontrollerini oluştur
+- [ ] Temiz veri sözleşmesini (data contract) tanımla
+- [ ] Veri pipeline testlerini yaz
 
 ## Sıradaki İş
 
-1. Faz 1 ürün spesifikasyonunu tamamla.
-2. Dashboard, asset detail, predictions, watchlist ve settings ekranlarının MVP kapsamını netleştir.
-3. Faz 1'i kapat ve kaydı güncelle.
-4. Faz 2'ye geç: BIST hisse/fon veri kaynaklarını ve veri şemasını belirle.
-5. Veri sağlayıcı seçimini yaptıktan sonra ingestion pipeline ve PostgreSQL/TimescaleDB şemasını oluştur.
+1. BIST hisse veri kaynaklarını karşılaştır.
+2. Türkiye yatırım fonu veri kaynaklarını karşılaştır.
+3. Kaynakların güvenilirlik, geçmiş veri kapsamı, API erişimi, maliyet ve kullanım şartlarını değerlendir.
+4. Veri kaynağı seçildikten sonra DB şemasını tasarla.
+5. Historical ingestion pipeline ile Faz 2 implementasyonuna başla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
-Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **Faz 1 Taskları** ve **Sıradaki İş** bölümleri esas alınmalı. Bir task tamamlandığında bu dosya aynı commit içinde güncellenmeli.
+Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı. Bir task tamamlandığında bu dosya aynı çalışma kapsamında güncellenmeli.
 
-> Kural: Yapılan her faz için kısa bir özet, alınan teknik/ürün kararları, tamamlanan tasklar ve sıradaki tasklar burada tutulur. Böylece proje farklı sohbetlerde kaldığı yerden sürdürülebilir.
+> Kural: Her faz tamamlandığında kısa özet, alınan teknik/ürün kararları, tamamlanan tasklar ve sıradaki faz/tasklar burada tutulur. Böylece proje farklı sohbetlerde kaldığı yerden sürdürülebilir.
