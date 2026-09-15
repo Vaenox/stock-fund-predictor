@@ -4,7 +4,12 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from app.data.ingestion import ingest_fund_history, ingest_stock_history
-from app.data.providers.base import MarketDataProvider, ProviderFundPrice, ProviderStockBar, ProviderSymbol
+from app.data.providers.base import (
+    MarketDataProvider,
+    ProviderFundPrice,
+    ProviderStockBar,
+    ProviderSymbol,
+)
 from app.models.market_data import AssetType
 
 
@@ -19,7 +24,9 @@ class FakeProvider(MarketDataProvider):
     def get_symbol_metadata(self, provider_symbol: str) -> ProviderSymbol:
         raise NotImplementedError
 
-    def get_daily_history(self, provider_symbol: str, start_date: date, end_date: date) -> list[ProviderStockBar]:
+    def get_daily_history(
+        self, provider_symbol: str, start_date: date, end_date: date
+    ) -> list[ProviderStockBar]:
         return [
             ProviderStockBar(
                 provider_symbol=provider_symbol,
@@ -34,7 +41,9 @@ class FakeProvider(MarketDataProvider):
     def get_latest_price(self, provider_symbol: str) -> ProviderStockBar:
         raise NotImplementedError
 
-    def get_fund_history(self, provider_symbol: str, start_date: date, end_date: date) -> list[ProviderFundPrice]:
+    def get_fund_history(
+        self, provider_symbol: str, start_date: date, end_date: date
+    ) -> list[ProviderFundPrice]:
         return [
             ProviderFundPrice(
                 provider_symbol=provider_symbol,
@@ -50,11 +59,18 @@ class FakeProvider(MarketDataProvider):
 class FakeSession:
     def __init__(self, asset_type: AssetType):
         self.asset = SimpleNamespace(id=uuid4(), asset_type=asset_type)
+        self.mapping = SimpleNamespace(
+            asset_id=self.asset.id,
+            provider="fake",
+            provider_symbol="THYAO",
+        )
+        self._scalar_values = [self.asset, self.mapping]
         self.executed = None
         self.committed = False
+        self.rolled_back = False
 
     def scalar(self, _statement):
-        return self.asset
+        return self._scalar_values.pop(0)
 
     def execute(self, statement):
         self.executed = statement
@@ -62,6 +78,9 @@ class FakeSession:
 
     def commit(self):
         self.committed = True
+
+    def rollback(self):
+        self.rolled_back = True
 
 
 def test_ingest_stock_history_normalizes_validates_and_commits():
@@ -79,11 +98,13 @@ def test_ingest_stock_history_normalizes_validates_and_commits():
     assert result.received == 1
     assert result.written == 1
     assert session.committed is True
+    assert session.rolled_back is False
     assert session.executed is not None
 
 
 def test_ingest_fund_history_normalizes_validates_and_commits():
     session = FakeSession(AssetType.FUND)
+    session.mapping.provider_symbol = "AAA"
     result = ingest_fund_history(
         session,
         FakeProvider(),
