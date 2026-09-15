@@ -65,6 +65,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] İlk SQLAlchemy ORM modelleri oluşturuldu.
 - [x] İlk Pydantic canonical veri giriş şemaları oluşturuldu.
 - [x] Backend temel bağımlılıkları `backend/requirements.txt` içine eklendi.
+- [x] Alembic migration altyapısı oluşturuldu.
+- [x] Initial PostgreSQL migration'ı oluşturuldu.
+- [x] TimescaleDB kuruluysa stock/fund time-series tablolarını hypertable'a dönüştüren koşullu migration eklendi.
+- [x] ORM modellerinin merkezi export'u oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -75,7 +79,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Hisse OHLCV canonical veri şemasını tasarla
 - [x] Fon veri şemasını tasarla
 - [x] Asset/symbol master şemasını tasarla
-- [ ] PostgreSQL / TimescaleDB şemasını oluştur
+- [x] PostgreSQL / TimescaleDB migration altyapısını oluştur
+- [x] Initial market data migration'ını yaz
 - [ ] Historical ingestion pipeline oluştur
 - [ ] Incremental update pipeline oluştur
 - [ ] Veri doğrulama kurallarını oluştur
@@ -85,13 +90,13 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. PostgreSQL/TimescaleDB migration altyapısını oluştur.
-2. `assets`, `asset_provider_mappings`, `stock_daily_bars` ve `fund_daily_prices` tablolarının migration'ını yaz.
-3. TimescaleDB hypertable kararını migration aşamasında uygula.
-4. Provider interface'i kodla.
-5. Normalizer + validator katmanını kodla.
-6. İlk provider adapter'ını oluştur.
-7. Historical ingestion pipeline'a geç.
+1. Provider interface'i kodla.
+2. Normalizer + validator katmanını kodla.
+3. İlk provider adapter'ını oluştur.
+4. Historical ingestion pipeline'a geç.
+5. Incremental update pipeline'ını oluştur.
+6. Veri kalite kontrollerini ve pipeline testlerini ekle.
+7. Historical data kapsamı ve ticari lisans koşullarını sağlayıcı görüşmesiyle kesinleştir.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
