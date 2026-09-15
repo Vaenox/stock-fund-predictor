@@ -10,7 +10,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 veri kaynakları araştırması: `docs/phase-2-data-sources.md`
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
 - Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
-- Güncel hedef: Matriks test erişimini gerçek endpoint sözleşmesine bağlayıp historical ingestion pipeline'ı çalıştırmak.
+- Faz 2 historical ingestion tasarımı: `docs/phase-2-historical-ingestion.md`
+- Güncel hedef: Matriks test erişimini gerçek endpoint sözleşmesine bağlayıp ilk gerçek BIST historical veri setini PostgreSQL/TimescaleDB'ye almak.
 
 ## Tamamlananlar
 
@@ -77,6 +78,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Matriks adapter için configurable endpoint/header yaklaşımı oluşturuldu.
 - [x] Matriks adapter parsing ve canonical validation testleri eklendi.
 - [x] `httpx` ve `pytest` backend bağımlılıkları eklendi.
+- [x] Historical stock/fund ingestion service oluşturuldu.
+- [x] Ingestion öncesi asset type + provider mapping kontrolü eklendi.
+- [x] Historical kayıtlar için PostgreSQL upsert (`ON CONFLICT DO UPDATE`) uygulandı.
+- [x] Ingestion transaction rollback davranışı eklendi.
+- [x] Historical ingestion orchestration testleri eklendi.
+- [x] Historical ingestion tasarımı `docs/phase-2-historical-ingestion.md` dosyasına işlendi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -94,10 +101,16 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Temel validator katmanını kodla
 - [x] Matriks provider adapter iskeletini oluştur
 - [x] Provider parsing / validation testlerini yaz
+- [x] Historical ingestion pipeline servis katmanını oluştur
+- [x] Ingestion asset/mapping güvenlik kontrollerini oluştur
+- [x] Historical upsert + transaction rollback davranışını oluştur
+- [x] Historical ingestion testlerini yaz
 - [ ] Matriks gerçek API test erişimi ve endpoint sözleşmesini bağla
-- [ ] Historical ingestion pipeline oluştur
+- [ ] Tek BIST sembolü üzerinde historical API smoke test çalıştır
+- [ ] PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz
+- [ ] Duplicate/upsert source provenance davranışını gerçek veriyle doğrula
 - [ ] Incremental update pipeline oluştur
-- [ ] Missing data / outlier / source-quality kontrollerini genişlet
+- [ ] Missing data / duplicate / outlier / source-quality kontrollerini genişlet
 - [ ] Temiz veri sözleşmesini (data contract) son haline getir
 - [ ] Uçtan uca veri pipeline testlerini yaz
 
@@ -105,12 +118,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 1. Matriks API test erişimi + teknik dokümandaki gerçek endpoint/header/payload bilgilerini configuration'a geçir.
 2. Tek BIST sembolü üzerinde historical API smoke test çalıştır.
-3. Historical ingestion service'i Provider → Normalizer → Validator zincirine bağla.
-4. PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz.
-5. Duplicate/upsert stratejisini ve source provenance davranışını kesinleştir.
-6. Incremental update pipeline'ını oluştur.
-7. Missing/outlier/source-quality kontrollerini ve uçtan uca pipeline testlerini genişlet.
-8. Ticari lisans ve historical coverage konularını sağlayıcı görüşmesiyle kesinleştir.
+3. PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz.
+4. Duplicate/upsert ve source provenance davranışını gerçek veriyle doğrula.
+5. Incremental update pipeline'ını oluştur.
+6. Missing/outlier/source-quality kontrollerini ve uçtan uca pipeline testlerini genişlet.
+7. Ticari lisans ve historical coverage konularını sağlayıcı görüşmesiyle kesinleştir.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
