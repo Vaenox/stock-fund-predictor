@@ -7,7 +7,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Aktif faz: **Faz 2 — Data Infrastructure / Veri Altyapısı**
 - Son tamamlanan faz: **Faz 1 — Product Design / Ürün Tanımı**
 - Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
-- Sonraki hedef: BIST hisse ve Türkiye yatırım fonu verileri için güvenilir veri kaynaklarını ve veri şemasını belirlemek.
+- Faz 2 veri kaynakları araştırması: `docs/phase-2-data-sources.md`
+- Sonraki hedef: canonical veri şemalarını ve PostgreSQL/TimescaleDB yapısını tasarlamak.
 
 ## Tamamlananlar
 
@@ -49,15 +50,24 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Look-ahead bias, data leakage, survivorship bias ve işlem maliyetleri için temel backtest kuralları tanımlandı.
 - Ayrıntılı ürün spesifikasyonu `docs/phase-1-product-spec.md` dosyasına eklendi.
 
-## Faz 2 — Data Infrastructure
+### Faz 2 — Data Infrastructure
+- [x] BIST hisse veri kaynakları için teknik araştırma yapıldı.
+- [x] Türkiye yatırım fonu veri kaynakları için teknik araştırma yapıldı.
+- [x] Borsa İstanbul veri lisansı / dağıtım yapısı incelendi.
+- [x] Öncelikli BIST sağlayıcısı olarak Matriks belirlendi; Finnet alternatif olarak kaydedildi.
+- [x] Öncelikli fon kaynağı olarak TEFAS belirlendi; SPK ikincil doğrulama kaynağı olarak kaydedildi.
+- [x] Provider abstraction yaklaşımı belirlendi.
+- [x] Araştırma `docs/phase-2-data-sources.md` dosyasına işlendi.
 
-### Tasklar
-- [ ] BIST hisse veri kaynaklarını araştır ve seç
-- [ ] Türkiye yatırım fonu veri kaynaklarını araştır ve seç
-- [ ] Veri lisansı / kullanım koşullarını kontrol et
-- [ ] Historical data kapsamını belirle
-- [ ] Hisse OHLCV veri şemasını tasarla
+### Faz 2 Taskları
+- [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
+- [x] Türkiye yatırım fonu veri kaynaklarını araştır ve teknik adayları belirle
+- [x] Veri lisansı / kullanım koşulları için temel araştırmayı yap
+- [ ] Ticari sağlayıcı fiyat/teklif ve nihai lisans koşullarını doğrula
+- [ ] Historical data kapsamını kesinleştir
+- [ ] Hisse OHLCV canonical veri şemasını tasarla
 - [ ] Fon veri şemasını tasarla
+- [ ] Asset/symbol master şemasını tasarla
 - [ ] PostgreSQL / TimescaleDB şemasını oluştur
 - [ ] Historical ingestion pipeline oluştur
 - [ ] Incremental update pipeline oluştur
@@ -68,11 +78,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. BIST hisse veri kaynaklarını karşılaştır.
-2. Türkiye yatırım fonu veri kaynaklarını karşılaştır.
-3. Kaynakların güvenilirlik, geçmiş veri kapsamı, API erişimi, maliyet ve kullanım şartlarını değerlendir.
-4. Veri kaynağı seçildikten sonra DB şemasını tasarla.
-5. Historical ingestion pipeline ile Faz 2 implementasyonuna başla.
+1. Hisse ve fon canonical veri modellerini tasarla.
+2. Asset/symbol master yapısını oluştur.
+3. PostgreSQL/TimescaleDB migration tasarla.
+4. Provider interface'i kodla.
+5. İlk provider adapter'ını oluştur.
+6. Historical ingestion pipeline'a geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
