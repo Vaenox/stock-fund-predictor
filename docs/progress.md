@@ -9,7 +9,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
 - Faz 2 veri kaynakları araştırması: `docs/phase-2-data-sources.md`
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
-- Sonraki hedef: ilk gerçek provider adapter'ı ve ingestion pipeline.
+- Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
+- Güncel hedef: Matriks test erişimini gerçek endpoint sözleşmesine bağlayıp historical ingestion pipeline'ı çalıştırmak.
 
 ## Tamamlananlar
 
@@ -69,12 +70,13 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Initial PostgreSQL migration'ı oluşturuldu.
 - [x] TimescaleDB kuruluysa stock/fund time-series tablolarını hypertable'a dönüştüren koşullu migration eklendi.
 - [x] ORM modellerinin merkezi export'u oluşturuldu.
-- [x] Provider interface'i oluşturuldu.
-- [x] Provider-specific stock/fund kayıt tipleri oluşturuldu.
+- [x] Provider interface ve provider DTO'ları oluşturuldu.
 - [x] Stock/fund normalizer katmanı oluşturuldu.
-- [x] Canonical veri validator katmanı oluşturuldu.
-- [x] Duplicate ve geleceğe tarihli kayıt kontrolleri eklendi.
-- [x] Normalizer/validator davranışı için backend testleri eklendi.
+- [x] Future-date ve canonical duplicate validation kontrolleri oluşturuldu.
+- [x] Matriks REST adapter iskeleti oluşturuldu.
+- [x] Matriks adapter için configurable endpoint/header yaklaşımı oluşturuldu.
+- [x] Matriks adapter parsing ve canonical validation testleri eklendi.
+- [x] `httpx` ve `pytest` backend bağımlılıkları eklendi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -88,25 +90,27 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] PostgreSQL / TimescaleDB migration altyapısını oluştur
 - [x] Initial market data migration'ını yaz
 - [x] Provider interface'i kodla
-- [x] Normalizer + validator katmanını kodla
-- [ ] İlk provider adapter'ını oluştur
+- [x] Normalizer katmanını kodla
+- [x] Temel validator katmanını kodla
+- [x] Matriks provider adapter iskeletini oluştur
+- [x] Provider parsing / validation testlerini yaz
+- [ ] Matriks gerçek API test erişimi ve endpoint sözleşmesini bağla
 - [ ] Historical ingestion pipeline oluştur
 - [ ] Incremental update pipeline oluştur
-- [ ] Veri doğrulama kurallarını tamamla
-- [ ] Missing data / duplicate / outlier kontrollerini tamamla
-- [ ] Temiz veri sözleşmesini (data contract) tanımla
-- [x] Provider/validator temel testlerini yaz
-- [ ] Tam veri pipeline testlerini yaz
+- [ ] Missing data / outlier / source-quality kontrollerini genişlet
+- [ ] Temiz veri sözleşmesini (data contract) son haline getir
+- [ ] Uçtan uca veri pipeline testlerini yaz
 
 ## Sıradaki İş
 
-1. Matriks adapter'ı için gerçek API sözleşmesini netleştir.
-2. Provider credentials/configuration katmanını ekle.
-3. Matriks stock history adapter'ını kodla.
-4. Adapter çıktısını normalizer + validator üzerinden geçir.
-5. Database repository/upsert katmanını oluştur.
-6. Historical ingestion pipeline'ını oluştur.
-7. Sonrasında incremental daily update ve veri kalite kontrollerine geç.
+1. Matriks API test erişimi + teknik dokümandaki gerçek endpoint/header/payload bilgilerini configuration'a geçir.
+2. Tek BIST sembolü üzerinde historical API smoke test çalıştır.
+3. Historical ingestion service'i Provider → Normalizer → Validator zincirine bağla.
+4. PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz.
+5. Duplicate/upsert stratejisini ve source provenance davranışını kesinleştir.
+6. Incremental update pipeline'ını oluştur.
+7. Missing/outlier/source-quality kontrollerini ve uçtan uca pipeline testlerini genişlet.
+8. Ticari lisans ve historical coverage konularını sağlayıcı görüşmesiyle kesinleştir.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
