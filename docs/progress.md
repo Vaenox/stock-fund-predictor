@@ -11,8 +11,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
 - Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
 - Faz 2 historical ingestion tasarımı: `docs/phase-2-historical-ingestion.md`
-- Faz 2 ücretsiz veri sağlayıcı stratejisi: `docs/phase-2-free-data-providers.md`
-- Güncel hedef: ücretsiz geliştirme provider'ları ile ilk gerçek BIST + fon historical veri akışını çalıştırmak.
+- Güncel hedef: **borsapy/TradingView WebSocket ile BIST canlı akışı + TEFAS JSON ile fon günlük güncellemesi**.
 
 ## Tamamlananlar
 
@@ -58,81 +57,63 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] BIST hisse veri kaynakları için teknik araştırma yapıldı.
 - [x] Türkiye yatırım fonu veri kaynakları için teknik araştırma yapıldı.
 - [x] Borsa İstanbul veri lisansı / dağıtım yapısı incelendi.
-- [x] Öncelikli BIST sağlayıcısı olarak Matriks belirlendi; Finnet alternatif olarak kaydedildi.
-- [x] Öncelikli fon kaynağı olarak TEFAS belirlendi; SPK ikincil doğrulama kaynağı olarak kaydedildi.
+- [x] Ticari BIST adayları olarak Matriks ve Finnet kaydedildi.
+- [x] Fon kaynağı olarak TEFAS ve ikincil doğrulama için SPK kaydedildi.
 - [x] Provider abstraction yaklaşımı belirlendi.
-- [x] Araştırma `docs/phase-2-data-sources.md` dosyasına işlendi.
 - [x] Canonical asset, provider mapping, stock OHLCV ve fund daily price veri modeli tasarlandı.
-- [x] Veri kuralları ve temel bütünlük kuralları dokümante edildi.
 - [x] SQLAlchemy 2.x + PostgreSQL/psycopg 3 backend veri erişim yaklaşımı seçildi.
-- [x] İlk SQLAlchemy ORM modelleri oluşturuldu.
-- [x] İlk Pydantic canonical veri giriş şemaları oluşturuldu.
-- [x] Backend temel bağımlılıkları `backend/requirements.txt` içine eklendi.
+- [x] SQLAlchemy ORM + Pydantic canonical şemaları oluşturuldu.
 - [x] Alembic migration altyapısı oluşturuldu.
 - [x] Initial PostgreSQL migration'ı oluşturuldu.
-- [x] TimescaleDB kuruluysa stock/fund time-series tablolarını hypertable'a dönüştüren koşullu migration eklendi.
-- [x] ORM modellerinin merkezi export'u oluşturuldu.
-- [x] Provider interface ve provider DTO'ları oluşturuldu.
-- [x] Stock/fund normalizer katmanı oluşturuldu.
-- [x] Future-date ve canonical duplicate validation kontrolleri oluşturuldu.
-- [x] Matriks REST adapter iskeleti oluşturuldu.
-- [x] Matriks adapter için configurable endpoint/header yaklaşımı oluşturuldu.
-- [x] Matriks adapter parsing ve canonical validation testleri eklendi.
-- [x] `httpx` ve `pytest` backend bağımlılıkları eklendi.
-- [x] Historical stock/fund ingestion service oluşturuldu.
-- [x] Ingestion öncesi asset type + provider mapping kontrolü eklendi.
-- [x] Historical kayıtlar için PostgreSQL upsert (`ON CONFLICT DO UPDATE`) uygulandı.
-- [x] Ingestion transaction rollback davranışı eklendi.
-- [x] Historical ingestion orchestration testleri eklendi.
-- [x] Matriks test erişimi için environment configuration katmanı oluşturuldu.
-- [x] Tek sembol historical API smoke-test scripti oluşturuldu.
-- [x] Ücretsiz BIST geliştirme provider'ı olarak yfinance adapterı oluşturuldu.
-- [x] Ücretsiz TEFAS fon provider'ı oluşturuldu.
-- [x] Ücretsiz provider testleri eklendi.
-- [x] Ücretsiz provider stratejisi `docs/phase-2-free-data-providers.md` dosyasına işlendi.
+- [x] TimescaleDB hypertable için koşullu migration mantığı eklendi.
+- [x] Provider interface ve DTO'ları oluşturuldu.
+- [x] Normalizer + temel validator katmanı oluşturuldu.
+- [x] Historical stock/fund ingestion service ve PostgreSQL upsert oluşturuldu.
+- [x] Transaction rollback ve ingestion testleri oluşturuldu.
+- [x] Matriks adapter iskeleti premium/opsiyonel provider olarak tutuldu.
+- [x] **Ücretsiz BIST provider olarak borsapy + TradingView WebSocket seçildi.**
+- [x] **Ücretsiz fon provider olarak doğrudan TEFAS JSON API seçildi.**
+- [x] `BorsapyProvider` ile BIST company discovery + live quote/candle streaming entegrasyonu oluşturuldu.
+- [x] `TefasProvider` ile fon evreni ve günlük fon verisi entegrasyonu oluşturuldu.
+- [x] `borsapy` bağımlılığı eklendi ve güncel release'e sabitlendi.
+- [x] Veri kaynakları dokümantasyonu ücretsiz provider kararına göre güncellendi.
 
 ### Faz 2 Taskları
-- [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
-- [x] Türkiye yatırım fonu veri kaynaklarını araştır ve teknik adayları belirle
-- [x] Veri lisansı / kullanım koşulları için temel araştırmayı yap
-- [ ] Ticari sağlayıcı fiyat/teklif ve nihai lisans koşullarını doğrula
-- [ ] Historical data kapsamını kesinleştir
-- [x] Hisse OHLCV canonical veri şemasını tasarla
-- [x] Fon veri şemasını tasarla
-- [x] Asset/symbol master şemasını tasarla
-- [x] PostgreSQL / TimescaleDB migration altyapısını oluştur
-- [x] Initial market data migration'ını yaz
+- [x] Veri kaynaklarını araştır ve teknik adayları belirle
+- [x] Canonical market data modelini tasarla
+- [x] PostgreSQL/TimescaleDB migration altyapısını oluştur
 - [x] Provider interface'i kodla
-- [x] Normalizer katmanını kodla
-- [x] Temel validator katmanını kodla
-- [x] Matriks provider adapter iskeletini oluştur
-- [x] Provider parsing / validation testlerini yaz
-- [x] Historical ingestion pipeline servis katmanını oluştur
-- [x] Ingestion asset/mapping güvenlik kontrollerini oluştur
-- [x] Historical upsert + transaction rollback davranışını oluştur
-- [x] Historical ingestion testlerini yaz
-- [x] Matriks test erişimi için config ve smoke-test harness'ını oluştur
-- [x] Ücretsiz BIST development provider'ını oluştur
-- [x] Ücretsiz TEFAS fund provider'ını oluştur
-- [x] Ücretsiz provider testlerini oluştur
-- [ ] Tek BIST sembolü üzerinde yfinance historical smoke test çalıştır
-- [ ] TEFAS tek fon üzerinde historical smoke test çalıştır
-- [ ] PostgreSQL/TimescaleDB'ye ilk gerçek tarihsel veri setini yaz
-- [ ] Duplicate/upsert source provenance davranışını gerçek veriyle doğrula
+- [x] Normalizer + validator katmanını kodla
+- [x] Historical ingestion service'i oluştur
+- [x] Matriks premium adapter iskeletini oluştur
+- [x] Ücretsiz BIST provider'ını seç ve adapter'ını oluştur
+- [x] Ücretsiz TEFAS provider'ını seç ve adapter'ını oluştur
+- [x] Provider dokümantasyonunu güncelle
+- [ ] Tüm BIST sembollerini borsapy ile keşfedip asset/provider mapping'e seed et
+- [ ] TradingViewStream toplu subscription manager oluştur
+- [ ] Live quote/candle → canonical live DTO → Redis akışını oluştur
+- [ ] BIST live/intraday TimescaleDB tablosunu oluştur
+- [ ] Reconnect, stale quote ve heartbeat kontrollerini oluştur
+- [ ] Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır
+- [ ] Tüm BIST evreniyle streaming yük testi çalıştır
+- [ ] TEFAS günlük tüm fon evreni smoke testini çalıştır
+- [ ] İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz
+- [ ] Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula
 - [ ] Incremental update pipeline oluştur
-- [ ] Missing data / duplicate / outlier / source-quality kontrollerini genişlet
+- [ ] Missing data / outlier / source-quality kontrollerini genişlet
 - [ ] Temiz veri sözleşmesini (data contract) son haline getir
-- [ ] Uçtan uca veri pipeline testlerini yaz
+- [ ] Uçtan uca data pipeline testlerini tamamla
 
 ## Sıradaki İş
 
-1. `THYAO` için yfinance historical smoke test çalıştır.
-2. Bir TEFAS fonu için historical smoke test çalıştır.
-3. İlk gerçek historical kayıtları PostgreSQL/TimescaleDB'ye yaz.
-4. Duplicate/upsert ve source provenance davranışını gerçek veriyle doğrula.
-5. Incremental update pipeline'ını oluştur.
-6. Missing/outlier/source-quality kontrollerini ve uçtan uca pipeline testlerini genişlet.
-7. Gerektiğinde aynı interface üzerinden lisanslı provider'a geçişi koru.
+1. Tüm BIST sembollerini otomatik keşfedip `assets` + `asset_provider_mappings` tablolarına seed et.
+2. TradingViewStream için toplu subscription manager oluştur.
+3. Live quote/candle eventlerini Redis üzerinden yayınla.
+4. Live/intraday market-data TimescaleDB tablosunu ekle.
+5. Tek sembol → tüm BIST evreni smoke/load testlerini çalıştır.
+6. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
+7. Reconnect/staleness/data-quality kontrollerini ekle.
+8. Gerçek veriyle ingestion ve provenance doğrulamasını tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
