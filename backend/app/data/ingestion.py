@@ -8,11 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.models.market_data import Asset, AssetType, FundDailyPrice, StockDailyBar
+from app.models.market_data import (
+    Asset,
+    AssetProviderMapping,
+    AssetType,
+    FundDailyPrice,
+    StockDailyBar,
+)
 
 from .normalizer import normalize_fund_price, normalize_stock_bar
-from .validator import validate_fund_prices, validate_stock_bars
 from .providers.base import MarketDataProvider
+from .validator import validate_fund_prices, validate_stock_bars
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +46,36 @@ def _require_asset(session: Session, asset_id: UUID, expected_type: AssetType) -
     return asset
 
 
+def _require_mapping(
+    session: Session,
+    *,
+    asset_id: UUID,
+    provider: str,
+    provider_symbol: str,
+) -> None:
+    mapping = session.scalar(
+        select(AssetProviderMapping).where(
+            AssetProviderMapping.asset_id == asset_id,
+            AssetProviderMapping.provider == provider,
+            AssetProviderMapping.provider_symbol == provider_symbol,
+        )
+    )
+    if mapping is None:
+        raise ValueError(
+            "Provider mapping not found: "
+            f"asset_id={asset_id}, provider={provider}, provider_symbol={provider_symbol}"
+        )
+
+
+def _execute_upsert(session: Session, stmt) -> None:
+    try:
+        session.execute(stmt)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+
+
 def ingest_stock_history(
     session: Session,
     provider: MarketDataProvider,
@@ -54,6 +90,13 @@ def ingest_stock_history(
         raise ValueError("start_date cannot be after end_date")
 
     _require_asset(session, asset_id, AssetType.STOCK)
+    _require_mapping(
+        session,
+        asset_id=asset_id,
+        provider=provider.name,
+        provider_symbol=provider_symbol,
+    )
+
     raw_records = provider.get_daily_history(provider_symbol, start_date, end_date)
     ingested_at = _utc_now()
     normalized = [
@@ -90,8 +133,7 @@ def ingest_stock_history(
             "ingested_at": excluded.ingested_at,
         },
     )
-    session.execute(stmt)
-    session.commit()
+    _execute_upsert(session, stmt)
 
     return IngestionResult(
         provider=provider.name,
@@ -117,6 +159,13 @@ def ingest_fund_history(
         raise ValueError("start_date cannot be after end_date")
 
     _require_asset(session, asset_id, AssetType.FUND)
+    _require_mapping(
+        session,
+        asset_id=asset_id,
+        provider=provider.name,
+        provider_symbol=provider_symbol,
+    )
+
     raw_records = provider.get_fund_history(provider_symbol, start_date, end_date)
     ingested_at = _utc_now()
     normalized = [
@@ -148,8 +197,7 @@ def ingest_fund_history(
             "ingested_at": excluded.ingested_at,
         },
     )
-    session.execute(stmt)
-    session.commit()
+    _execute_upsert(session, stmt)
 
     return IngestionResult(
         provider=provider.name,
