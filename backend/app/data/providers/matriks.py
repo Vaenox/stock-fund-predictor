@@ -51,6 +51,14 @@ class MatriksRestProvider(MarketDataProvider):
     def name(self) -> str:
         return "matriks"
 
+    def _render_path(self, path: str, **values: str) -> str:
+        try:
+            return path.format(**values)
+        except KeyError as exc:
+            raise MatriksProviderError(
+                f"Missing endpoint path parameter: {exc.args[0]}"
+            ) from exc
+
     def _request_json(self, path: str, **params: Any) -> Any:
         url = f"{self._base_url}/{path.lstrip('/')}"
         try:
@@ -108,9 +116,8 @@ class MatriksRestProvider(MarketDataProvider):
         return [self._parse_symbol(row) for row in rows]
 
     def get_symbol_metadata(self, provider_symbol: str) -> ProviderSymbol:
-        rows = self._rows(
-            self._request_json(self._endpoints.metadata_path, symbol=provider_symbol)
-        )
+        path = self._render_path(self._endpoints.metadata_path, symbol=provider_symbol)
+        rows = self._rows(self._request_json(path, symbol=provider_symbol))
         if not rows:
             raise MatriksProviderError(f"Matriks symbol not found: {provider_symbol}")
         return self._parse_symbol(rows[0])
@@ -123,8 +130,14 @@ class MatriksRestProvider(MarketDataProvider):
     ) -> list[ProviderStockBar]:
         if start_date > end_date:
             raise ValueError("start_date cannot be after end_date")
-        payload = self._request_json(
+        path = self._render_path(
             self._endpoints.history_path,
+            symbol=provider_symbol,
+            start=start_date.isoformat(),
+            end=end_date.isoformat(),
+        )
+        payload = self._request_json(
+            path,
             symbol=provider_symbol,
             start=start_date.isoformat(),
             end=end_date.isoformat(),
@@ -132,9 +145,8 @@ class MatriksRestProvider(MarketDataProvider):
         return [self._parse_bar(row, provider_symbol) for row in self._rows(payload)]
 
     def get_latest_price(self, provider_symbol: str) -> ProviderStockBar:
-        rows = self._rows(
-            self._request_json(self._endpoints.latest_path, symbol=provider_symbol)
-        )
+        path = self._render_path(self._endpoints.latest_path, symbol=provider_symbol)
+        rows = self._rows(self._request_json(path, symbol=provider_symbol))
         if not rows:
             raise MatriksProviderError(f"Matriks latest price not found: {provider_symbol}")
         return self._parse_bar(rows[0], provider_symbol)
@@ -160,9 +172,7 @@ class MatriksRestProvider(MarketDataProvider):
 
     @classmethod
     def _parse_symbol(cls, row: dict[str, Any]) -> ProviderSymbol:
-        symbol = str(
-            cls._value(row, "provider_symbol", "providerSymbol", "symbol", "code")
-        )
+        symbol = str(cls._value(row, "provider_symbol", "providerSymbol", "symbol", "code"))
         canonical_symbol = str(
             row.get(
                 "canonical_symbol",
