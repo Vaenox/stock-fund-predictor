@@ -9,7 +9,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
 - Faz 2 veri kaynakları araştırması: `docs/phase-2-data-sources.md`
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
-- Sonraki hedef: PostgreSQL/TimescaleDB migration ve provider abstraction.
+- Sonraki hedef: ilk gerçek provider adapter'ı ve ingestion pipeline.
 
 ## Tamamlananlar
 
@@ -69,6 +69,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Initial PostgreSQL migration'ı oluşturuldu.
 - [x] TimescaleDB kuruluysa stock/fund time-series tablolarını hypertable'a dönüştüren koşullu migration eklendi.
 - [x] ORM modellerinin merkezi export'u oluşturuldu.
+- [x] Provider interface'i oluşturuldu.
+- [x] Provider-specific stock/fund kayıt tipleri oluşturuldu.
+- [x] Stock/fund normalizer katmanı oluşturuldu.
+- [x] Canonical veri validator katmanı oluşturuldu.
+- [x] Duplicate ve geleceğe tarihli kayıt kontrolleri eklendi.
+- [x] Normalizer/validator davranışı için backend testleri eklendi.
 
 ### Faz 2 Taskları
 - [x] BIST hisse veri kaynaklarını araştır ve teknik adayları belirle
@@ -81,22 +87,26 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Asset/symbol master şemasını tasarla
 - [x] PostgreSQL / TimescaleDB migration altyapısını oluştur
 - [x] Initial market data migration'ını yaz
+- [x] Provider interface'i kodla
+- [x] Normalizer + validator katmanını kodla
+- [ ] İlk provider adapter'ını oluştur
 - [ ] Historical ingestion pipeline oluştur
 - [ ] Incremental update pipeline oluştur
-- [ ] Veri doğrulama kurallarını oluştur
-- [ ] Missing data / duplicate / outlier kontrollerini oluştur
+- [ ] Veri doğrulama kurallarını tamamla
+- [ ] Missing data / duplicate / outlier kontrollerini tamamla
 - [ ] Temiz veri sözleşmesini (data contract) tanımla
-- [ ] Veri pipeline testlerini yaz
+- [x] Provider/validator temel testlerini yaz
+- [ ] Tam veri pipeline testlerini yaz
 
 ## Sıradaki İş
 
-1. Provider interface'i kodla.
-2. Normalizer + validator katmanını kodla.
-3. İlk provider adapter'ını oluştur.
-4. Historical ingestion pipeline'a geç.
-5. Incremental update pipeline'ını oluştur.
-6. Veri kalite kontrollerini ve pipeline testlerini ekle.
-7. Historical data kapsamı ve ticari lisans koşullarını sağlayıcı görüşmesiyle kesinleştir.
+1. Matriks adapter'ı için gerçek API sözleşmesini netleştir.
+2. Provider credentials/configuration katmanını ekle.
+3. Matriks stock history adapter'ını kodla.
+4. Adapter çıktısını normalizer + validator üzerinden geçir.
+5. Database repository/upsert katmanını oluştur.
+6. Historical ingestion pipeline'ını oluştur.
+7. Sonrasında incremental daily update ve veri kalite kontrollerine geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
