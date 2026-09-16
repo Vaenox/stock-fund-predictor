@@ -52,6 +52,14 @@ Tek başına accuracy model kabul kriteri değildir; sınıf dengesizliği neden
 - Feature scaling zorunlu değildir; XGBoost ham sayısal feature'larla çalışır.
 - Hyperparameter tuning daha sonraki aşamadır ve yalnızca train dönemleri üzerinde yapılmalıdır.
 
+## Sınıf Dağılımı Kuralları
+
+- Her başarılı training fold'u iki sınıf içermelidir. Tek sınıflı training fold XGBoost binary classifier için geçersizdir ve değerlendirme reddedilir.
+- Test fold tek sınıflı olabilir; bu durumda ROC-AUC ve PR-AUC `None` olarak raporlanır.
+- Fold başına train/test negatif ve pozitif gözlem sayıları `FoldMetrics` ile kaydedilir.
+- Baseline sonucunun karşılaştırılabilirliği için target dağılımı model metriklerinden ayrı olarak raporlanır.
+- Minimum pozitif örnek sayısı için henüz performans eşiği tanımlanmamıştır; bu karar daha geniş gerçek veri coverage'ı sonrasında verilecektir.
+
 ## Inference
 
 Eğitilmiş baseline modelin çıktı sözleşmesi:
@@ -63,8 +71,13 @@ BUY/HOLD/SELL eşikleri bu fazda modelden ayrı tutulur ve sonraki signal/risk k
 
 ## Kabul
 
-- Time-series split üretimi test edilir.
-- Gap, horizon'dan küçük olamaz.
-- Leakage alanları feature matrix'ten reddedilir.
-- Model fit/predict smoke çalışır.
-- En az bir walk-forward fold başarıyla değerlendirilir.
+Aşağıdaki acceptance kontrolleri `backend/tests/ml/test_phase4_acceptance.py` içinde tutulur:
+
+- Time-series split ve `gap=5` kuralı korunur.
+- Her training fold iki sınıf içerir.
+- Model fit/predict probability sözleşmesi geçerlidir.
+- Tek sınıflı test fold'da ROC-AUC ve PR-AUC güvenli biçimde `None` raporlanır.
+- `target` ve `forward_return_5d` feature matrix'ine dahil edilmez.
+- Gerçek BIST ve TEFAS verisi üzerinde baseline smoke çalışır.
+
+Faz, acceptance testleri kullanıcı ortamında çalıştırılıp sonuçları doğrulandıktan sonra kapatılır.
