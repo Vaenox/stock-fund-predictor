@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import sys
 import time
+from pathlib import Path
 
 import borsapy as bp
+import httpx
 
+from app.data.providers.base import ProviderSymbol
 from app.data.providers.borsapy import BorsapyProvider
 from app.data.streaming.manager import BistStreamManager
+
+FALLBACK_UNIVERSE_URL = (
+    "https://raw.githubusercontent.com/ahmeterenodaci/"
+    "Istanbul-Stock-Exchange--BIST--including-symbols-and-logos/main/bist.csv"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +36,68 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Limit symbols for a controlled test; 0 means all discovered symbols",
     )
+    parser.add_argument(
+        "--symbols-file",
+        type=Path,
+        help="Optional newline-delimited BIST symbol file; bypasses company discovery",
+    )
+    parser.add_argument(
+        "--universe-url",
+        default=FALLBACK_UNIVERSE_URL,
+        help="Fallback CSV URL used only when borsapy company discovery times out",
+    )
     return parser.parse_args()
+
+
+def _symbols_from_csv(text: str) -> list[ProviderSymbol]:
+    rows = csv.DictReader(io.StringIO(text))
+    result: list[ProviderSymbol] = []
+    seen: set[str] = set()
+    for row in rows:
+        symbol = str(row.get("symbol", "")).strip().upper()
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        name = str(row.get("name", symbol)).strip() or symbol
+        result.append(
+            ProviderSymbol(
+                provider="borsapy",
+                provider_symbol=symbol,
+                canonical_symbol=symbol,
+                name=name,
+                asset_type="STOCK",
+                exchange="BIST",
+                currency="TRY",
+            )
+        )
+    return result
+
+
+def _symbols_from_file(path: Path) -> list[ProviderSymbol]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return _symbols_from_csv("name,symbol\n" + "\n".join(f"{line},{line}" for line in lines if line.strip()))
+
+
+def _load_fallback_universe(url: str) -> list[ProviderSymbol]:
+    response = httpx.get(url, timeout=15.0)
+    response.raise_for_status()
+    return _symbols_from_csv(response.text)
+
+
+def discover_symbols(provider: BorsapyProvider, args: argparse.Namespace) -> tuple[list[ProviderSymbol], str]:
+    if args.symbols_file:
+        symbols = _symbols_from_file(args.symbols_file)
+        return symbols, f"file:{args.symbols_file}"
+
+    try:
+        return provider.list_symbols(), "borsapy.companies"
+    except Exception as exc:
+        print(
+            f"WARNING: borsapy company discovery failed ({type(exc).__name__}: {exc})",
+            file=sys.stderr,
+        )
+        print(f"Falling back to public BIST universe CSV: {args.universe_url}")
+        return _load_fallback_universe(args.universe_url), "public-bist-csv"
 
 
 def main() -> int:
@@ -36,7 +107,12 @@ def main() -> int:
         return 2
 
     provider = BorsapyProvider()
-    symbols = provider.list_symbols()
+    try:
+        symbols, universe_source = discover_symbols(provider, args)
+    except Exception as exc:
+        print(f"ERROR: unable to load BIST universe: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+
     if args.max_symbols:
         symbols = symbols[: args.max_symbols]
     if not symbols:
@@ -63,6 +139,7 @@ def main() -> int:
     manager.add_candle_callback(on_candle)
 
     requested = [item.provider_symbol for item in symbols]
+    print(f"Universe source: {universe_source}")
     print(f"Discovered symbols: {len(requested)}")
     print("Starting one persistent BIST TradingView stream ...")
 
