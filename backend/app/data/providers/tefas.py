@@ -24,8 +24,9 @@ class TefasSettings:
     discovery_lookback_days: int = 7
     page_size: int = 10000
     max_pages: int = 100
-    rate_limit_retries: int = 3
-    rate_limit_backoff_seconds: float = 1.0
+    rate_limit_retries: int = 4
+    rate_limit_backoff_seconds: float = 2.0
+    inter_chunk_delay_seconds: float = 1.0
 
 
 class TefasProvider(MarketDataProvider):
@@ -65,6 +66,8 @@ class TefasProvider(MarketDataProvider):
             raise ValueError("rate_limit_retries cannot be negative")
         if self._settings.rate_limit_backoff_seconds < 0:
             raise ValueError("rate_limit_backoff_seconds cannot be negative")
+        if self._settings.inter_chunk_delay_seconds < 0:
+            raise ValueError("inter_chunk_delay_seconds cannot be negative")
 
         response: httpx.Response | None = None
         for attempt in range(self._settings.rate_limit_retries + 1):
@@ -80,7 +83,11 @@ class TefasProvider(MarketDataProvider):
                 if response.status_code == 429 and attempt < self._settings.rate_limit_retries:
                     retry_after = response.headers.get("Retry-After")
                     try:
-                        delay = float(retry_after) if retry_after is not None else self._settings.rate_limit_backoff_seconds * (2**attempt)
+                        delay = (
+                            float(retry_after)
+                            if retry_after is not None
+                            else self._settings.rate_limit_backoff_seconds * (2**attempt)
+                        )
                     except ValueError:
                         delay = self._settings.rate_limit_backoff_seconds * (2**attempt)
                     sleep(delay)
@@ -149,10 +156,9 @@ class TefasProvider(MarketDataProvider):
 
         rows: list[dict[str, Any]] = []
         seen_keys: set[tuple[str, str]] = set()
+        chunks = list(self._chunks(start_date, end_date, self._settings.max_days_per_request))
 
-        for chunk_start, chunk_end in self._chunks(
-            start_date, end_date, self._settings.max_days_per_request
-        ):
+        for chunk_index, (chunk_start, chunk_end) in enumerate(chunks):
             page_start = 1
             for _page in range(self._settings.max_pages):
                 payload = {
@@ -192,11 +198,15 @@ class TefasProvider(MarketDataProvider):
                 if len(page_rows) < self._settings.page_size:
                     break
                 page_start += self._settings.page_size
+
             else:
                 raise TefasProviderError(
                     "TEFAS pagination exceeded max_pages="
                     f"{self._settings.max_pages} for {chunk_start}..{chunk_end}"
                 )
+
+            if chunk_index < len(chunks) - 1 and self._settings.inter_chunk_delay_seconds > 0:
+                sleep(self._settings.inter_chunk_delay_seconds)
 
         return rows
 
