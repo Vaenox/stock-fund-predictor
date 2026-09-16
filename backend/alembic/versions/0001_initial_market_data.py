@@ -17,8 +17,21 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    asset_type = postgresql.ENUM("STOCK", "FUND", name="asset_type")
-    asset_status = postgresql.ENUM("ACTIVE", "INACTIVE", name="asset_status")
+    # Create PostgreSQL enum types explicitly once. ``create_type=False``
+    # prevents SQLAlchemy from trying to CREATE TYPE again while creating
+    # the table columns below.
+    asset_type = postgresql.ENUM(
+        "STOCK",
+        "FUND",
+        name="asset_type",
+        create_type=False,
+    )
+    asset_status = postgresql.ENUM(
+        "ACTIVE",
+        "INACTIVE",
+        name="asset_status",
+        create_type=False,
+    )
     asset_type.create(op.get_bind(), checkfirst=True)
     asset_status.create(op.get_bind(), checkfirst=True)
 
