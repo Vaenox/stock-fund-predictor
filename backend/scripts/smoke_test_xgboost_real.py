@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import time
 from datetime import date, timedelta
-from decimal import Decimal
 
 import pandas as pd
 
@@ -73,6 +72,8 @@ def _run(asset_type: str, symbol: str, days: int, n_splits: int, test_size: int,
     for metric in metrics:
         print(
             f"Fold {metric.fold}: train_end={metric.train_end} test={metric.test_start}->{metric.test_end} "
+            f"train_target={{0: {metric.train_negative_count}, 1: {metric.train_positive_count}}} "
+            f"test_target={{0: {metric.test_negative_count}, 1: {metric.test_positive_count}}} "
             f"ROC-AUC={metric.roc_auc} PR-AUC={metric.pr_auc} "
             f"accuracy={metric.accuracy:.4f} precision={metric.precision:.4f} recall={metric.recall:.4f} "
             f"positive_rate={metric.positive_rate:.4f}"
@@ -80,6 +81,7 @@ def _run(asset_type: str, symbol: str, days: int, n_splits: int, test_size: int,
 
     assert metrics
     assert all(metric.test_start - metric.train_end == gap for metric in metrics)
+    assert all(metric.train_negative_count > 0 and metric.train_positive_count > 0 for metric in metrics)
     assert all(0.0 <= metric.accuracy <= 1.0 for metric in metrics)
     assert all(0.0 <= metric.precision <= 1.0 for metric in metrics)
     assert all(0.0 <= metric.recall <= 1.0 for metric in metrics)
