@@ -35,17 +35,16 @@ def main() -> int:
     requested_codes = {fund.provider_symbol.upper() for fund in funds}
 
     try:
-        rows = provider.fetch_fund_history_bulk(start_date, end_date)
+        rows = provider._fetch_range(None, start_date, end_date)
     except Exception as exc:
         print(f"SMOKE TEST FAILED: bulk TEFAS request failed: {exc}", file=sys.stderr)
         return 1
 
-    rows_by_code = {}
+    rows_by_code: dict[str, int] = {}
     for row in rows:
         code = str(row.get("fonKodu", "")).strip().upper()
         if code:
-            rows_by_code.setdefault(code, 0)
-            rows_by_code[code] += 1
+            rows_by_code[code] = rows_by_code.get(code, 0) + 1
 
     successful = sum(1 for code in requested_codes if rows_by_code.get(code, 0) > 0)
     empty = len(requested_codes) - successful
