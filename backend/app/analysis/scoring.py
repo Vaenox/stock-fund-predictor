@@ -36,7 +36,11 @@ def _clip(value: float, lower: float = 0.0, upper: float = 100.0) -> float:
 
 def _latest(row: pd.Series, *columns: str) -> dict[str, float | None]:
     return {
-        column: (float(row[column]) if pd.notna(row[column]) else None)
+        column: (
+            float(row[column])
+            if column in row.index and pd.notna(row[column])
+            else None
+        )
         for column in columns
     }
 
