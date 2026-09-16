@@ -37,8 +37,8 @@ def _clip(value: float, lower: float = 0.0, upper: float = 100.0) -> float:
 def _latest(row: pd.Series, *columns: str) -> dict[str, float | None]:
     return {
         column: (
-            float(row[column])
-            if column in row.index and pd.notna(row[column])
+            float(row.get(column))
+            if column in row.index and pd.notna(row.get(column))
             else None
         )
         for column in columns
@@ -103,13 +103,29 @@ def _momentum_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
     return float(np.mean(parts)), values
 
 
-def _volatility_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
+def _stock_volatility_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
     values = _latest(row, "atr_pct_14", "volatility_20", "bb_position")
     parts: list[float] = []
 
     atr_pct = values["atr_pct_14"]
     if atr_pct is not None:
         parts.append(_clip(100.0 - (atr_pct / 0.10) * 100.0))
+
+    volatility = values["volatility_20"]
+    if volatility is not None:
+        parts.append(_clip(100.0 - (volatility / 0.50) * 100.0))
+
+    bb_position = values["bb_position"]
+    if bb_position is not None:
+        parts.append(_clip(50.0 + ((bb_position - 0.5) * 50.0)))
+
+    return (float(np.mean(parts)) if parts else 50.0), values
+
+
+def _fund_volatility_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
+    """Score only volatility features available on fund unit-price data."""
+    values = _latest(row, "volatility_20", "bb_position")
+    parts: list[float] = []
 
     volatility = values["volatility_20"]
     if volatility is not None:
@@ -177,7 +193,7 @@ def calculate_stock_technical_score(
     for _, row in result.iterrows():
         trend, trend_values = _trend_score(row)
         momentum, momentum_values = _momentum_score(row)
-        volatility, volatility_values = _volatility_score(row)
+        volatility, volatility_values = _stock_volatility_score(row)
         volume, volume_values = _volume_score(row)
         breadth, breadth_values = _breadth_score(row)
 
@@ -221,11 +237,12 @@ def calculate_fund_technical_score(
     *,
     config: TechnicalScoreConfig | None = None,
 ) -> pd.DataFrame:
-    """Add an explainable 0-100 fund technical score."""
+    """Add an explainable 0-100 fund technical score using only fund features."""
     config = config or TechnicalScoreConfig()
     if frame.empty:
         raise ValueError("technical score input cannot be empty")
     result = frame.sort_values("pricing_date").reset_index(drop=True).copy()
+
     scores: list[float] = []
     trend_scores: list[float] = []
     momentum_scores: list[float] = []
@@ -235,7 +252,7 @@ def calculate_fund_technical_score(
     for _, row in result.iterrows():
         trend, trend_values = _trend_score(row)
         momentum, momentum_values = _momentum_score(row)
-        volatility, volatility_values = _volatility_score(row)
+        volatility, volatility_values = _fund_volatility_score(row)
 
         available = (
             (trend, config.trend_weight, not all(value is None for value in trend_values.values())),
