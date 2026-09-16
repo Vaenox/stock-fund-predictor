@@ -242,6 +242,7 @@ def _assert_invalid_data_is_not_persisted(
     asset_type: AssetType,
     asset_id,
     provider: ControlledProvider,
+    provider_symbol: str,
 ) -> None:
     table = "stock_daily_bars" if asset_type == AssetType.STOCK else "fund_daily_prices"
     before = _count(session, table, asset_id)
@@ -251,7 +252,7 @@ def _assert_invalid_data_is_not_persisted(
                 session,
                 provider,
                 asset_id=asset_id,
-                provider_symbol=str(asset_id),
+                provider_symbol=provider_symbol,
                 start_date=TEST_START,
                 end_date=TEST_END,
                 today=VALIDATION_TODAY,
@@ -261,7 +262,7 @@ def _assert_invalid_data_is_not_persisted(
                 session,
                 provider,
                 asset_id=asset_id,
-                provider_symbol=str(asset_id),
+                provider_symbol=provider_symbol,
                 start_date=TEST_START,
                 end_date=TEST_END,
                 today=VALIDATION_TODAY,
@@ -394,12 +395,14 @@ def main() -> int:
                 asset_type=AssetType.STOCK,
                 asset_id=bad_stock_asset.id,
                 provider=invalid_stock_provider,
+                provider_symbol=bad_stock_symbol,
             )
             _assert_invalid_data_is_not_persisted(
                 session,
                 asset_type=AssetType.FUND,
                 asset_id=bad_fund_asset.id,
                 provider=invalid_fund_provider,
+                provider_symbol=bad_fund_symbol,
             )
 
             print(
