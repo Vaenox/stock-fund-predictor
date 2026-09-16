@@ -64,8 +64,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Tüm BIST evreni için streaming load-test harness'i oluşturuldu.
 - [x] Load-test universe discovery timeout dayanıklılığı geliştirildi: borsapy/KAP discovery başarısız olursa public BIST CSV fallback'i ve isteğe bağlı sembol dosyası desteği eklendi.
 - [x] **BIST load-test ölçüm kriteri güçlendirildi: canonical quote event alan semboller ayrı sayılıyor; eksik semboller listeleniyor; `--require-quote-for-all` strict doğrulaması eklendi.**
+- [x] **16.09.2026 — BIST strict full-universe streaming testi başarıyla tamamlandı: 516 sembol subscribe edildi, 516/516 (%100) canonical quote event alındı.**
+- [x] Public fallback evrenindeki stale ticker kodları güncel TradingView sembollerine normalize edildi; `YGYO` retired olarak filtrelendi.
 - [x] TEFAS tüm-fon günlük ingestion smoke-test scripti oluşturuldu.
 - [x] **TEFAS bulk smoke akışı doğrulandı: 09.09.2026–16.09.2026 aralığında `--max-funds 10` ile 10/10 fon veri aldı, 0 eksik; BULK rows returned: 10000; SMOKE TEST PASSED.**
+- [x] **Gerçek BIST historical + live persistence smoke-test scripti oluşturuldu: `backend/scripts/smoke_test_persistence.py`.**
+- [x] **TEFAS provider numeric exception sınıf adı hatası düzeltildi (`TefasProviderError`).**
 - [ ] TEFAS'ın tam fon evrenini tek bulk/paginated akışla doğrula.
 
 ### Faz 2 Taskları
@@ -86,7 +90,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] BIST live/intraday TimescaleDB tablosunu oluştur
 - [x] Reconnect, stale quote ve heartbeat kontrollerini oluştur
 - [x] **Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır — THYAO ile doğrulandı (16.09.2026).**
-- [ ] Tüm BIST evreniyle streaming yük testi çalıştır ve sonuçları kalite kriterleriyle doğrula
+- [x] **Tüm BIST evreniyle streaming yük testi çalıştır ve sonuçları kalite kriterleriyle doğrula — 516/516 (%100) quote coverage.**
 - [ ] TEFAS günlük tüm fon evreni smoke testini çalıştır
 - [ ] İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz
 - [ ] Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula
@@ -97,10 +101,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Yeni strict load-test ile tüm BIST evreninde quote coverage ve eksik sembolleri doğrula.
-2. TEFAS bulk/paginated akışı ile tam fon evrenini doğrula.
-3. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
-4. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
+1. PostgreSQL/TimescaleDB bağlantısını doğrula ve `smoke_test_persistence.py` ile THYAO historical + live gerçek kayıt yazımını çalıştır.
+2. Aynı testte duplicate/upsert ve `source_provider` provenance doğrulamasını tamamla.
+3. TEFAS bulk/paginated akışı ile tam fon evrenini doğrula.
+4. Incremental update pipeline ve genişletilmiş veri kalite kontrollerini tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
