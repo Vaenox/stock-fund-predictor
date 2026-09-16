@@ -68,9 +68,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Public fallback evrenindeki stale ticker kodları güncel TradingView sembollerine normalize edildi; `YGYO` retired olarak filtrelendi.
 - [x] TEFAS tüm-fon günlük ingestion smoke-test scripti oluşturuldu.
 - [x] **TEFAS bulk smoke akışı doğrulandı: 09.09.2026–16.09.2026 aralığında `--max-funds 10` ile 10/10 fon veri aldı, 0 eksik; BULK rows returned: 10000; SMOKE TEST PASSED.**
-- [x] **Gerçek BIST historical + live persistence smoke-test scripti oluşturuldu: `backend/scripts/smoke_test_persistence.py`.**
-- [x] **TEFAS provider numeric exception sınıf adı hatası düzeltildi (`TefasProviderError`).**
-- [ ] TEFAS'ın tam fon evrenini tek bulk/paginated akışla doğrula.
+- [x] **Gerçek BIST historical + live persistence smoke-test scripti oluşturuldu ve çalıştırıldı: THYAO için 6 historical satır ve en az 1 live tick PostgreSQL'e yazıldı; SMOKE TEST PASSED.**
+- [x] **Duplicate/upsert + source provenance gerçek veriyle doğrulandı: historical ikinci ingestion sonrasında satır sayısı değişmedi; `source_provider` doğrulandı ve `ingested_at` güncellendi; live conflict-key aynı kaydı güncelledi; `PERSISTENCE UPSERT/PROVENANCE VERIFIED`.**
+- [x] **TEFAS bulk retrieval kontrollü sayfalama ile güncellendi; tam YAT evreni ve uzun tarih aralıkları için page-based retrieval + duplicate `(date, fund_code)` koruması eklendi.**
+- [ ] TEFAS'ın tam fon evrenini gerçek veriyle doğrula.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -91,9 +92,9 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Reconnect, stale quote ve heartbeat kontrollerini oluştur
 - [x] **Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır — THYAO ile doğrulandı (16.09.2026).**
 - [x] **Tüm BIST evreniyle streaming yük testi çalıştır ve sonuçları kalite kriterleriyle doğrula — 516/516 (%100) quote coverage.**
-- [ ] TEFAS günlük tüm fon evreni smoke testini çalıştır
-- [ ] İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz
-- [ ] Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula
+- [ ] TEFAS günlük tüm fon evreni smoke testini gerçek veriyle çalıştır
+- [x] **İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz ve doğrula.**
+- [x] **Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula.**
 - [ ] Incremental update pipeline oluştur
 - [ ] Missing data / outlier / source-quality kontrollerini genişlet
 - [ ] Temiz veri sözleşmesini (data contract) son haline getir
@@ -101,10 +102,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. PostgreSQL/TimescaleDB bağlantısını doğrula ve `smoke_test_persistence.py` ile THYAO historical + live gerçek kayıt yazımını çalıştır.
-2. Aynı testte duplicate/upsert ve `source_provider` provenance doğrulamasını tamamla.
-3. TEFAS bulk/paginated akışı ile tam fon evrenini doğrula.
-4. Incremental update pipeline ve genişletilmiş veri kalite kontrollerini tamamla.
+1. **TEFAS tam YAT fon evrenini gerçek veriyle doğrula: discovery + bulk/pagination + eksik fon + duplicate `(date, fund_code)` kontrolü.**
+2. Incremental update pipeline oluştur.
+3. Missing data / outlier / source-quality kontrollerini genişlet.
+4. Temiz data contract'ı son haline getir ve uçtan uca data pipeline testlerini tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
