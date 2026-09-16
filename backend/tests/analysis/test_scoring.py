@@ -72,9 +72,24 @@ def test_fund_score_uses_only_supported_components():
     assert "Hacim: fon verisinde desteklenmiyor" in result.loc[219, "technical_score_reason"]
 
 
+def test_fund_score_does_not_require_stock_only_columns():
+    indicators = calculate_fund_indicators(_fund_frame())
+    indicators = indicators.drop(columns=["bb_position"])
+    result = calculate_fund_technical_score(indicators)
+
+    assert result["technical_score"].between(0, 100).all()
+    assert result["technical_score_volatility"].notna().any()
+
+
 def test_config_requires_weights_to_sum_to_one():
     with pytest.raises(ValueError, match="sum to 1.0"):
-        TechnicalScoreConfig(trend_weight=0.5, momentum_weight=0.5, volatility_weight=0.1, volume_weight=0.0, breadth_weight=0.0)
+        TechnicalScoreConfig(
+            trend_weight=0.5,
+            momentum_weight=0.5,
+            volatility_weight=0.1,
+            volume_weight=0.0,
+            breadth_weight=0.0,
+        )
 
 
 def test_score_does_not_use_future_rows():
