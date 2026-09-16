@@ -24,9 +24,9 @@ class TefasSettings:
     discovery_lookback_days: int = 7
     page_size: int = 10000
     max_pages: int = 100
-    rate_limit_retries: int = 4
-    rate_limit_backoff_seconds: float = 2.0
-    inter_chunk_delay_seconds: float = 1.0
+    rate_limit_retries: int = 6
+    rate_limit_backoff_seconds: float = 5.0
+    inter_chunk_delay_seconds: float = 3.0
 
 
 class TefasProvider(MarketDataProvider):
@@ -210,11 +210,7 @@ class TefasProvider(MarketDataProvider):
 
         return rows
 
-    def fetch_fund_history_bulk(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[dict[str, Any]]:
+    def fetch_fund_history_bulk(self, start_date: date, end_date: date) -> list[dict[str, Any]]:
         """Fetch daily info for the complete YAT universe in paginated bulk requests."""
         return self._fetch_range(None, start_date, end_date)
 
@@ -271,23 +267,13 @@ class TefasProvider(MarketDataProvider):
             raise TefasProviderError(f"TEFAS fund not found: {provider_symbol}")
         return symbol
 
-    def get_daily_history(
-        self,
-        provider_symbol: str,
-        start_date: date,
-        end_date: date,
-    ) -> list[ProviderStockBar]:
+    def get_daily_history(self, provider_symbol: str, start_date: date, end_date: date) -> list[ProviderStockBar]:
         raise NotImplementedError("TEFAS provider is fund-only")
 
     def get_latest_price(self, provider_symbol: str) -> ProviderStockBar:
         raise NotImplementedError("TEFAS provider is fund-only")
 
-    def get_fund_history(
-        self,
-        provider_symbol: str,
-        start_date: date,
-        end_date: date,
-    ) -> list[ProviderFundPrice]:
+    def get_fund_history(self, provider_symbol: str, start_date: date, end_date: date) -> list[ProviderFundPrice]:
         records: list[ProviderFundPrice] = []
         for row in self._fetch_range(provider_symbol, start_date, end_date):
             price = row.get("fiyat")
@@ -311,11 +297,7 @@ class TefasProvider(MarketDataProvider):
                     provider_symbol=provider_symbol.strip().upper(),
                     pricing_date=self._date(pricing_value),
                     unit_price=self._decimal(price),
-                    total_net_assets=(
-                        self._decimal(portfolio_size)
-                        if portfolio_size not in (None, "")
-                        else None
-                    ),
+                    total_net_assets=(self._decimal(portfolio_size) if portfolio_size not in (None, "") else None),
                     source_timestamp=datetime.now(timezone.utc),
                     raw=row,
                 )
