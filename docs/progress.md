@@ -99,7 +99,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Watchdog health callback ve son event zamanlarının izlenmesi eklendi.
 - [x] Watchdog davranışı için birim testleri oluşturuldu.
 - [x] **Tek sembollü gerçek TradingView/BIST WebSocket smoke-test scripti oluşturuldu.**
-- [x] Smoke test quote ve isteğe bağlı candle eventini ayrı ayrı doğrulayacak şekilde tasarlandı.
+- [x] **16 Eylül 2026 — THYAO gerçek WebSocket smoke test başarıyla çalıştırıldı: quote_received=True, candle_received=True, SMOKE TEST PASSED.**
 - [x] Gerçek WebSocket smoke testini GitHub Actions üzerinden manuel çalıştırmak için workflow eklendi.
 - [x] **Tüm BIST evreni için streaming load-test harness'i oluşturuldu.**
 - [x] Load-test, discovered tüm sembolleri tek persistent bağlantıda subscribe etmeyi ve event sayısını gözlemlemeyi destekliyor.
@@ -124,7 +124,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Live eventleri Redis Pub/Sub/Streams üzerinden yayınla
 - [x] BIST live/intraday TimescaleDB tablosunu oluştur
 - [x] Reconnect, stale quote ve heartbeat kontrollerini oluştur
-- [ ] Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır
+- [x] **Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır — THYAO ile doğrulandı (16.09.2026).**
 - [ ] Tüm BIST evreniyle streaming yük testi çalıştır
 - [ ] TEFAS günlük tüm fon evreni smoke testini çalıştır
 - [ ] İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz
@@ -136,11 +136,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Erişilebilir gerçek ağ/CI ortamında tek BIST sembolüyle smoke testini çalıştır ve sonucu kayda geçir.
-2. Erişilebilir gerçek ağ/CI ortamında tüm BIST evreni load testini çalıştır ve sonuçları ölç.
-3. Erişilebilir gerçek ağ/CI ortamında TEFAS günlük tüm fon evreni smoke testini çalıştır.
-4. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
-5. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
+1. Erişilebilir gerçek ağ/CI ortamında tüm BIST evreni load testini çalıştır ve sonuçları ölç.
+2. Erişilebilir gerçek ağ/CI ortamında TEFAS günlük tüm fon evreni smoke testini çalıştır.
+3. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
+4. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
