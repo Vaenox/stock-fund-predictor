@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -9,12 +8,7 @@ import pandas as pd
 
 @dataclass(frozen=True, slots=True)
 class TechnicalScoreConfig:
-    """Deterministic heuristic weights for the pre-ML technical score.
-
-    These are feature aggregation defaults, not backtested trading thresholds.
-    They must be recalibrated only through out-of-sample evaluation before any
-    production signal policy is defined.
-    """
+    """Deterministic heuristic weights for the pre-ML technical score."""
 
     trend_weight: float = 0.30
     momentum_weight: float = 0.30
@@ -41,7 +35,10 @@ def _clip(value: float, lower: float = 0.0, upper: float = 100.0) -> float:
 
 
 def _latest(row: pd.Series, *columns: str) -> dict[str, float | None]:
-    return {column: (float(row[column]) if pd.notna(row[column]) else None) for column in columns}
+    return {
+        column: (float(row[column]) if pd.notna(row[column]) else None)
+        for column in columns
+    }
 
 
 def _signed_threshold_score(value: float | None, threshold: float) -> float:
@@ -64,31 +61,41 @@ def _rsi_score(value: float | None) -> float:
     return _clip(90.0 - ((value - 70.0) * 2.0))
 
 
+def _price_column(row: pd.Series) -> str:
+    if "close" in row.index:
+        return "close"
+    if "unit_price" in row.index:
+        return "unit_price"
+    raise ValueError("technical score input requires close or unit_price")
+
+
 def _trend_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
-    values = _latest(row, "close", "ema_20", "ema_50", "ema_200")
-    close = values["close"]
+    price_column = _price_column(row)
+    values = _latest(row, price_column, "ema_20", "ema_50", "ema_200")
+    price = values[price_column]
     ema_20 = values["ema_20"]
     ema_50 = values["ema_50"]
     ema_200 = values["ema_200"]
     parts: list[float] = []
 
-    if close is not None and ema_20 is not None:
-        parts.append(_signed_threshold_score((close / ema_20) - 1.0, 0.05))
+    if price is not None and ema_20 is not None:
+        parts.append(_signed_threshold_score((price / ema_20) - 1.0, 0.05))
     if ema_20 is not None and ema_50 is not None:
         parts.append(_signed_threshold_score((ema_20 / ema_50) - 1.0, 0.05))
     if ema_50 is not None and ema_200 is not None:
         parts.append(_signed_threshold_score((ema_50 / ema_200) - 1.0, 0.10))
-    if not parts:
-        return 50.0, values
-    return float(np.mean(parts)), values
+
+    return (float(np.mean(parts)) if parts else 50.0), values
 
 
 def _momentum_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
     values = _latest(row, "rsi_14", "macd_hist", "momentum_5", "momentum_20")
-    parts = [_rsi_score(values["rsi_14"])]
-    parts.append(_signed_threshold_score(values["macd_hist"], 0.05))
-    parts.append(_signed_threshold_score(values["momentum_5"], 0.05))
-    parts.append(_signed_threshold_score(values["momentum_20"], 0.10))
+    parts = [
+        _rsi_score(values["rsi_14"]),
+        _signed_threshold_score(values["macd_hist"], 0.05),
+        _signed_threshold_score(values["momentum_5"], 0.05),
+        _signed_threshold_score(values["momentum_20"], 0.10),
+    ]
     return float(np.mean(parts)), values
 
 
@@ -108,9 +115,7 @@ def _volatility_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
     if bb_position is not None:
         parts.append(_clip(50.0 + ((bb_position - 0.5) * 50.0)))
 
-    if not parts:
-        return 50.0, values
-    return float(np.mean(parts)), values
+    return (float(np.mean(parts)) if parts else 50.0), values
 
 
 def _volume_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
@@ -133,9 +138,7 @@ def _breadth_score(row: pd.Series) -> tuple[float, dict[str, float | None]]:
         parts.append(_clip(adx / 50.0 * 100.0))
     if bb_position is not None:
         parts.append(_clip(50.0 + ((bb_position - 0.5) * 50.0)))
-    if not parts:
-        return 50.0, values
-    return float(np.mean(parts)), values
+    return (float(np.mean(parts)) if parts else 50.0), values
 
 
 def _component_reason(name: str, score: float, missing: bool = False) -> str:
@@ -187,15 +190,17 @@ def calculate_stock_technical_score(
         volatility_scores.append(volatility)
         volume_scores.append(volume)
         breadth_scores.append(breadth)
-
-        reason_parts = [
-            _component_reason("Trend", trend, all(value is None for value in trend_values.values())),
-            _component_reason("Momentum", momentum, all(value is None for value in momentum_values.values())),
-            _component_reason("Volatilite", volatility, all(value is None for value in volatility_values.values())),
-            _component_reason("Hacim", volume, all(value is None for value in volume_values.values())),
-            _component_reason("Trend gücü", breadth, all(value is None for value in breadth_values.values())),
-        ]
-        reasons.append(" | ".join(reason_parts))
+        reasons.append(
+            " | ".join(
+                [
+                    _component_reason("Trend", trend, all(value is None for value in trend_values.values())),
+                    _component_reason("Momentum", momentum, all(value is None for value in momentum_values.values())),
+                    _component_reason("Volatilite", volatility, all(value is None for value in volatility_values.values())),
+                    _component_reason("Hacim", volume, all(value is None for value in volume_values.values())),
+                    _component_reason("Trend gücü", breadth, all(value is None for value in breadth_values.values())),
+                ]
+            )
+        )
 
     result["technical_score_trend"] = trend_scores
     result["technical_score_momentum"] = momentum_scores
@@ -212,12 +217,7 @@ def calculate_fund_technical_score(
     *,
     config: TechnicalScoreConfig | None = None,
 ) -> pd.DataFrame:
-    """Add an explainable 0-100 fund technical score.
-
-    Fund inputs do not contain OHLCV, so unavailable stock-only components are
-    neutralized and the available trend/momentum/volatility signals are
-    reweighted deterministically.
-    """
+    """Add an explainable 0-100 fund technical score."""
     config = config or TechnicalScoreConfig()
     if frame.empty:
         raise ValueError("technical score input cannot be empty")
@@ -232,12 +232,18 @@ def calculate_fund_technical_score(
         trend, trend_values = _trend_score(row)
         momentum, momentum_values = _momentum_score(row)
         volatility, volatility_values = _volatility_score(row)
-        available = [(trend, config.trend_weight), (momentum, config.momentum_weight), (volatility, config.volatility_weight)]
-        denominator = sum(weight for score, weight in available if any(value is not None for value in ({"trend": trend_values, "momentum": momentum_values, "volatility": volatility_values}["trend" if score == trend else "momentum" if score == momentum else "volatility"]).values()))
-        if denominator == 0:
-            final = 50.0
-        else:
-            final = sum(score * weight for score, weight in available) / denominator
+
+        available = (
+            (trend, config.trend_weight, not all(value is None for value in trend_values.values())),
+            (momentum, config.momentum_weight, not all(value is None for value in momentum_values.values())),
+            (volatility, config.volatility_weight, not all(value is None for value in volatility_values.values())),
+        )
+        denominator = sum(weight for _, weight, is_available in available if is_available)
+        final = (
+            sum(score * weight for score, weight, is_available in available if is_available) / denominator
+            if denominator
+            else 50.0
+        )
 
         scores.append(_clip(final))
         trend_scores.append(trend)
@@ -246,9 +252,9 @@ def calculate_fund_technical_score(
         reasons.append(
             " | ".join(
                 [
-                    _component_reason("Trend", trend, all(value is None for value in trend_values.values())),
-                    _component_reason("Momentum", momentum, all(value is None for value in momentum_values.values())),
-                    _component_reason("Volatilite", volatility, all(value is None for value in volatility_values.values())),
+                    _component_reason("Trend", trend, not available[0][2]),
+                    _component_reason("Momentum", momentum, not available[1][2]),
+                    _component_reason("Volatilite", volatility, not available[2][2]),
                     "Hacim: fon verisinde desteklenmiyor",
                 ]
             )
