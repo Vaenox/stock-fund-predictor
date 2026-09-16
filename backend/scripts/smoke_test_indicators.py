@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -18,6 +19,12 @@ def parse_args() -> argparse.Namespace:
     target.add_argument("--fund-code", help="TEFAS fund code")
     target.add_argument("--active-fund", action="store_true", help="Auto-select a current TEFAS fund")
     parser.add_argument("--days", type=int, default=450, help="Calendar-day history window")
+    parser.add_argument(
+        "--tefas-request-interval",
+        type=float,
+        default=10.0,
+        help="Seconds between TEFAS requests when manually chunking a fund history",
+    )
     return parser.parse_args()
 
 
@@ -38,19 +45,42 @@ def _stock_frame(provider: BorsapyProvider, symbol: str, start: date, end: date)
     )
 
 
-def _fund_frame(provider: TefasProvider, fund_code: str, start: date, end: date) -> pd.DataFrame:
-    records = provider.get_fund_history(fund_code, start, end)
+def _fund_frame(
+    provider: TefasProvider,
+    fund_code: str,
+    start: date,
+    end: date,
+    *,
+    request_interval: float,
+) -> pd.DataFrame:
+    # TEFAS enforces a roughly one-month date-window limit. The provider already
+    # chunks internally, but a long request can still hit the site's rate limit.
+    # Keep each API call explicit here so the smoke test remains predictable.
+    chunk_size = 28
+    records = []
+    current = start
+    first_request = True
+
+    while current <= end:
+        chunk_end = min(current + timedelta(days=chunk_size - 1), end)
+        if not first_request and request_interval > 0:
+            time.sleep(request_interval)
+        chunk_records = provider.get_fund_history(fund_code, current, chunk_end)
+        records.extend(chunk_records)
+        print(f"TEFAS chunk: {current}->{chunk_end} rows={len(chunk_records)}")
+        first_request = False
+        current = chunk_end + timedelta(days=1)
+
     return pd.DataFrame(
         [{"pricing_date": record.pricing_date, "unit_price": record.unit_price} for record in records]
-    )
+    ).drop_duplicates(subset=["pricing_date"], keep="last")
 
 
 def _assert_no_lookahead(full: pd.DataFrame, truncated: pd.DataFrame, feature_columns: list[str]) -> None:
-    full_features = feature_columns
     full_result = calculate_stock_indicators(full) if "trading_date" in full.columns else calculate_fund_indicators(full)
     truncated_result = calculate_stock_indicators(truncated) if "trading_date" in truncated.columns else calculate_fund_indicators(truncated)
     probe = min(100, len(truncated_result) - 1)
-    for column in full_features:
+    for column in feature_columns:
         a = full_result.loc[probe, column]
         b = truncated_result.loc[probe, column]
         if pd.isna(a) and pd.isna(b):
@@ -85,7 +115,11 @@ def main() -> int:
             print(f"ATR14 latest: {result['atr_14'].iloc[-1]:.6f}")
             print(f"ADX14 latest: {result['adx_14'].iloc[-1]:.6f}")
             print(f"Volume ratio20 latest: {result['volume_ratio_20'].iloc[-1]:.6f}")
-            _assert_no_lookahead(frame, frame.iloc[: max(101, len(frame) - 20)], ["sma_20", "ema_20", "rsi_14", "macd", "bb_upper", "momentum_20"])
+            _assert_no_lookahead(
+                frame,
+                frame.iloc[: max(101, len(frame) - 20)],
+                ["sma_20", "ema_20", "rsi_14", "macd", "bb_upper", "momentum_20"],
+            )
             print("LOOK-AHEAD CHECK: PASSED")
         else:
             provider = TefasProvider()
@@ -96,7 +130,13 @@ def main() -> int:
                 fund_code = symbols[0].provider_symbol
             else:
                 fund_code = args.fund_code.strip().upper()
-            frame = _fund_frame(provider, fund_code, start, end)
+            frame = _fund_frame(
+                provider,
+                fund_code,
+                start,
+                end,
+                request_interval=args.tefas_request_interval,
+            )
             if len(frame) < 200:
                 raise RuntimeError(f"insufficient TEFAS rows for 200-day warm-up: {len(frame)}")
             result = calculate_fund_indicators(frame)
@@ -107,7 +147,11 @@ def main() -> int:
             print(f"EMA20 latest: {result['ema_20'].iloc[-1]:.6f}")
             print(f"EMA200 latest: {result['ema_200'].iloc[-1]:.6f}")
             print(f"MACD hist latest: {result['macd_hist'].iloc[-1]:.6f}")
-            _assert_no_lookahead(frame, frame.iloc[: max(101, len(frame) - 20)], ["sma_20", "ema_20", "rsi_14", "macd", "bb_upper", "momentum_20"])
+            _assert_no_lookahead(
+                frame,
+                frame.iloc[: max(101, len(frame) - 20)],
+                ["sma_20", "ema_20", "rsi_14", "macd", "bb_upper", "momentum_20"],
+            )
             print("LOOK-AHEAD CHECK: PASSED")
 
         print("TECHNICAL INDICATOR SMOKE TEST PASSED")
