@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/stock_fund_predictor"
     )
+    redis_url: str = Field(default="redis://localhost:6379/0")
+    live_tick_retention_days: int = Field(default=30, ge=1)
+    live_candle_retention_days: int = Field(default=180, ge=1)
 
 
 @lru_cache
