@@ -34,9 +34,41 @@ def test_stock_quality_flags_invalid_ohlc_negative_volume_and_missing_day():
     )
 
     assert report.ok is False
-    assert date(2026, 9, 15) in report.missing_weekdays
+    assert date(2026, 9, 15) in report.missing_business_dates
     assert date(2026, 9, 16) in report.invalid_ohlc
     assert date(2026, 9, 16) in report.negative_volume
+
+
+def test_stock_quality_ignores_bist_full_closure():
+    rows = [
+        {
+            "trading_date": date(2026, 4, 22),
+            "open": Decimal("100"),
+            "high": Decimal("110"),
+            "low": Decimal("99"),
+            "close": Decimal("105"),
+            "volume": Decimal("10"),
+            "source_provider": "borsapy",
+        },
+        {
+            "trading_date": date(2026, 4, 24),
+            "open": Decimal("106"),
+            "high": Decimal("112"),
+            "low": Decimal("104"),
+            "close": Decimal("108"),
+            "volume": Decimal("12"),
+            "source_provider": "borsapy",
+        },
+    ]
+
+    report = inspect_stock_bars(
+        rows,
+        start_date=date(2026, 4, 22),
+        end_date=date(2026, 4, 24),
+    )
+
+    assert report.ok is True
+    assert not report.missing_business_dates
 
 
 def test_stock_quality_allows_single_source_and_normal_ohlc():
@@ -69,7 +101,7 @@ def test_stock_quality_allows_single_source_and_normal_ohlc():
 
     assert report.ok is True
     assert not report.duplicate_keys
-    assert not report.missing_weekdays
+    assert not report.missing_business_dates
     assert not report.mixed_sources
 
 
