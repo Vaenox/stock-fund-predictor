@@ -12,6 +12,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 3 teknik analiz contract: `docs/phase-3-technical-analysis.md`
 - Faz 3 ML feature contract: `docs/ml-feature-contract.md`
 - Faz 4 ML baseline contract: `docs/phase-4-ml-baseline.md`
+- Faz 4 baseline evaluation raporu: `docs/phase-4-ml-baseline-evaluation.md`
 
 ## Faz 0 — Proje Başlangıcı ve Roadmap
 
@@ -136,11 +137,15 @@ Leakage / Warm-up Tests
 - [x] `gap >= 5` kuralı baseline evaluation'a bağlandı.
 - [x] XGBoost baseline wrapper oluşturuldu: `backend/app/ml/xgboost_baseline.py`.
 - [x] ROC-AUC, PR-AUC, accuracy, precision, recall ve positive-rate metrikleri eklendi.
+- [x] Fold bazında train/test target sınıf sayıları `FoldMetrics` içine eklendi.
+- [x] Gerçek smoke çıktısında fold target dağılımları görünür hale getirildi.
 - [x] scikit-learn ve XGBoost bağımlılıkları requirements'a eklendi.
 - [x] Split ve XGBoost baseline unit testleri oluşturuldu.
 - [x] **16.09.2026 — Faz 4 ML unit testleri başarıyla geçti.**
 - [x] **16.09.2026 — Gerçek BIST XGBoost baseline smoke başarılı: THYAO, 684 ham / 480 training row, 3 walk-forward fold.**
-- [ ] Gerçek TEFAS XGBoost baseline smoke: AAL'ın ilk eğitim penceresi tek sınıf olduğu için değerlendirilemedi; validation kuralı gevşetilmedi.
+- [x] **16.09.2026 — Gerçek TEFAS XGBoost baseline smoke başarılı: AFA, 312 ham / 108 training row, 3 walk-forward fold.**
+- [x] İlk gerçek BIST + TEFAS baseline sonuçları `docs/phase-4-ml-baseline-evaluation.md` içine kaydedildi.
+- [ ] Gerçek TEFAS üzerinde farklı bir fonla daha geniş baseline coverage.
 
 ### Faz 4 Taskları
 
@@ -151,8 +156,10 @@ Leakage / Warm-up Tests
 - [x] Baseline metriklerini oluştur.
 - [x] ML baseline unit testlerini çalıştır.
 - [x] Gerçek BIST feature dataset ile XGBoost baseline smoke çalıştır.
-- [ ] Gerçek TEFAS feature dataset ile XGBoost baseline smoke çalıştır.
-- [ ] Walk-forward baseline sonuçlarını kaydet ve değerlendirme tablosu oluştur.
+- [x] Gerçek TEFAS feature dataset ile ilk XGBoost baseline smoke çalıştır.
+- [x] Walk-forward baseline sonuçlarını kaydet ve değerlendirme tablosu oluştur.
+- [ ] Birden fazla gerçek BIST + TEFAS örneği ile coverage'ı genişlet.
+- [ ] Minimum target/class-distribution kabul kriterini netleştir.
 - [ ] Faz 4 kabul testlerini tamamla.
 
 ### BIST Baseline Smoke Sonucu — THYAO
@@ -160,10 +167,20 @@ Leakage / Warm-up Tests
 - Raw rows: `684`
 - Training rows: `480`
 - Target distribution: `{0: 374, 1: 106}`
-- Fold 1: ROC-AUC `0.2843`, PR-AUC `0.1181`, accuracy `0.8500`, precision `0.0000`, recall `0.0000`, positive-rate `0.1500`
-- Fold 2: ROC-AUC `0.6113`, PR-AUC `0.4765`, accuracy `0.7500`, precision `1.0000`, recall `0.0909`, positive-rate `0.2750`
-- Fold 3: ROC-AUC `0.5128`, PR-AUC `0.0500`, accuracy `0.9750`, precision `0.0000`, recall `0.0000`, positive-rate `0.0250`
+- Fold 1: train `312/43`, test `34/6`, ROC-AUC `0.2843`, PR-AUC `0.1181`, accuracy `0.8500`, precision `0.0000`, recall `0.0000`, positive-rate `0.1500`
+- Fold 2: train `332/63`, test `30/10`, ROC-AUC `0.6113`, PR-AUC `0.4765`, accuracy `0.7500`, precision `1.0000`, recall `0.0909`, positive-rate `0.2750`
+- Fold 3: train `351/84`, test `39/1`, ROC-AUC `0.5128`, PR-AUC `0.0500`, accuracy `0.9750`, precision `0.0000`, recall `0.0000`, positive-rate `0.0250`
 - Not: Bu sonuçlar baseline doğrulaması içindir; tek başına model kalitesi veya genellenebilirlik sonucu olarak yorumlanmamalıdır.
+
+### TEFAS Baseline Smoke Sonucu — AFA
+
+- Raw rows: `312`
+- Training rows: `108`
+- Target distribution: `{0: 84, 1: 24}`
+- Fold 1: train `39/9`, test `18/2`, ROC-AUC `0.5556`, PR-AUC `0.1818`, accuracy `0.8000`, precision `0.0000`, recall `0.0000`, positive-rate `0.1000`
+- Fold 2: train `53/10`, test `15/5`, ROC-AUC `0.8800`, PR-AUC `0.8369`, accuracy `0.7500`, precision `0.0000`, recall `0.0000`, positive-rate `0.2500`
+- Fold 3: train `69/14`, test `20/0`, ROC-AUC `None`, PR-AUC `None`, accuracy `1.0000`, precision `0.0000`, recall `0.0000`, positive-rate `0.0000`
+- Not: Fold 2'nin yüksek metrikleri tek başına model performansı sonucu olarak yorumlanmamalıdır; Fold 3 test setinde pozitif örnek yoktur.
 
 ### AAL Validation Notu
 
@@ -174,10 +191,10 @@ Leakage / Warm-up Tests
 
 ## Sıradaki İş
 
-1. Baseline için iki sınıflı gerçek TEFAS örnek fon seç.
-2. BIST baseline fold sonuçlarını ortak evaluation tablosuna aktar.
-3. Gerçek BIST + TEFAS baseline sonuçlarını birlikte değerlendir.
-4. Faz 4 kabul testlerini tamamla.
+1. Birkaç gerçek BIST ve TEFAS sembolü üzerinde baseline coverage'ı genişlet.
+2. Fold train/test sınıf dağılımlarını ve metrikleri ortak evaluation dokümanında tut.
+3. Minimum target/class-distribution kabul kriterini belirle.
+4. Faz 4 acceptance testlerini tamamla.
 5. Ardından model tuning / feature importance / signal katmanına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
