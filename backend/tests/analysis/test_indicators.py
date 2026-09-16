@@ -34,32 +34,11 @@ def test_stock_indicators_are_chronological_and_have_expected_columns():
 
     assert result["trading_date"].is_monotonic_increasing
     expected = {
-        "sma_20",
-        "sma_50",
-        "sma_200",
-        "ema_20",
-        "ema_50",
-        "ema_200",
-        "rsi_14",
-        "macd",
-        "macd_signal",
-        "macd_hist",
-        "bb_upper",
-        "bb_lower",
-        "bb_width",
-        "bb_position",
-        "atr_14",
-        "atr_pct_14",
-        "adx_14",
-        "momentum_5",
-        "momentum_10",
-        "momentum_20",
-        "return_1d",
-        "return_5d",
-        "volatility_20",
-        "volume_sma_20",
-        "volume_ratio_20",
-        "volume_change_1d",
+        "sma_20", "sma_50", "sma_200", "ema_20", "ema_50", "ema_200",
+        "rsi_14", "macd", "macd_signal", "macd_hist", "bb_upper", "bb_lower",
+        "bb_width", "bb_position", "atr_14", "atr_pct_14", "adx_14",
+        "momentum_5", "momentum_10", "momentum_20", "return_1d", "return_5d",
+        "volatility_20", "volume_sma_20", "volume_ratio_20", "volume_change_1d",
     }
     assert expected.issubset(result.columns)
 
@@ -67,8 +46,9 @@ def test_stock_indicators_are_chronological_and_have_expected_columns():
 def test_stock_indicator_warmup_is_nan_and_mature_values_are_finite():
     result = calculate_stock_indicators(_stock_frame())
 
-    assert result.loc[0, "sma_20"] != result.loc[0, "sma_20"]
-    assert result.loc[19, "sma_20"] == result.loc[19, "close"] - 19 / 2
+    assert pd.isna(result.loc[0, "sma_20"])
+    expected_sma20 = result["close"].iloc[:20].mean()
+    assert result.loc[19, "sma_20"] == expected_sma20
     assert result.loc[199, "sma_200"] == result["close"].iloc[:200].mean()
     assert np.isfinite(result.loc[219, "rsi_14"])
     assert np.isfinite(result.loc[219, "atr_14"])
