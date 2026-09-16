@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -18,7 +19,41 @@ def parse_args() -> argparse.Namespace:
     target.add_argument("--symbol", help="BIST stock symbol")
     target.add_argument("--fund-code", help="TEFAS fund code")
     parser.add_argument("--days", type=int, default=450, help="Calendar-day history window")
+    parser.add_argument(
+        "--tefas-request-interval",
+        type=float,
+        default=10.0,
+        help="Seconds between TEFAS requests when manually chunking a fund history",
+    )
     return parser.parse_args()
+
+
+def _fund_frame(
+    provider: TefasProvider,
+    fund_code: str,
+    start: date,
+    end: date,
+    *,
+    request_interval: float,
+) -> pd.DataFrame:
+    chunk_size = 28
+    records = []
+    current = start
+    first_request = True
+
+    while current <= end:
+        chunk_end = min(current + timedelta(days=chunk_size - 1), end)
+        if not first_request and request_interval > 0:
+            time.sleep(request_interval)
+        chunk_records = provider.get_fund_history(fund_code, current, chunk_end)
+        records.extend(chunk_records)
+        print(f"TEFAS chunk: {current}->{chunk_end} rows={len(chunk_records)}")
+        first_request = False
+        current = chunk_end + timedelta(days=1)
+
+    return pd.DataFrame(
+        [{"pricing_date": record.pricing_date, "unit_price": record.unit_price} for record in records]
+    ).drop_duplicates(subset=["pricing_date"], keep="last")
 
 
 def main() -> int:
@@ -33,9 +68,12 @@ def main() -> int:
     try:
         if args.fund_code:
             code = args.fund_code.strip().upper()
-            records = TefasProvider().get_fund_history(code, start, end)
-            frame = pd.DataFrame(
-                [{"pricing_date": r.pricing_date, "unit_price": r.unit_price} for r in records]
+            frame = _fund_frame(
+                TefasProvider(),
+                code,
+                start,
+                end,
+                request_interval=args.tefas_request_interval,
             )
             if len(frame) < 200:
                 raise RuntimeError(f"insufficient TEFAS rows: {len(frame)}")
