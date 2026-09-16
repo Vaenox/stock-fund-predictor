@@ -1,6 +1,6 @@
 # Faz 4 — ML Baseline Evaluation Report
 
-Bu doküman, Faz 4 XGBoost baseline'ının gerçek BIST ve TEFAS feature datasetleri üzerindeki ilk walk-forward sonuçlarını kayıt altına alır.
+Bu doküman, Faz 4 XGBoost baseline'ının gerçek BIST ve TEFAS feature datasetleri üzerindeki walk-forward sonuçlarını kayıt altına alır.
 
 ## Evaluation Kuralları
 
@@ -26,26 +26,14 @@ Bu doküman, Faz 4 XGBoost baseline'ının gerçek BIST ve TEFAS feature dataset
 
 ## Expanded Real-Data Smoke Coverage
 
-Kullanıcı ortamında aynı baseline smoke protokolü ile aşağıdaki ek gerçek veri örnekleri çalıştırıldı ve `REAL XGBOOST BASELINE SMOKE TEST PASSED` sonucu doğrulandı:
+Aynı baseline smoke protokolü ile kullanıcı ortamında aşağıdaki ek gerçek veri örnekleri çalıştırıldı ve `REAL XGBOOST BASELINE SMOKE TEST PASSED` sonucu doğrulandı:
 
-| Asset | Symbols | Status | Detailed fold metrics |
-|---|---|---|---|
-| Stock | `ASELS`, `TUPRS`, `BIMAS` | Passed | Bu turda ayrıntılı çıktılar dokümana aktarılmadı. |
-| Fund | `AFT`, `AFS` | Passed | Bu turda ayrıntılı çıktılar dokümana aktarılmadı. |
+| Asset | Symbols | Status |
+|---|---|---|
+| Stock | `ASELS`, `TUPRS`, `BIMAS` | Passed |
+| Fund | `AFT`, `AFS` | Passed |
 
-Bu ek smoke sonuçları pipeline coverage'ını genişletir; ancak ayrıntılı metrikler kaydedilmediği için bunlardan performans ortalaması veya model genellenebilirliği sonucu çıkarılmaz.
-
-## THYAO — BIST
-
-Gerçek baseline smoke başarılı oldu. Target dağılımı `374` negatif / `106` pozitif gözlem.
-
-Fold sonuçları belirgin şekilde değişiyor: ROC-AUC `0.2843 → 0.6113 → 0.5128`. Üçüncü test fold'unda yalnızca 1 pozitif gözlem bulunuyor. Bu sonuçlar pipeline'ın çalıştığını doğrular; tek başına genellenebilir model performansı kanıtı değildir.
-
-## AFA — TEFAS
-
-Gerçek baseline smoke başarılı oldu. Target dağılımı `84` negatif / `24` pozitif gözlem.
-
-Fold 2'de ROC-AUC `0.8800` ve PR-AUC `0.8369` görülürken Fold 1 daha düşük, Fold 3 ise test setinde hiç pozitif gözlem olmadığı için ROC-AUC/PR-AUC hesaplanamaz durumdadır. Bu nedenle tek bir fold'un yüksek metriklerine dayanarak model kalitesi sonucu çıkarılmamalıdır.
+Ek sembollerin ayrıntılı fold metrikleri kullanıcı çıktısı olarak ayrıca kaydedilmediği için bu sonuçlardan performans ortalaması çıkarılmamıştır.
 
 ## AAL — TEFAS
 
@@ -54,30 +42,29 @@ AAL ile yapılan gerçek smoke testlerinde ilk training fold tek sınıflı kald
 - `days=1000`, `n_splits=3`: fold 1 training target tek sınıf.
 - `n_splits=1`, `test_size=40`, `gap=5`: yine fold 1 training target tek sınıf.
 
-Bu veri problemi nedeniyle validation kuralı gevşetilmedi, sentetik veri kullanılmadı ve AAL sonuç tablosuna başarılı bir baseline sonucu olarak eklenmedi.
+Bu veri problemi nedeniyle validation kuralı gevşetilmedi, sentetik veri kullanılmadı ve AAL geçerli baseline sonucu olarak kabul edilmedi.
 
-## Teknik Değerlendirme
+## Faz 4 Acceptance Sonucu
 
-İlk gerçek veri sonuçları şu anda üç şeyi doğruluyor:
+Resmi acceptance suite kullanıcı ortamında çalıştırıldı:
 
-1. Phase 3 causal feature datasetleri gerçek XGBoost baseline'a bağlanabiliyor.
-2. Walk-forward split ve `gap=5` kuralı gerçek veride uygulanıyor.
-3. 5-günde `%3+` target bazı fonlarda seyrek olduğundan fold-level class distribution açıkça izlenmeli.
+```text
+PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
+3 passed
+```
 
-Bu aşamada tuning, threshold optimizasyonu veya BUY/HOLD/SELL üretimine geçilmemelidir. Önce acceptance kontrolleri tamamlanmalı, ardından model davranışı için daha geniş ve sayısal olarak kayıtlı evaluation çalışması yapılmalıdır.
+Kabul edilen kontroller:
 
-## Faz 4 Acceptance Durumu
+- `predict_proba` probability contract geçerli.
+- Walk-forward split kronolojik ve `gap=5` kuralına uyuyor.
+- Training fold iki sınıflı olmalı; tek sınıflı training reddediliyor.
+- Single-class test fold için ROC-AUC/PR-AUC `None` raporlanıyor.
+- Gerçek BIST baseline smoke: `THYAO`; ek coverage `ASELS`, `TUPRS`, `BIMAS`.
+- Gerçek TEFAS baseline smoke: `AFA`; ek coverage `AFT`, `AFS`.
+- AAL one-class training problemi açıkça kayıt altına alındı ve validation kuralı gevşetilmedi.
 
-- Model fit/predict probability contract: kod seviyesinde test mevcut.
-- Walk-forward + `gap=5`: kod seviyesinde test mevcut.
-- Training fold two-class kuralı: uygulanıyor ve test ediliyor.
-- Single-class test fold: ROC-AUC/PR-AUC güvenli biçimde `None` raporlanıyor ve test ediliyor.
-- Gerçek BIST smoke: `THYAO` ve ek `ASELS/TUPRS/BIMAS` örnekleri geçti.
-- Gerçek TEFAS smoke: `AFA` ve ek `AFT/AFS` örnekleri geçti; `AAL` tek-sınıf eğitim penceresi nedeniyle reddedildi.
-- Resmi acceptance suite'in son kullanıcı ortamı çalıştırması henüz bu dokümana sonuç olarak eklenmedi.
+### Faz 4 Kararı
 
-## Sonraki Adım
+**Faz 4 — ML Baseline / XGBoost kabul edildi ve kapatıldı.**
 
-- `backend/tests/ml/test_phase4_acceptance.py` testlerini kullanıcı ortamında çalıştır.
-- Sonuç PASS ise Faz 4 acceptance'ı kapat.
-- Ardından model tuning / feature importance / signal katmanına geç.
+Bu kabul, baseline pipeline'ının teknik olarak çalıştığını ve leakage-aware walk-forward evaluation sözleşmesinin uygulandığını gösterir. Sonuçlar modelin üretim kalitesini veya genellenebilirliğini kanıtlamaz. Tuning, feature selection ve production signal tasarımı sonraki fazların konusudur.
