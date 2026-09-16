@@ -94,6 +94,7 @@ Canonical tablo: `fund_daily_prices`
 - Canlı quote/candle verisi günlük OHLCV'den ayrı live tablolarına gider.
 - Provider'dan gelen canlı event zamanı `source_timestamp` / `occurred_at` olarak korunabildiği ölçüde saklanır.
 - Geçersiz TradingView sembolleri universe katmanında filtrelenir veya canonical alias ile normalize edilir.
+- İşlem günü beklentisi Borsa İstanbul'un tam kapanış takvimi ile değerlendirilir. Yarım günler ayrı bir işlem tarihi olarak korunur.
 
 ### TEFAS
 
@@ -101,6 +102,7 @@ Canonical tablo: `fund_daily_prices`
 - Fon fiyatları günlük pricing datumudur; tick-level market data olarak modellenmez.
 - TEFAS public JSON'daki `fonKodu`, `tarih`, `fiyat` ve mevcutsa portföy büyüklüğü canonical alanlara normalize edilir.
 - Aktif/current universe discovery günlük veri penceresinden yapılır; kapanmış/işlem görmeyen eski fon kodları güncel aktif evrenin dışında kabul edilir.
+- TEFAS eksik-gün teşhisi BIST resmi tatil takvimini doğrudan zorunlu takvim olarak kullanmaz; provider'ın fiili pricing günleri esas alınır.
 
 ## 6. Veri kalitesi semantiği
 
@@ -122,10 +124,10 @@ Bunlar ingestion veya quality validation sonucunu başarısız yapar:
 
 Bunlar doğrudan ingestion'ı başarısız saydırmaz:
 
-- beklenen piyasa işlem gününde veri bulunmaması
+- beklenen market/pricing gününde veri bulunmaması
 - aşırı günlük getiri
 
-Eksik gün değerlendirmesi hafta sonunu otomatik olarak beklenen işlem günü saymaz; resmi piyasa kapanış günleri takvimden çıkarılır. Hisse/fon provider'ının takvim davranışı ayrıca izlenir.
+Eksik gün değerlendirmesi hafta sonunu otomatik olarak beklenen işlem günü saymaz. BIST'te resmi tam kapanış günleri takvimden çıkarılır. TEFAS'ta ise fon fiyatlama günleri provider davranışına göre ayrıca değerlendirilir.
 
 ## 7. Source provenance
 
