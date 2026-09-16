@@ -94,6 +94,8 @@ Quality
 - [x] Faz 3 technical-analysis contract oluşturuldu: `docs/phase-3-technical-analysis.md`.
 - [x] Gerçek provider indicator smoke scripti oluşturuldu: `backend/scripts/smoke_test_indicators.py`.
 - [x] **16.09.2026 — Gerçek TEFAS indicator smoke testi başarıyla tamamlandı: AAL için 450 günlük takvim penceresinden 312 fiyat satırı alındı; RSI/EMA/MACD üretildi, `LOOK-AHEAD CHECK: PASSED` ve `TECHNICAL INDICATOR SMOKE TEST PASSED`.**
+- [x] **Technical Score Engine oluşturuldu: `backend/app/analysis/scoring.py`; stock/fund için 0–100 skor, bileşen skorları ve açıklanabilir reason çıktısı üretilebiliyor.**
+- [x] **16.09.2026 — Gerçek TEFAS Technical Score smoke testi başarıyla tamamlandı: AAL, 312 satır; Technical Score 68.7969, Trend 76.0478, Momentum 53.9851, Volatility 83.9188; `TECHNICAL SCORE SMOKE TEST PASSED`.**
 
 ### Faz 3 Taskları
 
@@ -104,16 +106,16 @@ Quality
 - [x] Look-ahead / warm-up davranışını test et.
 - [ ] Gerçek BIST verisiyle indicator smoke testini çalıştır.
 - [x] **Gerçek TEFAS verisiyle indicator smoke testini çalıştır — 16.09.2026 AAL, 312 satır, look-ahead check passed.**
-- [ ] Teknik skor (`0–100`) katmanını oluştur.
-- [ ] Teknik skor için explainability bileşenlerini oluştur.
+- [x] **Teknik skor (`0–100`) katmanını oluştur.**
+- [x] **Teknik skor için explainability bileşenlerini oluştur.**
 - [ ] ML feature dataset builder oluştur.
 - [ ] Faz 3 kabul testlerini tamamla.
 
 ## Sıradaki İş
 
-1. Gerçek BIST indicator smoke testini çalıştır.
-2. Teknik Score (`0–100`) katmanını oluştur.
-3. Indicator → ML feature dataset builder katmanını oluştur.
+1. Gerçek BIST indicator + technical score smoke testlerini çalıştır.
+2. Indicator → ML feature dataset builder katmanını oluştur.
+3. Feature schema ve leakage/warm-up kurallarını test et.
 4. Faz 3 kabul testlerini tamamla.
 5. Ardından Faz 4 — İlk ML Modeli / XGBoost baseline.
 
