@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.orm import Session
@@ -21,6 +21,11 @@ def parse_args() -> argparse.Namespace:
     target = parser.add_mutually_exclusive_group()
     target.add_argument("--symbol", help="BIST stock symbol (default: THYAO)")
     target.add_argument("--fund-code", help="TEFAS fund code")
+    target.add_argument(
+        "--active-fund",
+        action="store_true",
+        help="Automatically select a fund with current TEFAS history",
+    )
     parser.add_argument("--bootstrap-days", type=int, default=30)
     parser.add_argument("--overlap-days", type=int, default=1)
     return parser.parse_args()
@@ -86,24 +91,68 @@ def _ensure_mapping(
     session.commit()
 
 
+def _select_active_fund(provider: TefasProvider) -> str:
+    funds = provider.list_symbols()
+    if not funds:
+        raise RuntimeError("TEFAS returned no current YAT funds during discovery")
+
+    end_date = date.today()
+    start_date = end_date - timedelta(days=7)
+    rows = provider.fetch_fund_history_bulk(start_date, end_date)
+    history_codes = {
+        str(row.get("fonKodu", "")).strip().upper()
+        for row in rows
+        if str(row.get("fonKodu", "")).strip()
+    }
+
+    for fund in funds:
+        code = fund.provider_symbol.strip().upper()
+        if code in history_codes:
+            return code
+
+    raise RuntimeError(
+        "TEFAS discovery succeeded, but no discovered fund had history in the latest window"
+    )
+
+
 def main() -> int:
     args = parse_args()
 
-    is_fund = args.fund_code is not None
-    identifier = (args.fund_code if is_fund else (args.symbol or "THYAO")).strip().upper()
+    if args.active_fund and (args.symbol or args.fund_code):
+        print(
+            "ERROR: --active-fund cannot be combined with --symbol/--fund-code",
+            file=sys.stderr,
+        )
+        return 2
+
+    is_fund = args.fund_code is not None or args.active_fund
+    identifier = (
+        args.fund_code.strip().upper()
+        if args.fund_code is not None
+        else (args.symbol or "THYAO").strip().upper()
+    )
     asset_type = AssetType.FUND if is_fund else AssetType.STOCK
 
-    if not identifier or args.bootstrap_days < 1 or args.overlap_days < 0:
+    if not identifier and not args.active_fund:
+        print("ERROR: invalid test identifier", file=sys.stderr)
+        return 2
+    if args.bootstrap_days < 1 or args.overlap_days < 0:
         print("ERROR: invalid test configuration", file=sys.stderr)
         return 2
 
     engine = create_engine(get_settings().database_url, future=True)
     provider = TefasProvider() if is_fund else BorsapyProvider()
-    table = "fund_daily_prices" if is_fund else "stock_daily_bars"
-    date_column = "pricing_date" if is_fund else "trading_date"
 
     try:
         _ensure_schema(engine, asset_type)
+
+        if args.active_fund:
+            identifier = _select_active_fund(provider)
+            print(f"Auto-selected active TEFAS fund: {identifier}")
+
+        table = "fund_daily_prices" if is_fund else "stock_daily_bars"
+        date_column = "pricing_date" if is_fund else "trading_date"
+
         with Session(engine) as session:
             asset = _ensure_asset(session, identifier, asset_type)
             _ensure_mapping(session, asset, provider.name, identifier)
@@ -121,8 +170,8 @@ def main() -> int:
                 {"asset_id": asset_id},
             )
 
-            if is_fund:
-                result = ingest_fund_incremental(
+            result = (
+                ingest_fund_incremental(
                     session,
                     provider,
                     asset_id=asset_id,
@@ -131,8 +180,8 @@ def main() -> int:
                     bootstrap_days=args.bootstrap_days,
                     overlap_days=args.overlap_days,
                 )
-            else:
-                result = ingest_stock_incremental(
+                if is_fund
+                else ingest_stock_incremental(
                     session,
                     provider,
                     asset_id=asset_id,
@@ -141,6 +190,7 @@ def main() -> int:
                     bootstrap_days=args.bootstrap_days,
                     overlap_days=args.overlap_days,
                 )
+            )
 
             after_count = session.scalar(
                 text(f"SELECT COUNT(*) FROM {table} WHERE asset_id = :asset_id"),
@@ -178,14 +228,12 @@ def main() -> int:
         if not result.bootstrap:
             print("INCREMENTAL SMOKE FAILED: expected bootstrap mode", file=sys.stderr)
             return 1
-    else:
-        if result.bootstrap or result.start_date > previous_last:
-            print(
-                "INCREMENTAL SMOKE FAILED: incremental window did not resume "
-                "from persisted data",
-                file=sys.stderr,
-            )
-            return 1
+    elif result.bootstrap or result.start_date > previous_last:
+        print(
+            "INCREMENTAL SMOKE FAILED: incremental window did not resume from persisted data",
+            file=sys.stderr,
+        )
+        return 1
 
     if result.ingestion.received == 0 or result.ingestion.written == 0:
         print(
