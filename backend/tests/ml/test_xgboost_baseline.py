@@ -36,7 +36,7 @@ def test_training_rejects_missing_feature_values():
         fit_baseline_model(frame, asset_type="stock")
 
 
-def test_walk_forward_evaluation_returns_fold_metrics():
+def test_walk_forward_evaluation_returns_fold_metrics_and_class_counts():
     metrics = evaluate_walk_forward(
         _training_frame(),
         asset_type="stock",
@@ -48,6 +48,9 @@ def test_walk_forward_evaluation_returns_fold_metrics():
 
     assert len(metrics) == 3
     assert all(metric.test_start - metric.train_end == 5 for metric in metrics)
+    assert all(metric.train_negative_count > 0 for metric in metrics)
+    assert all(metric.train_positive_count > 0 for metric in metrics)
+    assert all(metric.test_negative_count + metric.test_positive_count == 20 for metric in metrics)
     assert all(0.0 <= metric.accuracy <= 1.0 for metric in metrics)
 
 
