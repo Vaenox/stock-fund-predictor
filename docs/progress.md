@@ -90,6 +90,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **BIST streaming manager ile Redis publisher arasında pipeline bridge oluşturuldu.**
 - [x] Redis Python client bağımlılığı eklendi.
 - [x] Redis publisher ve pipeline için birim testleri oluşturuldu.
+- [x] **BIST live tick ve intraday candle için TimescaleDB uyumlu tablolar oluşturuldu.**
+- [x] **Live tick/candle upsert persistence katmanı oluşturuldu.**
+- [x] **TimescaleDB retention ayarları config'e bağlandı (tick 30 gün, candle 180 gün varsayılan).**
+- [x] Live persistence testleri oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -107,7 +111,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] TradingViewStream toplu subscription manager oluştur
 - [x] Quote/candle → canonical live DTO dönüşümünü oluştur
 - [x] Live eventleri Redis Pub/Sub/Streams üzerinden yayınla
-- [ ] BIST live/intraday TimescaleDB tablosunu oluştur
+- [x] BIST live/intraday TimescaleDB tablosunu oluştur
 - [ ] Reconnect, stale quote ve heartbeat kontrollerini oluştur
 - [ ] Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır
 - [ ] Tüm BIST evreniyle streaming yük testi çalıştır
@@ -121,11 +125,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. BIST live/intraday market-data TimescaleDB tablosunu ve retention politikasını ekle.
-2. Reconnect, heartbeat ve stale quote kontrollerini ekle.
-3. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
-4. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
-5. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
+1. Reconnect, heartbeat ve stale quote kontrollerini ekle.
+2. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
+3. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
+4. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
+5. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
