@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from threading import Lock
+from threading import RLock
 from typing import Any, Callable
 
 from app.data.providers.base import ProviderSymbol
@@ -35,7 +35,7 @@ class BistStreamManager:
         self._provider_name = provider_name
         self._stream_factory = stream_factory
         self._stream: Any | None = None
-        self._lock = Lock()
+        self._lock = RLock()
         self._symbols: dict[str, ProviderSymbol] = {}
         self._quote_callbacks: list[QuoteCallback] = []
         self._candle_callbacks: list[CandleCallback] = []
