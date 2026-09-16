@@ -202,7 +202,10 @@ class BistStreamManager:
         candle: dict[str, Any],
     ) -> None:
         symbol = provider_symbol.strip().upper()
-        timestamp = self._timestamp(candle.get("timestamp"))
+        # borsapy's TradingView candle payload uses `time` as the epoch field.
+        # Keep `timestamp` as a compatibility fallback for provider variants.
+        timestamp_value = candle.get("time", candle.get("timestamp"))
+        timestamp = self._timestamp(timestamp_value)
         open_price = self._decimal(candle.get("open"))
         high = self._decimal(candle.get("high"))
         low = self._decimal(candle.get("low"))
