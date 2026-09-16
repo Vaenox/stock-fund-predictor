@@ -43,6 +43,10 @@ class FoldMetrics:
     train_end: int
     test_start: int
     test_end: int
+    train_negative_count: int
+    train_positive_count: int
+    test_negative_count: int
+    test_positive_count: int
     roc_auc: float | None
     pr_auc: float | None
     accuracy: float
@@ -142,13 +146,20 @@ def evaluate_walk_forward(
         probability = model.predict_proba(test[columns])[:, 1]
         predicted = (probability >= 0.5).astype(int)
 
+        y_train = train["target"].astype(int)
         y_test = test["target"].astype(int)
+        train_counts = y_train.value_counts().to_dict()
+        test_counts = y_test.value_counts().to_dict()
         metrics.append(
             FoldMetrics(
                 fold=index,
                 train_end=fold.train_end,
                 test_start=fold.test_start,
                 test_end=fold.test_end,
+                train_negative_count=int(train_counts.get(0, 0)),
+                train_positive_count=int(train_counts.get(1, 0)),
+                test_negative_count=int(test_counts.get(0, 0)),
+                test_positive_count=int(test_counts.get(1, 0)),
                 roc_auc=_safe_roc_auc(y_test, probability),
                 pr_auc=_safe_pr_auc(y_test, probability),
                 accuracy=float(accuracy_score(y_test, predicted)),
