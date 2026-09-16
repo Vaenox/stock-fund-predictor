@@ -72,6 +72,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Duplicate/upsert + source provenance gerçek veriyle doğrulandı: historical ikinci ingestion sonrasında satır sayısı değişmedi; `source_provider` doğrulandı ve `ingested_at` güncellendi; live conflict-key aynı kaydı güncelledi; `PERSISTENCE UPSERT/PROVENANCE VERIFIED`.**
 - [x] **TEFAS bulk retrieval kontrollü sayfalama ile güncellendi; tam YAT evreni ve uzun tarih aralıkları için page-based retrieval + duplicate `(date, fund_code)` koruması eklendi.**
 - [x] **16.09.2026 — TEFAS tam YAT fon evreni gerçek veriyle doğrulandı: 2040 fon keşfedildi, bulk/paginated akıştan 12233 satır döndü, 2041 unique fund code bulundu, keşfedilen 2040 fonun tamamında veri var, 0 eksik fon ve 0 duplicate `(date, fund_code)` kaydı; `FULL TEFAS UNIVERSE SMOKE TEST PASSED`.**
+- [x] **Incremental historical ingestion pipeline oluşturuldu: mevcut `MAX(trading_date)` / `MAX(pricing_date)` watermark'ından devam ediyor, ilk çalıştırmada bootstrap window kullanıyor ve son günleri overlap ederek düzeltilebilir kayıtları yeniden upsert ediyor.**
+- [x] **Incremental pipeline için stock/fund unit testleri ve gerçek BIST smoke-test scripti oluşturuldu.**
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -95,14 +97,15 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **TEFAS günlük tüm fon evreni smoke testini gerçek veriyle çalıştır — 2040/2040 veri coverage, 0 duplicate.**
 - [x] **İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz ve doğrula.**
 - [x] **Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula.**
-- [ ] Incremental update pipeline oluştur
+- [x] **Incremental update pipeline kodunu ve testlerini oluştur.**
+- [ ] Incremental update pipeline'ı gerçek BIST + TEFAS verisiyle smoke-test et
 - [ ] Missing data / outlier / source-quality kontrollerini genişlet
 - [ ] Temiz veri sözleşmesini (data contract) son haline getir
 - [ ] Uçtan uca data pipeline testlerini tamamla
 
 ## Sıradaki İş
 
-1. **Incremental update pipeline oluştur: BIST canlı/günlük güncelleme ve TEFAS günlük fon güncellemesini idempotent, retry/backoff ve watermark mantığıyla çalıştır.**
+1. **Gerçek incremental BIST + TEFAS smoke testlerini çalıştır ve watermark/overlap davranışını doğrula.**
 2. Missing data / outlier / source-quality kontrollerini genişlet.
 3. Temiz data contract'ı son haline getir ve uçtan uca data pipeline testlerini tamamla.
 4. Ardından Faz 3 — Technical Analysis Engine'e geç.
