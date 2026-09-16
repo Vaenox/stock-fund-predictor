@@ -74,6 +74,9 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **16.09.2026 — TEFAS tam YAT fon evreni gerçek veriyle doğrulandı: 2040 fon keşfedildi, bulk/paginated akıştan 12233 satır döndü, 2041 unique fund code bulundu, keşfedilen 2040 fonun tamamında veri var, 0 eksik fon ve 0 duplicate `(date, fund_code)` kaydı; `FULL TEFAS UNIVERSE SMOKE TEST PASSED`.**
 - [x] **Incremental historical ingestion pipeline oluşturuldu: mevcut `MAX(trading_date)` / `MAX(pricing_date)` watermark'ından devam ediyor, ilk çalıştırmada bootstrap window kullanıyor ve son günleri overlap ederek düzeltilebilir kayıtları yeniden upsert ediyor.**
 - [x] **Incremental pipeline için stock/fund unit testleri ve gerçek BIST smoke-test scripti oluşturuldu.**
+- [x] **16.09.2026 — Gerçek BIST incremental smoke testi başarıyla tamamlandı: THYAO watermark 2026-09-16 üzerinden 2026-09-15→2026-09-16 overlap penceresi yeniden çekildi; received=2, written=2, DB satır sayısı 6→6 kaldı ve latest persisted date 2026-09-16 oldu.**
+- [x] **Market data quality katmanı eklendi: duplicate key, OHLC tutarlılığı, negatif hacim/varlık büyüklüğü, source mixing, eksik hafta içi tarihleri ve aşırı getiri anomalileri için raporlama; aşırı getiri ve eksik günler uyarı, yapısal ihlaller hata olarak sınıflandırıldı.**
+- [x] Gerçek PostgreSQL market-data quality smoke-test scripti eklendi; quality unit testleri oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -98,17 +101,20 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yaz ve doğrula.**
 - [x] **Duplicate/upsert + source provenance davranışını gerçek veriyle doğrula.**
 - [x] **Incremental update pipeline kodunu ve testlerini oluştur.**
-- [ ] Incremental update pipeline'ı gerçek BIST + TEFAS verisiyle smoke-test et
-- [ ] Missing data / outlier / source-quality kontrollerini genişlet
+- [x] **Incremental update pipeline'ı gerçek BIST verisiyle smoke-test et.**
+- [ ] Incremental update pipeline'ı gerçek TEFAS verisiyle smoke-test et
+- [x] Missing data / outlier / source-quality kontrollerinin temel katmanını oluştur
+- [ ] Missing data / outlier / source-quality kontrollerini gerçek BIST + TEFAS veriyle genişletip doğrula
 - [ ] Temiz veri sözleşmesini (data contract) son haline getir
 - [ ] Uçtan uca data pipeline testlerini tamamla
 
 ## Sıradaki İş
 
-1. **Gerçek incremental BIST + TEFAS smoke testlerini çalıştır ve watermark/overlap davranışını doğrula.**
-2. Missing data / outlier / source-quality kontrollerini genişlet.
-3. Temiz data contract'ı son haline getir ve uçtan uca data pipeline testlerini tamamla.
-4. Ardından Faz 3 — Technical Analysis Engine'e geç.
+1. **TEFAS incremental update pipeline'ını gerçek veriyle smoke-test et.**
+2. BIST + TEFAS market-data quality kontrollerini gerçek veriyle genişletip doğrula; özellikle resmi tatil takvimi ve provider-specific source kurallarını ekle.
+3. Temiz data contract'ı son haline getir.
+4. Uçtan uca data pipeline testlerini tamamla.
+5. Faz 2 kapandıktan sonra Faz 3 — Technical Analysis Engine'e geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
