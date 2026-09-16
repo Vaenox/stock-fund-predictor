@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import product
 
 import pandas as pd
 
@@ -94,3 +95,55 @@ def evaluate_candidate_inner(
     if not fold_scores:
         raise ValueError("inner validation has no two-class fold")
     return float(sum(fold_scores) / len(fold_scores))
+
+
+def default_candidate_grid(*, random_state: int = 42) -> tuple[XGBoostBaselineConfig, ...]:
+    """Small deterministic grid suitable for the first real-data tuning pass."""
+    candidates = []
+    for max_depth, learning_rate, min_child_weight in product((3, 4, 5), (0.03, 0.05), (1.0, 3.0)):
+        candidates.append(
+            XGBoostBaselineConfig(
+                n_estimators=200,
+                max_depth=max_depth,
+                learning_rate=learning_rate,
+                subsample=0.9,
+                colsample_bytree=0.9,
+                min_child_weight=min_child_weight,
+                reg_lambda=1.0,
+                random_state=random_state,
+            )
+        )
+    return tuple(candidates)
+
+
+def select_best_candidate(
+    frame: pd.DataFrame,
+    *,
+    asset_type: AssetType,
+    candidates: tuple[XGBoostBaselineConfig, ...] | None = None,
+    tuning_config: TuningConfig | None = None,
+) -> TuningCandidate:
+    """Select a candidate using only inner chronological validation PR-AUC."""
+    candidates = candidates or default_candidate_grid()
+    if not candidates:
+        raise ValueError("candidate grid cannot be empty")
+
+    scored: list[TuningCandidate] = []
+    for candidate in candidates:
+        score = evaluate_candidate_inner(
+            frame,
+            asset_type=asset_type,
+            candidate=candidate,
+            tuning_config=tuning_config,
+        )
+        scored.append(TuningCandidate(config=candidate, score=score))
+
+    return max(
+        scored,
+        key=lambda item: (
+            item.score,
+            -item.config.max_depth,
+            -item.config.learning_rate,
+            -item.config.min_child_weight,
+        ),
+    )
