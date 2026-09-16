@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from typing import Iterable
+
+from .calendar import expected_business_dates
 
 
 @dataclass(frozen=True, slots=True)
@@ -11,20 +13,13 @@ class StockBarQualityReport:
     duplicate_keys: tuple[date, ...]
     invalid_ohlc: tuple[date, ...]
     negative_volume: tuple[date, ...]
-    missing_weekdays: tuple[date, ...]
+    missing_business_dates: tuple[date, ...]
     extreme_return_dates: tuple[date, ...]
     mixed_sources: tuple[str, ...]
 
     @property
     def ok(self) -> bool:
-        return not any(
-            (
-                self.duplicate_keys,
-                self.invalid_ohlc,
-                self.negative_volume,
-                self.mixed_sources,
-            )
-        )
+        return not any((self.duplicate_keys, self.invalid_ohlc, self.negative_volume, self.mixed_sources))
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,29 +27,12 @@ class FundPriceQualityReport:
     duplicate_keys: tuple[date, ...]
     invalid_prices: tuple[date, ...]
     negative_assets: tuple[date, ...]
-    missing_weekdays: tuple[date, ...]
+    missing_business_dates: tuple[date, ...]
     mixed_sources: tuple[str, ...]
 
     @property
     def ok(self) -> bool:
-        return not any(
-            (
-                self.duplicate_keys,
-                self.invalid_prices,
-                self.negative_assets,
-                self.mixed_sources,
-            )
-        )
-
-
-def _weekdays_between(start: date, end: date) -> set[date]:
-    current = start
-    result: set[date] = set()
-    while current <= end:
-        if current.weekday() < 5:
-            result.add(current)
-        current += timedelta(days=1)
-    return result
+        return not any((self.duplicate_keys, self.invalid_prices, self.negative_assets, self.mixed_sources))
 
 
 def inspect_stock_bars(
@@ -71,10 +49,10 @@ def inspect_stock_bars(
     negative_volume: list[date] = []
     extreme_returns: list[date] = []
     sources: set[str] = set()
+    dates: set[date] = set()
     ordered = sorted(rows, key=lambda row: row["trading_date"])
 
     previous_close: Decimal | None = None
-    dates: set[date] = set()
     for row in ordered:
         trading_date = row["trading_date"]
         dates.add(trading_date)
@@ -103,7 +81,7 @@ def inspect_stock_bars(
         previous_close = close
 
     missing = (
-        sorted(_weekdays_between(start_date, end_date) - dates)
+        sorted(expected_business_dates(start_date, end_date) - dates)
         if start_date is not None and end_date is not None
         else []
     )
@@ -112,7 +90,7 @@ def inspect_stock_bars(
         duplicate_keys=tuple(sorted(set(duplicates))),
         invalid_ohlc=tuple(sorted(set(invalid_ohlc))),
         negative_volume=tuple(sorted(set(negative_volume))),
-        missing_weekdays=tuple(missing),
+        missing_business_dates=tuple(missing),
         extreme_return_dates=tuple(sorted(set(extreme_returns))),
         mixed_sources=tuple(sorted(sources)) if len(sources) > 1 else (),
     )
@@ -151,7 +129,7 @@ def inspect_fund_prices(
             sources.add(str(source))
 
     missing = (
-        sorted(_weekdays_between(start_date, end_date) - dates)
+        sorted(expected_business_dates(start_date, end_date) - dates)
         if start_date is not None and end_date is not None
         else []
     )
@@ -160,6 +138,6 @@ def inspect_fund_prices(
         duplicate_keys=tuple(sorted(set(duplicates))),
         invalid_prices=tuple(sorted(set(invalid_prices))),
         negative_assets=tuple(sorted(set(negative_assets))),
-        missing_weekdays=tuple(missing),
+        missing_business_dates=tuple(missing),
         mixed_sources=tuple(sorted(sources)) if len(sources) > 1 else (),
     )
