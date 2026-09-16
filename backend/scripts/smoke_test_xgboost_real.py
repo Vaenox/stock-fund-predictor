@@ -96,7 +96,12 @@ def main() -> None:
     parser.add_argument("--n-splits", type=int, default=3)
     parser.add_argument("--test-size", type=int, default=40)
     parser.add_argument("--gap", type=int, default=5)
-    parser.add_argument("--chunk-delay", type=float, default=10.0)
+    parser.add_argument(
+        "--chunk-delay",
+        type=float,
+        default=0.0,
+        help="Optional sleep in seconds between TEFAS date chunks (default: 0).",
+    )
     args = parser.parse_args()
     if args.days < 260:
         raise SystemExit("days must be at least 260")
@@ -104,6 +109,8 @@ def main() -> None:
         raise SystemExit("gap must be at least 5")
     if args.test_size <= 0:
         raise SystemExit("test-size must be positive")
+    if args.chunk_delay < 0:
+        raise SystemExit("chunk-delay cannot be negative")
     _run(
         args.asset_type,
         args.symbol.strip().upper(),
