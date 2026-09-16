@@ -1,6 +1,6 @@
 # Faz 5 — Tuning Evaluation
 
-Bu doküman, Faz 4 baseline XGBoost ile Faz 5 tuned XGBoost'un aynı outer walk-forward test foldlarında karşılaştırılmasından elde edilen ilk gerçek veri sonucunu kayıt altına alır.
+Bu doküman, Faz 4 baseline XGBoost ile Faz 5 tuned XGBoost'un aynı outer walk-forward test foldlarında karşılaştırılmasından elde edilen gerçek veri sonuçlarını kayıt altına alır.
 
 ## Evaluation Kuralları
 
@@ -33,8 +33,16 @@ Fold 1'de tuned modelin ROC-AUC ve PR-AUC değerleri baseline'a göre yükseldi;
 
 Bu tek sembol üzerindeki ilk karşılaştırma tuning yaklaşımının outer test protokolünde çalıştığını gösterir. Daha geniş sembol/fon örneklemi olmadan tuned modelin genellenebilirliği veya production performansı hakkında sonuç çıkarılmaz.
 
+## TEFAS — AFA Outer Comparison
+
+AFA üzerinde inner tuning smoke başarılı olmuş olsa da outer baseline-vs-tuned karşılaştırması henüz bu dokümana sayısal sonuç olarak eklenmedi.
+
+## Feature Importance
+
+THYAO için gerçek model üzerinde gain-based feature importance smoke scripti hazırlandı ancak ayrıntılı çıktı henüz bu rapora aktarılmadı. Feature importance yalnızca model açıklaması olarak ele alınacak, nedensellik iddiası olarak kullanılmayacaktır.
+
 ## Sonraki Adım
 
-- Birden fazla BIST ve TEFAS örneğinde aynı outer baseline-vs-tuned karşılaştırmasını çalıştırmak.
-- Fold-level feature importance değerlerini toplamak.
-- Sonuçlara göre probability calibration ihtiyacını değerlendirmek.
+- AFA üzerinde aynı outer baseline-vs-tuned karşılaştırmasını çalıştırmak.
+- THYAO üzerinde gerçek gain feature importance smoke çalıştırıp ilk 10 özelliği kaydetmek.
+- Birden fazla outer fold/sembol sonucu üzerinden probability calibration ihtiyacını değerlendirmek.
