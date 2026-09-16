@@ -79,7 +79,7 @@ def test_manager_uses_one_persistent_connection_and_idempotent_quote_subscriptio
     assert manager.subscribed_symbols == ()
 
 
-def test_manager_canonicalizes_quote_and_candle_events():
+def test_manager_canonicalizes_quote_and_real_borsapy_candle_events():
     stream = FakeStream()
     manager = BistStreamManager(
         provider_name="borsapy",
@@ -109,11 +109,12 @@ def test_manager_canonicalizes_quote_and_candle_events():
             "timestamp": 1_700_000_000,
         },
     )
+    # borsapy/TradingView candle payload uses `time`, not `timestamp`.
     stream.candle_callback(
         "thyao",
         "1m",
         {
-            "timestamp": 1_700_000_000,
+            "time": 1_700_000_000,
             "open": 310.0,
             "high": 313.0,
             "low": 309.5,
@@ -130,6 +131,7 @@ def test_manager_canonicalizes_quote_and_candle_events():
 
     assert candles[0].canonical_symbol == "BIST:THYAO"
     assert candles[0].interval == "1m"
+    assert candles[0].timestamp == datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)
     assert candles[0].open == Decimal("310.0")
     assert candles[0].close == Decimal("312.45")
     assert candles[0].received_at is not None
