@@ -103,6 +103,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Gerçek WebSocket smoke testini GitHub Actions üzerinden manuel çalıştırmak için workflow eklendi.
 - [x] **Tüm BIST evreni için streaming load-test harness'i oluşturuldu.**
 - [x] Load-test, discovered tüm sembolleri tek persistent bağlantıda subscribe etmeyi ve event sayısını gözlemlemeyi destekliyor.
+- [x] **Load-test universe discovery timeout dayanıklılığı geliştirildi: borsapy/KAP discovery başarısız olursa public BIST CSV fallback'i ve isteğe bağlı sembol dosyası desteği eklendi.**
 - [x] **TEFAS tüm-fon günlük ingestion smoke-test scripti oluşturuldu.**
 - [x] TEFAS testinde tüm keşfedilen fonlar için yakın tarihli günlük geçmiş isteniyor; hatalı fon istekleri ayrı raporlanıyor.
 
@@ -136,7 +137,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Erişilebilir gerçek ağ/CI ortamında tüm BIST evreni load testini çalıştır ve sonuçları ölç.
+1. Güncellenen load-test ile tüm BIST evreni streaming testini çalıştır ve sonuçları ölç.
 2. Erişilebilir gerçek ağ/CI ortamında TEFAS günlük tüm fon evreni smoke testini çalıştır.
 3. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
 4. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
