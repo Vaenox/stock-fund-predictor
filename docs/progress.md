@@ -13,6 +13,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 4 ML baseline contract: `docs/phase-4-ml-baseline.md`
 - Faz 4 baseline evaluation raporu: `docs/phase-4-ml-baseline-evaluation.md`
 - Faz 5 contract: `docs/phase-5-model-tuning-and-signals.md`
+- Faz 5 tuning evaluation: `docs/phase-5-tuning-evaluation.md`
 
 ## Faz 2 — Data Infrastructure — TAMAMLANDI
 
@@ -60,22 +61,26 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - Küçük ve reproducible XGBoost candidate grid oluşturuldu (`12` aday; depth/learning-rate/min-child-weight eksenleri).
 - `backend/app/ml/feature_importance.py` ile XGBoost `gain` importance raporlama foundation'ı eklendi.
 - `backend/tests/ml/test_tuning.py` ile inner gap, chronological split ve deterministic selection testleri eklendi.
-- `backend/tests/ml/test_feature_importance.py` ile stock feature coverage ve single-class validation testleri eklendi.
+- `backend/tests/ml/test_feature_importance.py` ile stock feature coverage ve validation testleri eklendi.
 - `backend/scripts/smoke_test_xgboost_tuning_real.py` ile gerçek BIST/TEFAS inner tuning smoke akışı eklendi.
+- Gerçek THYAO tuning smoke: `REAL XGBOOST TUNING SMOKE TEST PASSED`.
+- THYAO tuning sonucu: best inner PR-AUC `1.000000`; seed `42`; selected candidate outer evaluation için kullanılabilir hale getirildi.
+- `backend/app/ml/comparison.py` ile aynı outer walk-forward foldlarında baseline vs tuned karşılaştırma katmanı eklendi.
+- `backend/tests/ml/test_comparison.py` ile outer-fold aynılaştırma, gap ve deterministic tuning kontrolleri eklendi.
+- Gerçek THYAO baseline vs tuned outer comparison sonucu `docs/phase-5-tuning-evaluation.md` içine kaydedildi.
 
-### Sonraki Test
+### Faz 5 THYAO Outer Comparison
 
-```text
-PYTHONPATH=. pytest tests/ml/test_tuning.py tests/ml/test_feature_importance.py -q
-```
-
-Bu testler PASS olduktan sonra gerçek tuning smoke çalıştırılacak ve ardından tuned candidate ile outer-fold baseline karşılaştırması eklenecek.
+- Fold 1: baseline ROC `0.2157`, PR `0.1246`; tuned ROC `0.2549`, PR `0.1310`; accuracy ikisinde de `0.8500`.
+- Fold 2: test fold tek sınıflı; ROC/PR iki model için de `None`; accuracy ikisinde de `1.0000`.
+- Fold 3: baseline ROC `0.8947`, PR `0.3333`; tuned ROC `0.9474`, PR `0.5000`; accuracy ikisinde de `0.9500`.
+- Bu tek sembol sonucunda tuning iki ölçülebilir outer fold'da ROC-AUC ve PR-AUC'yi yükseltti; ancak sample size sınırlı ve Fold 2 tek sınıflı olduğu için genellenebilirlik sonucu çıkarılmadı.
 
 ### Faz 5 Taskları
 
 - [x] Tuning dataset / inner-validation foundation oluştur.
 - [x] XGBoost hyperparameter candidate search katmanı oluştur.
-- [ ] Baseline vs tuned modelleri aynı outer walk-forward protokolünde karşılaştır.
+- [x] Baseline vs tuned modelleri aynı outer walk-forward protokolünde karşılaştır.
 - [x] Feature importance / gain raporlama foundation'ı oluştur.
 - [ ] Model probability calibration ihtiyacını değerlendir.
 - [ ] Risk adjustment contract'ını uygulama/test aşamasına taşı.
@@ -89,11 +94,11 @@ Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold 
 
 ## Sıradaki İş
 
-1. Tuning + feature-importance unit testlerini çalıştır.
-2. Gerçek BIST üzerinde tuning smoke çalıştır.
-3. Ardından TEFAS'ta gerçek tuning smoke çalıştır.
-4. Seçilen candidate ile outer-fold baseline vs tuned comparison üret.
-5. Calibration ve risk/signal foundation'a geç.
+1. Baseline vs tuned comparison testinin PASS olduğunu doğrula.
+2. Feature importance değerlerini gerçek THYAO üzerinde üret ve kaydet.
+3. Aynı comparison'ı en az bir TEFAS fonunda çalıştır.
+4. Probability calibration ihtiyacını değerlendirmeye başla.
+5. Ardından risk adjustment ve signal foundation'a geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
