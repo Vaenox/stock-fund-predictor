@@ -174,19 +174,25 @@ def main() -> int:
     print(f"DB rows: before={before_count} after={after_count}")
     print(f"Latest persisted date: {after_last}")
 
-    expected_start = result.end_date if previous_last is None else previous_last
     if previous_last is None:
         if not result.bootstrap:
             print("INCREMENTAL SMOKE FAILED: expected bootstrap mode", file=sys.stderr)
             return 1
     else:
-        if result.bootstrap or result.start_date > expected_start:
+        if result.bootstrap or result.start_date > previous_last:
             print(
                 "INCREMENTAL SMOKE FAILED: incremental window did not resume "
                 "from persisted data",
                 file=sys.stderr,
             )
             return 1
+
+    if result.ingestion.received == 0 or result.ingestion.written == 0:
+        print(
+            "INCREMENTAL SMOKE FAILED: provider returned no records for the requested window",
+            file=sys.stderr,
+        )
+        return 1
 
     if after_last is None or after_last > result.end_date:
         print("INCREMENTAL SMOKE FAILED: invalid persisted upper bound", file=sys.stderr)
