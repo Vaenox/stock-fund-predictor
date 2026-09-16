@@ -141,11 +141,14 @@ Leakage / Warm-up Tests
 - [x] Gerçek smoke çıktısında fold target dağılımları görünür hale getirildi.
 - [x] scikit-learn ve XGBoost bağımlılıkları requirements'a eklendi.
 - [x] Split ve XGBoost baseline unit testleri oluşturuldu.
+- [x] Phase 4 acceptance testleri: `backend/tests/ml/test_phase4_acceptance.py` oluşturuldu.
 - [x] **16.09.2026 — Faz 4 ML unit testleri başarıyla geçti.**
 - [x] **16.09.2026 — Gerçek BIST XGBoost baseline smoke başarılı: THYAO, 684 ham / 480 training row, 3 walk-forward fold.**
 - [x] **16.09.2026 — Gerçek TEFAS XGBoost baseline smoke başarılı: AFA, 312 ham / 108 training row, 3 walk-forward fold.**
+- [x] Gerçek BIST coverage genişletildi: `ASELS`, `TUPRS`, `BIMAS` smoke testleri kullanıcı ortamında geçti.
+- [x] Gerçek TEFAS coverage genişletildi: `AFT`, `AFS` smoke testleri kullanıcı ortamında geçti.
 - [x] İlk gerçek BIST + TEFAS baseline sonuçları `docs/phase-4-ml-baseline-evaluation.md` içine kaydedildi.
-- [ ] Gerçek TEFAS üzerinde farklı bir fonla daha geniş baseline coverage.
+- [x] TEFAS smoke scriptindeki varsayılan `chunk-delay` `10s -> 0s` yapıldı; gerektiğinde manuel gecikme verilebilir.
 
 ### Faz 4 Taskları
 
@@ -154,13 +157,13 @@ Leakage / Warm-up Tests
 - [x] Leakage gap kuralını uygula.
 - [x] XGBoost baseline wrapper'ını oluştur.
 - [x] Baseline metriklerini oluştur.
-- [x] ML baseline unit testlerini çalıştır.
+- [x] ML baseline unit testlerini oluştur.
 - [x] Gerçek BIST feature dataset ile XGBoost baseline smoke çalıştır.
 - [x] Gerçek TEFAS feature dataset ile ilk XGBoost baseline smoke çalıştır.
 - [x] Walk-forward baseline sonuçlarını kaydet ve değerlendirme tablosu oluştur.
-- [ ] Birden fazla gerçek BIST + TEFAS örneği ile coverage'ı genişlet.
-- [ ] Minimum target/class-distribution kabul kriterini netleştir.
-- [ ] Faz 4 kabul testlerini tamamla.
+- [x] Birden fazla gerçek BIST + TEFAS örneği ile coverage'ı genişlet.
+- [ ] Phase 4 acceptance testlerini kullanıcı ortamında son kez çalıştır ve sonucu kaydet.
+- [ ] Minimum target/class-distribution performans kriterini, daha geniş sayısal evaluation sonucuna göre netleştir.
 
 ### BIST Baseline Smoke Sonucu — THYAO
 
@@ -189,13 +192,19 @@ Leakage / Warm-up Tests
 - Bu nedenle mevcut AAL veri penceresinde XGBoost eğitimi için iki sınıflı yeterli training gözlemi doğrulanamadı.
 - Single-class fold hatasını atlamak veya sentetik veri eklemek kabul edilmedi.
 
+### Genişletilmiş Smoke Coverage
+
+- BIST: `THYAO`, `ASELS`, `TUPRS`, `BIMAS` smoke testleri kullanıcı ortamında geçti.
+- TEFAS: `AFA`, `AFT`, `AFS` smoke testleri kullanıcı ortamında geçti.
+- AAL: veri penceresi nedeniyle one-class training fold problemi devam ediyor ve geçerli baseline sonucu olarak kabul edilmiyor.
+- Ek sembollerin ayrıntılı fold metrikleri kullanıcı çıktısı olarak kaydedilmedi; yalnızca smoke PASS durumu kayıt altına alındı.
+
 ## Sıradaki İş
 
-1. Birkaç gerçek BIST ve TEFAS sembolü üzerinde baseline coverage'ı genişlet.
-2. Fold train/test sınıf dağılımlarını ve metrikleri ortak evaluation dokümanında tut.
-3. Minimum target/class-distribution kabul kriterini belirle.
-4. Faz 4 acceptance testlerini tamamla.
-5. Ardından model tuning / feature importance / signal katmanına geç.
+1. `PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q` ile resmi acceptance suite'i çalıştır.
+2. PASS sonucunu Faz 4 evaluation dokümanına kaydet.
+3. Faz 4'ü kabul edip kapat.
+4. Sonraki fazda model tuning + feature importance + signal/risk katmanına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
