@@ -48,8 +48,9 @@ def test_stock_indicator_warmup_is_nan_and_mature_values_are_finite():
 
     assert pd.isna(result.loc[0, "sma_20"])
     expected_sma20 = result["close"].iloc[:20].mean()
-    assert result.loc[19, "sma_20"] == expected_sma20
-    assert result.loc[199, "sma_200"] == result["close"].iloc[:200].mean()
+    np.testing.assert_allclose(result.loc[19, "sma_20"], expected_sma20)
+    expected_sma200 = result["close"].iloc[:200].mean()
+    np.testing.assert_allclose(result.loc[199, "sma_200"], expected_sma200)
     assert np.isfinite(result.loc[219, "rsi_14"])
     assert np.isfinite(result.loc[219, "atr_14"])
 
