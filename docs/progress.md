@@ -76,8 +76,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Incremental pipeline için stock/fund unit testleri ve gerçek BIST smoke-test scripti oluşturuldu.**
 - [x] **16.09.2026 — Gerçek BIST incremental smoke testi başarıyla tamamlandı: THYAO watermark 2026-09-16 üzerinden 2026-09-15→2026-09-16 overlap penceresi yeniden çekildi; received=2, written=2, DB satır sayısı 6→6 kaldı ve latest persisted date 2026-09-16 oldu.**
 - [x] **16.09.2026 — Gerçek TEFAS incremental smoke testi başarıyla tamamlandı: güncel aktif fon evreninden otomatik seçilen AAL için 2026-08-18→2026-09-16 bootstrap penceresinde received=22, written=22; DB satırları 0→22 ve latest persisted date 2026-09-16 oldu.**
-- [x] **Market data quality katmanı eklendi: duplicate key, OHLC tutarlılığı, negatif hacim/varlık büyüklüğü, source mixing, eksik hafta içi tarihleri ve aşırı getiri anomalileri için raporlama; aşırı getiri ve eksik günler uyarı, yapısal ihlaller hata olarak sınıflandırıldı.**
-- [x] Gerçek PostgreSQL market-data quality smoke-test scripti eklendi; quality unit testleri oluşturuldu.
+- [x] **Market data quality katmanı eklendi: duplicate key, OHLC tutarlılığı, negatif hacim/varlık büyüklüğü, source mixing, eksik iş günü ve aşırı getiri anomalileri için raporlama; aşırı getiri ve eksik günler uyarı, yapısal ihlaller hata olarak sınıflandırıldı.**
+- [x] **BIST resmi tatil takvimi için 2025–2026 tam kapanış günleri kalite kontrollerine bağlandı; yarım günler işlem/pricing tarihi olarak korunuyor.**
+- [x] **Quality smoke scripti BIST ve TEFAS modlarına genişletildi; BIST için `borsapy`, TEFAS için `tefas` source-provider doğrulaması eklendi.**
+- [x] Quality takvim kontrolleri için unit test eklendi.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -106,12 +108,12 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Incremental update pipeline'ı gerçek TEFAS verisiyle smoke-test et — 16.09.2026 AAL ile 22/22 kayıt.**
 - [x] Missing data / outlier / source-quality kontrollerinin temel katmanını oluştur
 - [ ] Missing data / outlier / source-quality kontrollerini gerçek BIST + TEFAS veriyle genişletip doğrula
-- [ ] Temiz veri sözleşmesini (data contract) son haline getir
+- [ ] Temiz data sözleşmesini (data contract) son haline getir
 - [ ] Uçtan uca data pipeline testlerini tamamla
 
 ## Sıradaki İş
 
-1. **BIST + TEFAS market-data quality kontrollerini gerçek veriyle genişletip doğrula; özellikle resmi tatil takvimi ve provider-specific source kurallarını ekle.**
+1. **Market-data quality kontrollerini gerçek BIST + TEFAS DB verisiyle çalıştırıp doğrula.**
 2. Temiz data contract'ı son haline getir.
 3. Uçtan uca data pipeline testlerini tamamla.
 4. Faz 2 kapandıktan sonra Faz 3 — Technical Analysis Engine'e geç.
