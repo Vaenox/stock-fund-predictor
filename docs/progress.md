@@ -93,6 +93,7 @@ Quality
 - [x] Look-ahead regression unit testi eklendi.
 - [x] Faz 3 technical-analysis contract oluşturuldu: `docs/phase-3-technical-analysis.md`.
 - [x] Gerçek provider indicator smoke scripti oluşturuldu: `backend/scripts/smoke_test_indicators.py`.
+- [x] **16.09.2026 — Gerçek TEFAS indicator smoke testi başarıyla tamamlandı: AAL için 450 günlük takvim penceresinden 312 fiyat satırı alındı; RSI/EMA/MACD üretildi, `LOOK-AHEAD CHECK: PASSED` ve `TECHNICAL INDICATOR SMOKE TEST PASSED`.**
 
 ### Faz 3 Taskları
 
@@ -102,7 +103,7 @@ Quality
 - [x] Fund-compatible indicator setini oluştur ve test et.
 - [x] Look-ahead / warm-up davranışını test et.
 - [ ] Gerçek BIST verisiyle indicator smoke testini çalıştır.
-- [ ] Gerçek TEFAS verisiyle indicator smoke testini çalıştır.
+- [x] **Gerçek TEFAS verisiyle indicator smoke testini çalıştır — 16.09.2026 AAL, 312 satır, look-ahead check passed.**
 - [ ] Teknik skor (`0–100`) katmanını oluştur.
 - [ ] Teknik skor için explainability bileşenlerini oluştur.
 - [ ] ML feature dataset builder oluştur.
@@ -110,7 +111,7 @@ Quality
 
 ## Sıradaki İş
 
-1. Gerçek BIST + TEFAS indicator smoke testlerini çalıştır.
+1. Gerçek BIST indicator smoke testini çalıştır.
 2. Teknik Score (`0–100`) katmanını oluştur.
 3. Indicator → ML feature dataset builder katmanını oluştur.
 4. Faz 3 kabul testlerini tamamla.
