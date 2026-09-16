@@ -37,6 +37,8 @@ class BistStreamManager:
         self._stream: Any | None = None
         self._lock = RLock()
         self._symbols: dict[str, ProviderSymbol] = {}
+        self._quote_subscribed: set[str] = set()
+        self._candle_subscribed: set[tuple[str, str]] = set()
         self._quote_callbacks: list[QuoteCallback] = []
         self._candle_callbacks: list[CandleCallback] = []
 
@@ -48,8 +50,12 @@ class BistStreamManager:
         return self._stream is not None
 
     @property
-    def subscribed_symbols(self) -> tuple[str, ...]:
+    def known_symbols(self) -> tuple[str, ...]:
         return tuple(sorted(self._symbols))
+
+    @property
+    def subscribed_symbols(self) -> tuple[str, ...]:
+        return tuple(sorted(self._quote_subscribed))
 
     def set_symbols(self, symbols: list[ProviderSymbol]) -> None:
         """Replace the local provider-symbol → canonical-symbol registry."""
@@ -95,7 +101,11 @@ class BistStreamManager:
             self.start([])
             try:
                 for symbol in self._normalize_symbols(symbols):
+                    subscription = (symbol, interval)
+                    if subscription in self._candle_subscribed:
+                        continue
                     self._stream.subscribe_chart(symbol, interval)
+                    self._candle_subscribed.add(subscription)
             except Exception as exc:
                 raise BistStreamManagerError(
                     f"Unable to subscribe candle stream ({interval})"
@@ -107,6 +117,8 @@ class BistStreamManager:
                 return
             stream = self._stream
             self._stream = None
+            self._quote_subscribed.clear()
+            self._candle_subscribed.clear()
             try:
                 stream.disconnect()
             except Exception as exc:
@@ -116,7 +128,10 @@ class BistStreamManager:
         normalized = self._normalize_symbols(symbols)
         try:
             for symbol in normalized:
+                if symbol in self._quote_subscribed:
+                    continue
                 self._stream.subscribe(symbol)
+                self._quote_subscribed.add(symbol)
         except Exception as exc:
             raise BistStreamManagerError("Unable to subscribe BIST symbols") from exc
 
