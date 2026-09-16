@@ -63,6 +63,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Gerçek WebSocket smoke testini GitHub Actions üzerinden manuel çalıştırmak için workflow eklendi.
 - [x] Tüm BIST evreni için streaming load-test harness'i oluşturuldu.
 - [x] Load-test universe discovery timeout dayanıklılığı geliştirildi: borsapy/KAP discovery başarısız olursa public BIST CSV fallback'i ve isteğe bağlı sembol dosyası desteği eklendi.
+- [x] **BIST load-test ölçüm kriteri güçlendirildi: canonical quote event alan semboller ayrı sayılıyor; eksik semboller listeleniyor; `--require-quote-for-all` strict doğrulaması eklendi.**
 - [x] TEFAS tüm-fon günlük ingestion smoke-test scripti oluşturuldu.
 - [x] **TEFAS bulk smoke akışı doğrulandı: 09.09.2026–16.09.2026 aralığında `--max-funds 10` ile 10/10 fon veri aldı, 0 eksik; BULK rows returned: 10000; SMOKE TEST PASSED.**
 - [ ] TEFAS'ın tam fon evrenini tek bulk/paginated akışla doğrula.
@@ -96,7 +97,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Güncellenen load-test ile tüm BIST evreni streaming testini çalıştır ve sonuçları kalite kriterleriyle ölç.
+1. Yeni strict load-test ile tüm BIST evreninde quote coverage ve eksik sembolleri doğrula.
 2. TEFAS bulk/paginated akışı ile tam fon evrenini doğrula.
 3. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
 4. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
