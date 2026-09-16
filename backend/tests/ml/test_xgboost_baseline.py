@@ -15,7 +15,7 @@ from app.ml.xgboost_baseline import (
 def _training_frame(rows: int = 120) -> pd.DataFrame:
     rng = np.random.default_rng(42)
     frame = pd.DataFrame(rng.normal(size=(rows, len(STOCK_FEATURE_COLUMNS))), columns=STOCK_FEATURE_COLUMNS)
-    frame["target"] = (np.arange(rows) % 3 == 0).astype("Int64")
+    frame["target"] = pd.Series(np.arange(rows) % 3 == 0, dtype="Int64")
     frame["forward_return_5d"] = frame["target"].astype(float) * 0.05 - 0.01
     return frame
 
