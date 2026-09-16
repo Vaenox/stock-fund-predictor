@@ -22,8 +22,6 @@ class StockBarQualityReport:
                 self.duplicate_keys,
                 self.invalid_ohlc,
                 self.negative_volume,
-                self.missing_weekdays,
-                self.extreme_return_dates,
                 self.mixed_sources,
             )
         )
@@ -44,7 +42,6 @@ class FundPriceQualityReport:
                 self.duplicate_keys,
                 self.invalid_prices,
                 self.negative_assets,
-                self.missing_weekdays,
                 self.mixed_sources,
             )
         )
@@ -105,9 +102,11 @@ def inspect_stock_bars(
                 extreme_returns.append(trading_date)
         previous_close = close
 
-    missing = sorted(
-        _weekdays_between(start_date, end_date) - dates
-    ) if start_date is not None and end_date is not None else []
+    missing = (
+        sorted(_weekdays_between(start_date, end_date) - dates)
+        if start_date is not None and end_date is not None
+        else []
+    )
 
     return StockBarQualityReport(
         duplicate_keys=tuple(sorted(set(duplicates))),
@@ -151,9 +150,11 @@ def inspect_fund_prices(
         if source:
             sources.add(str(source))
 
-    missing = sorted(
-        _weekdays_between(start_date, end_date) - dates
-    ) if start_date is not None and end_date is not None else []
+    missing = (
+        sorted(_weekdays_between(start_date, end_date) - dates)
+        if start_date is not None and end_date is not None
+        else []
+    )
 
     return FundPriceQualityReport(
         duplicate_keys=tuple(sorted(set(duplicates))),
