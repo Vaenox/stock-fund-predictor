@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import text
@@ -92,24 +91,27 @@ class LiveMarketPersistence:
         if bind.dialect.name != "postgresql":
             return
 
+        # Values are validated integers above, so interpolation keeps the
+        # TimescaleDB interval syntax simple and avoids driver-specific bind
+        # handling inside a PostgreSQL DO block.
         bind.execute(
             text(
-                """
+                f"""
                 DO $$
                 BEGIN
                     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
                         PERFORM add_retention_policy(
                             'stock_live_ticks',
-                            make_interval(days => :tick_days),
+                            INTERVAL '{tick_days} days',
                             if_not_exists => TRUE
                         );
                         PERFORM add_retention_policy(
                             'stock_live_candles',
-                            make_interval(days => :candle_days),
+                            INTERVAL '{candle_days} days',
                             if_not_exists => TRUE
                         );
                     END IF;
                 END $$;
                 """
-            ).bindparams(tick_days=tick_days, candle_days=candle_days)
+            )
         )
