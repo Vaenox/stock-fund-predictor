@@ -21,6 +21,24 @@ FALLBACK_UNIVERSE_URL = (
 )
 TICKER_PATTERN = re.compile(r"^[A-Z0-9]{2,6}$")
 
+# The public fallback CSV can lag behind Borsa İstanbul's current ticker codes.
+# These mappings were verified against documented BIST/KAP code changes.
+CURRENT_SYMBOL_ALIASES = {
+    "DAGHL": "TRHOL",
+    "GRTRK": "GRTHO",
+    "ITTFH": "LRSHO",
+    "KOZAA": "TRMET",
+    "MIPAZ": "LYDHO",
+    "PEGYO": "PEHOL",
+    "QNBFB": "QNBTR",
+    "QNBFL": "QNBFK",
+    "TETMT": "LYDYE",
+    "UZERB": "INTEK",
+}
+# YGYO was removed from listing after the bankruptcy process and is not an active
+# TradingView symbol for the streaming universe.
+RETIRED_SYMBOLS = {"YGYO"}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -52,14 +70,25 @@ def _symbols_from_csv(text: str) -> tuple[list[ProviderSymbol], int]:
     seen: set[str] = set()
     skipped = 0
     for row in rows:
-        symbol = str(row.get("symbol", "")).strip().upper()
-        if not symbol or symbol in seen:
+        source_symbol = str(row.get("symbol", "")).strip().upper()
+        if not source_symbol:
             continue
-        if not TICKER_PATTERN.fullmatch(symbol):
+        if source_symbol in RETIRED_SYMBOLS:
             skipped += 1
             continue
+
+        symbol = CURRENT_SYMBOL_ALIASES.get(source_symbol, source_symbol)
+        if not TICKER_PATTERN.fullmatch(symbol) or symbol in seen:
+            skipped += 1
+            continue
+
         seen.add(symbol)
-        name = str(row.get("name", symbol)).strip() or symbol
+        source_name = str(row.get("name", symbol)).strip() or symbol
+        name = (
+            f"{source_name} (renamed from {source_symbol})"
+            if symbol != source_symbol
+            else source_name
+        )
         result.append(
             ProviderSymbol(
                 provider="borsapy",
@@ -152,7 +181,7 @@ def main() -> int:
     print(f"Universe source: {universe_source}")
     print(f"Discovered symbols: {len(requested)}")
     if skipped:
-        print(f"Skipped non-ticker CSV rows: {skipped}")
+        print(f"Skipped stale/non-ticker CSV rows: {skipped}")
     print("Starting one persistent BIST TradingView stream ...")
 
     started_at = time.monotonic()
@@ -175,12 +204,18 @@ def main() -> int:
         quote_coverage = (len(quoted_symbols) / len(requested_set)) * 100.0
 
         print(f"Quote events observed: {quote_count}")
-        print(f"Unique symbols with quote: {len(quoted_symbols)}/{len(requested_set)} ({quote_coverage:.2f}%)")
+        print(
+            f"Unique symbols with quote: {len(quoted_symbols)}/{len(requested_set)} "
+            f"({quote_coverage:.2f}%)"
+        )
         print(f"Candle events observed: {candle_count}")
         if candle_symbols:
             print(f"Unique symbols with candle: {len(candle_symbols)}/{len(requested_set)}")
         if missing_quote_symbols:
-            print(f"Symbols without quote events ({len(missing_quote_symbols)}): {', '.join(missing_quote_symbols)}")
+            print(
+                f"Symbols without quote events ({len(missing_quote_symbols)}): "
+                f"{', '.join(missing_quote_symbols)}"
+            )
 
         if args.require_quote_for_all and missing_quote_symbols:
             print(
@@ -191,9 +226,15 @@ def main() -> int:
             return 1
 
         if args.require_quote_for_all:
-            print("LOAD TEST PASSED: every requested symbol emitted at least one canonical quote event")
+            print(
+                "LOAD TEST PASSED: every requested symbol emitted at least one "
+                "canonical quote event"
+            )
         else:
-            print("LOAD TEST PASSED: subscription layer accepted the requested universe; quote coverage reported separately")
+            print(
+                "LOAD TEST PASSED: subscription layer accepted the requested universe; "
+                "quote coverage reported separately"
+            )
         return 0
     except Exception as exc:
         print(f"LOAD TEST FAILED: {exc}", file=sys.stderr)
