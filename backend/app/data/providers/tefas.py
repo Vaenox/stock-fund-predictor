@@ -20,6 +20,7 @@ class TefasSettings:
     fund_kind: str = "YAT"
     timeout: float = 30.0
     max_days_per_request: int = 28
+    discovery_lookback_days: int = 7
 
 
 class TefasProvider(MarketDataProvider):
@@ -49,6 +50,11 @@ class TefasProvider(MarketDataProvider):
             "Content-Type": "application/json",
             "Origin": "https://www.tefas.gov.tr",
             "Referer": "https://www.tefas.gov.tr/tr/fon-verileri",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/146.0.0.0 Safari/537.36"
+            ),
         }
         try:
             if self._request is not None:
@@ -98,7 +104,7 @@ class TefasProvider(MarketDataProvider):
         except Exception as exc:
             raise TefasProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
 
-    def _fetch_range(self, fund_code: str, start_date: date, end_date: date) -> list[dict[str, Any]]:
+    def _fetch_range(self, fund_code: str | None, start_date: date, end_date: date) -> list[dict[str, Any]]:
         if start_date > end_date:
             raise ValueError("start_date cannot be after end_date")
         rows: list[dict[str, Any]] = []
@@ -107,7 +113,7 @@ class TefasProvider(MarketDataProvider):
         ):
             payload = {
                 "fonTipi": self._settings.fund_kind,
-                "fonKodu": fund_code.strip().upper(),
+                "fonKodu": fund_code.strip().upper() if fund_code else None,
                 "aramaMetni": None,
                 "fonTurKod": None,
                 "fonGrubu": None,
@@ -131,27 +137,45 @@ class TefasProvider(MarketDataProvider):
         return rows
 
     def list_symbols(self) -> list[ProviderSymbol]:
+        """Discover the current YAT fund universe from the latest available day."""
         today = datetime.now(timezone.utc).date()
-        rows = self._fetch_range("", today, today)
-        return [
-            ProviderSymbol(
-                provider=self.name,
-                provider_symbol=str(row.get("fonKod", "")).upper(),
-                canonical_symbol=str(row.get("fonKod", "")).upper(),
-                name=str(row.get("fonUnvan", row.get("fonAdi", ""))),
-                asset_type="FUND",
-                exchange=None,
-                currency="TRY",
-            )
-            for row in rows
-            if row.get("fonKod")
-        ]
+        lookback = max(self._settings.discovery_lookback_days, 0)
+
+        for offset in range(lookback + 1):
+            candidate = today - timedelta(days=offset)
+            rows = self._fetch_range(None, candidate, candidate)
+            if not rows:
+                continue
+
+            result: list[ProviderSymbol] = []
+            seen: set[str] = set()
+            for row in rows:
+                code = str(row.get("fonKod", "")).strip().upper()
+                if not code or code in seen:
+                    continue
+                seen.add(code)
+                result.append(
+                    ProviderSymbol(
+                        provider=self.name,
+                        provider_symbol=code,
+                        canonical_symbol=code,
+                        name=str(row.get("fonUnvan", row.get("fonAdi", code))).strip(),
+                        asset_type="FUND",
+                        exchange=None,
+                        currency="TRY",
+                    )
+                )
+            if result:
+                return result
+
+        return []
 
     def get_symbol_metadata(self, provider_symbol: str) -> ProviderSymbol:
+        today = datetime.now(timezone.utc).date()
         rows = self._fetch_range(
             provider_symbol,
-            datetime.now(timezone.utc).date(),
-            datetime.now(timezone.utc).date(),
+            today - timedelta(days=self._settings.discovery_lookback_days),
+            today,
         )
         if not rows:
             raise TefasProviderError(f"TEFAS fund not found: {provider_symbol}")
@@ -208,8 +232,6 @@ class TefasProvider(MarketDataProvider):
 
     def health_check(self) -> bool:
         try:
-            today = datetime.now(timezone.utc).date()
-            self._fetch_range("", today, today)
-            return True
+            return bool(self.list_symbols())
         except (TefasProviderError, ValueError):
             return False
