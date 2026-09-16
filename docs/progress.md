@@ -138,6 +138,9 @@ Leakage / Warm-up Tests
 - [x] ROC-AUC, PR-AUC, accuracy, precision, recall ve positive-rate metrikleri eklendi.
 - [x] scikit-learn ve XGBoost bağımlılıkları requirements'a eklendi.
 - [x] Split ve XGBoost baseline unit testleri oluşturuldu.
+- [x] **16.09.2026 — Faz 4 ML unit testleri başarıyla geçti.**
+- [x] **16.09.2026 — Gerçek BIST XGBoost baseline smoke başarılı: THYAO, 684 ham / 480 training row, 3 walk-forward fold.**
+- [ ] Gerçek TEFAS XGBoost baseline smoke: AAL'ın ilk eğitim penceresi tek sınıf olduğu için değerlendirilemedi; validation kuralı gevşetilmedi.
 
 ### Faz 4 Taskları
 
@@ -146,19 +149,36 @@ Leakage / Warm-up Tests
 - [x] Leakage gap kuralını uygula.
 - [x] XGBoost baseline wrapper'ını oluştur.
 - [x] Baseline metriklerini oluştur.
-- [ ] ML baseline unit testlerini çalıştır.
-- [ ] Gerçek BIST feature dataset ile XGBoost baseline smoke çalıştır.
+- [x] ML baseline unit testlerini çalıştır.
+- [x] Gerçek BIST feature dataset ile XGBoost baseline smoke çalıştır.
 - [ ] Gerçek TEFAS feature dataset ile XGBoost baseline smoke çalıştır.
 - [ ] Walk-forward baseline sonuçlarını kaydet ve değerlendirme tablosu oluştur.
 - [ ] Faz 4 kabul testlerini tamamla.
 
+### BIST Baseline Smoke Sonucu — THYAO
+
+- Raw rows: `684`
+- Training rows: `480`
+- Target distribution: `{0: 374, 1: 106}`
+- Fold 1: ROC-AUC `0.2843`, PR-AUC `0.1181`, accuracy `0.8500`, precision `0.0000`, recall `0.0000`, positive-rate `0.1500`
+- Fold 2: ROC-AUC `0.6113`, PR-AUC `0.4765`, accuracy `0.7500`, precision `1.0000`, recall `0.0909`, positive-rate `0.2750`
+- Fold 3: ROC-AUC `0.5128`, PR-AUC `0.0500`, accuracy `0.9750`, precision `0.0000`, recall `0.0000`, positive-rate `0.0250`
+- Not: Bu sonuçlar baseline doğrulaması içindir; tek başına model kalitesi veya genellenebilirlik sonucu olarak yorumlanmamalıdır.
+
+### AAL Validation Notu
+
+- `days=1000`, `n_splits=3` ile fold 1 training target tek sınıf oldu.
+- `n_splits=1`, `test_size=40`, `gap=5` ile de fold 1 training target tek sınıf oldu.
+- Bu nedenle mevcut AAL veri penceresinde XGBoost eğitimi için iki sınıflı yeterli training gözlemi doğrulanamadı.
+- Single-class fold hatasını atlamak veya sentetik veri eklemek kabul edilmedi.
+
 ## Sıradaki İş
 
-1. Codespace'te yeni ML bağımlılıklarını kur.
-2. `tests/ml` unit testlerini çalıştır.
-3. Gerçek BIST ve TEFAS feature dataset üzerinde XGBoost baseline smoke çalıştır.
-4. Walk-forward metriklerini kaydet.
-5. Faz 4 kabulünü tamamla ve sonraki model geliştirme tasklarına geç.
+1. Baseline için iki sınıflı gerçek TEFAS örnek fon seç.
+2. BIST baseline fold sonuçlarını ortak evaluation tablosuna aktar.
+3. Gerçek BIST + TEFAS baseline sonuçlarını birlikte değerlendir.
+4. Faz 4 kabul testlerini tamamla.
+5. Ardından model tuning / feature importance / signal katmanına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
