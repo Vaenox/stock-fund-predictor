@@ -24,6 +24,17 @@ Bu doküman, Faz 4 XGBoost baseline'ının gerçek BIST ve TEFAS feature dataset
 | Fund | AFA | 312 | 108 | 84 | 24 | 2 | 53/10 | 15/5 | 0.8800 | 0.8369 | 0.7500 | 0.0000 | 0.0000 |
 | Fund | AFA | 312 | 108 | 84 | 24 | 3 | 69/14 | 20/0 | None | None | 1.0000 | 0.0000 | 0.0000 |
 
+## Expanded Real-Data Smoke Coverage
+
+Kullanıcı ortamında aynı baseline smoke protokolü ile aşağıdaki ek gerçek veri örnekleri çalıştırıldı ve `REAL XGBOOST BASELINE SMOKE TEST PASSED` sonucu doğrulandı:
+
+| Asset | Symbols | Status | Detailed fold metrics |
+|---|---|---|---|
+| Stock | `ASELS`, `TUPRS`, `BIMAS` | Passed | Bu turda ayrıntılı çıktılar dokümana aktarılmadı. |
+| Fund | `AFT`, `AFS` | Passed | Bu turda ayrıntılı çıktılar dokümana aktarılmadı. |
+
+Bu ek smoke sonuçları pipeline coverage'ını genişletir; ancak ayrıntılı metrikler kaydedilmediği için bunlardan performans ortalaması veya model genellenebilirliği sonucu çıkarılmaz.
+
 ## THYAO — BIST
 
 Gerçek baseline smoke başarılı oldu. Target dağılımı `374` negatif / `106` pozitif gözlem.
@@ -53,11 +64,20 @@ Bu veri problemi nedeniyle validation kuralı gevşetilmedi, sentetik veri kulla
 2. Walk-forward split ve `gap=5` kuralı gerçek veride uygulanıyor.
 3. 5-günde `%3+` target bazı fonlarda seyrek olduğundan fold-level class distribution açıkça izlenmeli.
 
-Bu aşamada tuning, threshold optimizasyonu veya BUY/HOLD/SELL üretimine geçilmemelidir. Önce daha geniş bir gerçek örnek seti ile baseline davranışı kayda alınmalıdır.
+Bu aşamada tuning, threshold optimizasyonu veya BUY/HOLD/SELL üretimine geçilmemelidir. Önce acceptance kontrolleri tamamlanmalı, ardından model davranışı için daha geniş ve sayısal olarak kayıtlı evaluation çalışması yapılmalıdır.
+
+## Faz 4 Acceptance Durumu
+
+- Model fit/predict probability contract: kod seviyesinde test mevcut.
+- Walk-forward + `gap=5`: kod seviyesinde test mevcut.
+- Training fold two-class kuralı: uygulanıyor ve test ediliyor.
+- Single-class test fold: ROC-AUC/PR-AUC güvenli biçimde `None` raporlanıyor ve test ediliyor.
+- Gerçek BIST smoke: `THYAO` ve ek `ASELS/TUPRS/BIMAS` örnekleri geçti.
+- Gerçek TEFAS smoke: `AFA` ve ek `AFT/AFS` örnekleri geçti; `AAL` tek-sınıf eğitim penceresi nedeniyle reddedildi.
+- Resmi acceptance suite'in son kullanıcı ortamı çalıştırması henüz bu dokümana sonuç olarak eklenmedi.
 
 ## Sonraki Adım
 
-- Farklı BIST sembollerinden ve iki sınıflı yeterli TEFAS fonlardan birkaç baseline smoke sonucu daha toplamak.
-- Sonuçları aynı tabloya eklemek.
-- Gerekli minimum veri / target dağılımı kabul kriterini netleştirmek.
-- Ardından Faz 4 acceptance kararını vermek.
+- `backend/tests/ml/test_phase4_acceptance.py` testlerini kullanıcı ortamında çalıştır.
+- Sonuç PASS ise Faz 4 acceptance'ı kapat.
+- Ardından model tuning / feature importance / signal katmanına geç.
