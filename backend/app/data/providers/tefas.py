@@ -105,7 +105,7 @@ class TefasProvider(MarketDataProvider):
         try:
             return Decimal(str(value).replace(",", "."))
         except Exception as exc:
-            raise TefASProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
+            raise TefasProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
 
     def _fetch_range(
         self,
