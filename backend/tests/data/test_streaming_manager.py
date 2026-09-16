@@ -49,7 +49,7 @@ def symbol(provider_symbol: str, canonical_symbol: str) -> ProviderSymbol:
     )
 
 
-def test_manager_uses_one_persistent_connection_and_bulk_quote_subscriptions():
+def test_manager_uses_one_persistent_connection_and_idempotent_quote_subscriptions():
     created: list[FakeStream] = []
 
     def factory() -> FakeStream:
@@ -68,13 +68,15 @@ def test_manager_uses_one_persistent_connection_and_bulk_quote_subscriptions():
 
     assert len(created) == 1
     assert created[0].connected is True
-    assert created[0].quote_subscriptions == ["THYAO", "GARAN", "THYAO", "GARAN"]
+    assert created[0].quote_subscriptions == ["THYAO", "GARAN"]
     assert manager.is_connected is True
+    assert manager.known_symbols == ("GARAN", "THYAO")
     assert manager.subscribed_symbols == ("GARAN", "THYAO")
 
     manager.stop()
     assert created[0].disconnected is True
     assert manager.is_connected is False
+    assert manager.subscribed_symbols == ()
 
 
 def test_manager_canonicalizes_quote_and_candle_events():
@@ -91,6 +93,7 @@ def test_manager_canonicalizes_quote_and_candle_events():
 
     manager.start([" thyao "])
     manager.subscribe_candles(["THYAO"], "1m")
+    manager.subscribe_candles(["thyao"], "1m")
 
     assert stream.quote_subscriptions == ["THYAO"]
     assert stream.candle_subscriptions == [("THYAO", "1m")]
@@ -123,11 +126,13 @@ def test_manager_canonicalizes_quote_and_candle_events():
     assert quotes[0].price == Decimal("312.45")
     assert quotes[0].provider_symbol == "THYAO"
     assert quotes[0].timestamp == datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)
+    assert quotes[0].received_at is not None
 
     assert candles[0].canonical_symbol == "BIST:THYAO"
     assert candles[0].interval == "1m"
     assert candles[0].open == Decimal("310.0")
     assert candles[0].close == Decimal("312.45")
+    assert candles[0].received_at is not None
 
 
 def test_manager_ignores_quote_without_last_price():
