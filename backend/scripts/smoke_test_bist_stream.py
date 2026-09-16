@@ -6,6 +6,7 @@ import time
 
 import borsapy as bp
 
+from app.data.providers.base import ProviderSymbol
 from app.data.providers.borsapy import BorsapyProvider
 from app.data.streaming.manager import BistStreamManager
 
@@ -42,13 +43,15 @@ def main() -> int:
         return 2
 
     provider = BorsapyProvider()
-    metadata = next(
-        (item for item in provider.list_symbols() if item.provider_symbol == symbol),
-        None,
+    metadata = ProviderSymbol(
+        provider=provider.name,
+        provider_symbol=symbol,
+        canonical_symbol=symbol,
+        name=symbol,
+        asset_type="STOCK",
+        exchange="BIST",
+        currency="TRY",
     )
-    if metadata is None:
-        print(f"ERROR: {symbol} was not found in borsapy company discovery", file=sys.stderr)
-        return 2
 
     manager = BistStreamManager(
         provider_name=provider.name,
@@ -80,16 +83,19 @@ def main() -> int:
     manager.add_candle_callback(on_candle)
 
     print(f"Starting BIST WebSocket smoke test for {symbol} ...")
-    manager.start([symbol])
-    if not args.skip_candle:
-        manager.subscribe_candles([symbol], args.candle_interval)
-
-    deadline = time.monotonic() + args.timeout
     try:
+        manager.start([symbol])
+        if not args.skip_candle:
+            manager.subscribe_candles([symbol], args.candle_interval)
+
+        deadline = time.monotonic() + args.timeout
         while time.monotonic() < deadline:
             if quote_received and (args.skip_candle or candle_received):
                 break
             time.sleep(0.5)
+    except Exception as exc:
+        print(f"SMOKE TEST FAILED: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
     finally:
         manager.stop()
 
