@@ -47,7 +47,7 @@ def test_stock_feature_dataset_drops_warmup_and_futureless_rows():
         "forward_return_5d",
         "target",
     ]
-    assert result[STOCK_FEATURE_COLUMNS].notna().all().all()
+    assert result[list(STOCK_FEATURE_COLUMNS)].notna().all().all()
     assert result["forward_return_5d"].notna().all()
     assert result["target"].isin([0, 1]).all()
 
@@ -57,7 +57,7 @@ def test_fund_feature_dataset_uses_available_observation_horizon():
     result = build_ml_feature_dataset(indicators, asset_type="fund")
 
     assert len(result) == 260 - 199 - 5
-    assert result[FUND_FEATURE_COLUMNS].notna().all().all()
+    assert result[list(FUND_FEATURE_COLUMNS)].notna().all().all()
     assert result["target"].isin([0, 1]).all()
 
 
