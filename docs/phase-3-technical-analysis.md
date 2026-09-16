@@ -57,7 +57,35 @@ Fonlarda yalnızca unit-price tabanlı göstergeler hesaplanır. ATR, ADX ve vol
 
 ## Teknik skor
 
-Faz 3'ün ilk adımında ham indicator üretimi ile teknik skor birbirinden ayrıdır. Trend, momentum, volatilite, hacim ve destek/direnç bileşenlerinden oluşacak `0–100` teknik skor daha sonra ayrı bir katmanda tasarlanacaktır. Bu ayrım, ham feature'ların ML modelinde kayıpsız kullanılabilmesini sağlar.
+Ham indicator üretimi ile teknik skor ayrı katmanlardır. `backend/app/analysis/scoring.py` deterministik ve açıklanabilir bir `0–100` skor üretir.
+
+### Stock score bileşenleri
+
+- Trend: fiyat/EMA20, EMA20/EMA50 ve EMA50/EMA200 ilişkileri.
+- Momentum: RSI14, MACD histogramı, 5 günlük ve 20 günlük momentum.
+- Volatilite: ATR/fiyat, 20 günlük yıllıklaştırılmış volatilite ve Bollinger konumu.
+- Hacim: 20 günlük volume ratio ve 1 günlük volume change.
+- Trend gücü: ADX14 ve Bollinger konumu.
+
+Varsayılan ağırlıklar `30% / 30% / 15% / 15% / 10%` olarak tanımlıdır. Eksik indicator bileşenleri bu katmanda sessizce sıfırlanmaz; mevcut değilse ilgili hesap nötr `50` kabul edilir. Bu ağırlıklar üretim trading eşiği değildir ve out-of-sample backtest ile doğrulanmadan karar politikası olarak kullanılmamalıdır.
+
+### Fund score
+
+Fonlarda OHLCV olmadığı için hacim ve stock-only trend-strength alanları üretilmez. Trend, momentum ve volatilite bileşenleri mevcut ağırlıkları oranında yeniden normalize edilir. Böylece `0–100` skor varlık türleri arasında karşılaştırılabilir bir aralıkta kalır, ancak kullanılan feature kapsamı açıkça açıklanır.
+
+### Explainability
+
+Her satırda aşağıdaki alanlar tutulur:
+
+- `technical_score`
+- `technical_score_trend`
+- `technical_score_momentum`
+- `technical_score_volatility`
+- `technical_score_volume`
+- `technical_score_breadth`
+- `technical_score_reason`
+
+Bu çıktı daha sonra dashboard açıklaması ve ML feature dataset builder için kullanılacaktır.
 
 ## Faz 3 kabul kriterlerinin ilk bölümü
 
@@ -66,7 +94,10 @@ Faz 3'ün ilk adımında ham indicator üretimi ile teknik skor birbirinden ayr�
 - [x] Fund unit-price indicator seti oluşturuldu.
 - [x] Warm-up / `NaN` semantiği belirlendi.
 - [x] Look-ahead regression unit testi eklendi.
+- [x] Teknik Score (`0–100`) engine oluşturuldu.
+- [x] Teknik Score explainability çıktıları oluşturuldu.
+- [x] Gerçek TEFAS geçmiş verisiyle indicator smoke testi — AAL, 312 satır, look-ahead kontrolü geçti.
 - [ ] Gerçek BIST geçmiş verisiyle indicator smoke testi
-- [ ] Gerçek TEFAS geçmiş verisiyle indicator smoke testi
-- [ ] Technical Score katmanı
+- [ ] Teknik Score gerçek BIST + TEFAS smoke testi
 - [ ] ML feature dataset builder
+- [ ] Faz 3 kabul testleri
