@@ -11,18 +11,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run a real TEFAS daily fund-universe smoke test."
     )
-    parser.add_argument(
-        "--days",
-        type=int,
-        default=7,
-        help="Number of recent calendar days to request",
-    )
-    parser.add_argument(
-        "--max-funds",
-        type=int,
-        default=0,
-        help="Limit funds checked; 0 means all discovered funds",
-    )
+    parser.add_argument("--days", type=int, default=7)
+    parser.add_argument("--max-funds", type=int, default=0)
     return parser.parse_args()
 
 
@@ -42,36 +32,32 @@ def main() -> int:
 
     end_date = date.today()
     start_date = end_date - timedelta(days=args.days)
-    successful = 0
-    empty = 0
-    failed = 0
+    requested_codes = {fund.provider_symbol.upper() for fund in funds}
+
+    try:
+        rows = provider.fetch_fund_history_bulk(start_date, end_date)
+    except Exception as exc:
+        print(f"SMOKE TEST FAILED: bulk TEFAS request failed: {exc}", file=sys.stderr)
+        return 1
+
+    rows_by_code = {}
+    for row in rows:
+        code = str(row.get("fonKodu", "")).strip().upper()
+        if code:
+            rows_by_code.setdefault(code, 0)
+            rows_by_code[code] += 1
+
+    successful = sum(1 for code in requested_codes if rows_by_code.get(code, 0) > 0)
+    empty = len(requested_codes) - successful
 
     print(f"Discovered funds: {len(funds)}")
     print(f"History window: {start_date.isoformat()} -> {end_date.isoformat()}")
-
-    for fund in funds:
-        try:
-            rows = provider.get_fund_history(fund.provider_symbol, start_date, end_date)
-        except Exception as exc:
-            failed += 1
-            print(f"FAILED {fund.provider_symbol}: {exc}", file=sys.stderr)
-            continue
-
-        if rows:
-            successful += 1
-        else:
-            empty += 1
-
+    print(f"Bulk rows returned: {len(rows)}")
     print(f"Funds with data: {successful}")
     print(f"Funds without rows in window: {empty}")
-    print(f"Fund requests failed: {failed}")
-
-    if failed:
-        print("SMOKE TEST FAILED: one or more TEFAS fund requests failed", file=sys.stderr)
-        return 1
 
     if successful == 0:
-        print("SMOKE TEST FAILED: no TEFAS history rows were returned", file=sys.stderr)
+        print("SMOKE TEST FAILED: no TEFAS history rows matched discovered funds", file=sys.stderr)
         return 1
 
     print("SMOKE TEST PASSED")
