@@ -1,0 +1,35 @@
+name: BIST WebSocket Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: BIST symbol
+        required: true
+        default: THYAO
+      timeout:
+        description: Seconds to wait for the first quote/candle
+        required: true
+        default: "20"
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r backend/requirements.txt
+
+      - name: Run BIST WebSocket smoke test
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: python scripts/smoke_test_bist_stream.py --symbol "${{ inputs.symbol }}" --timeout "${{ inputs.timeout }}"
