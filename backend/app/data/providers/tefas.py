@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from time import sleep
 from typing import Any, Callable
 
 import httpx
@@ -23,6 +24,8 @@ class TefasSettings:
     discovery_lookback_days: int = 7
     page_size: int = 10000
     max_pages: int = 100
+    rate_limit_retries: int = 3
+    rate_limit_backoff_seconds: float = 1.0
 
 
 class TefasProvider(MarketDataProvider):
@@ -58,18 +61,41 @@ class TefasProvider(MarketDataProvider):
                 "Chrome/146.0.0.0 Safari/537.36"
             ),
         }
-        try:
-            if self._request is not None:
-                response = self._request(
-                    "POST", url, json=payload, headers=headers, timeout=self._settings.timeout
-                )
-            else:
-                client = self._client or httpx.Client(timeout=self._settings.timeout)
-                response = client.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-        except (httpx.HTTPError, ValueError) as exc:
-            raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
+        if self._settings.rate_limit_retries < 0:
+            raise ValueError("rate_limit_retries cannot be negative")
+        if self._settings.rate_limit_backoff_seconds < 0:
+            raise ValueError("rate_limit_backoff_seconds cannot be negative")
+
+        response: httpx.Response | None = None
+        for attempt in range(self._settings.rate_limit_retries + 1):
+            try:
+                if self._request is not None:
+                    response = self._request(
+                        "POST", url, json=payload, headers=headers, timeout=self._settings.timeout
+                    )
+                else:
+                    client = self._client or httpx.Client(timeout=self._settings.timeout)
+                    response = client.post(url, json=payload, headers=headers)
+
+                if response.status_code == 429 and attempt < self._settings.rate_limit_retries:
+                    retry_after = response.headers.get("Retry-After")
+                    try:
+                        delay = float(retry_after) if retry_after is not None else self._settings.rate_limit_backoff_seconds * (2**attempt)
+                    except ValueError:
+                        delay = self._settings.rate_limit_backoff_seconds * (2**attempt)
+                    sleep(delay)
+                    continue
+
+                response.raise_for_status()
+                data = response.json()
+                break
+            except (httpx.HTTPError, ValueError) as exc:
+                if response is not None and response.status_code == 429 and attempt < self._settings.rate_limit_retries:
+                    continue
+                raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
+        else:
+            raise TefasProviderError(f"TEFAS request failed: {endpoint}")
+
         if not isinstance(data, dict):
             raise TefasProviderError("TEFAS response is not a JSON object")
         if data.get("errorCode") or data.get("errorMessage"):
