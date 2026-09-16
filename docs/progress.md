@@ -9,6 +9,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Güncel hedef: **borsapy/TradingView WebSocket ile BIST canlı/dinamik akışı + TEFAS JSON ile fon günlük güncellemesi**.
 - Faz 1 ürün spesifikasyonu: `docs/phase-1-product-spec.md`
 - Faz 2 ana dokümanları: `docs/phase-2-data-sources.md`, `docs/phase-2-data-model.md`, `docs/phase-2-provider-adapter.md`, `docs/phase-2-historical-ingestion.md`, `docs/phase-2-free-data-providers.md`
+- Canonical market data contract: `docs/data-contract.md`
 
 ## Tamamlananlar
 
@@ -80,6 +81,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **BIST resmi tatil takvimi için 2025–2026 tam kapanış günleri kalite kontrollerine bağlandı; yarım günler işlem/pricing tarihi olarak korunuyor.**
 - [x] **Quality smoke scripti BIST ve TEFAS modlarına genişletildi; BIST için `borsapy`, TEFAS için `tefas` source-provider doğrulaması eklendi.**
 - [x] Quality takvim kontrolleri için unit test eklendi.
+- [x] **16.09.2026 — Gerçek PostgreSQL quality smoke testleri başarıyla tamamlandı: THYAO 30 günlük pencerede 6 satır, 0 duplicate, 0 invalid OHLC, 0 negative volume, 0 extreme return ve tek `borsapy` source; AAL 30 günlük pencerede 22 satır, 0 duplicate, 0 invalid unit price, 0 negative total assets ve tek `tefas` source. Her iki test de `MARKET DATA QUALITY SMOKE TEST PASSED` ile sonuçlandı. Eksik beklenen günler yalnızca teşhis/uıyarı olarak raporlandı.**
+- [x] **Canonical market data contract son haline getirildi: asset identity, stock OHLCV, fund daily price, provider-specific kurallar, source provenance, quality semantiği ve incremental ingestion sözleşmesi `docs/data-contract.md` altında tanımlandı.**
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -107,16 +110,15 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Incremental update pipeline'ı gerçek BIST verisiyle smoke-test et.**
 - [x] **Incremental update pipeline'ı gerçek TEFAS verisiyle smoke-test et — 16.09.2026 AAL ile 22/22 kayıt.**
 - [x] Missing data / outlier / source-quality kontrollerinin temel katmanını oluştur
-- [ ] Missing data / outlier / source-quality kontrollerini gerçek BIST + TEFAS veriyle genişletip doğrula
-- [ ] Temiz data sözleşmesini (data contract) son haline getir
+- [x] **Missing data / outlier / source-quality kontrollerini gerçek BIST + TEFAS veriyle genişletip doğrula.**
+- [x] **Temiz data sözleşmesini (data contract) son haline getir — `docs/data-contract.md`.**
 - [ ] Uçtan uca data pipeline testlerini tamamla
 
 ## Sıradaki İş
 
-1. **Market-data quality kontrollerini gerçek BIST + TEFAS DB verisiyle çalıştırıp doğrula.**
-2. Temiz data contract'ı son haline getir.
-3. Uçtan uca data pipeline testlerini tamamla.
-4. Faz 2 kapandıktan sonra Faz 3 — Technical Analysis Engine'e geç.
+1. **Uçtan uca data pipeline testlerini tamamla: provider → normalize → validate → ingest/upsert → quality zincirini gerçek ve kontrollü testlerle doğrula.**
+2. E2E testleri geçtikten sonra Faz 2 kapanış kontrolünü yap.
+3. Faz 2 kapandıktan sonra Faz 3 — Technical Analysis Engine'e geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
