@@ -5,7 +5,13 @@ import pandas as pd
 import pytest
 
 from app.analysis.features import STOCK_FEATURE_COLUMNS
-from app.ml.tuning import TuningConfig, build_inner_splits, evaluate_candidate_inner
+from app.ml.tuning import (
+    TuningConfig,
+    build_inner_splits,
+    default_candidate_grid,
+    evaluate_candidate_inner,
+    select_best_candidate,
+)
 from app.ml.xgboost_baseline import XGBoostBaselineConfig
 
 
@@ -17,10 +23,7 @@ def _frame(rows: int = 100) -> pd.DataFrame:
 
 
 def test_inner_splits_are_chronological_and_keep_gap():
-    folds = build_inner_splits(
-        100,
-        config=TuningConfig(n_inner_splits=2, inner_test_size=15, gap=5),
-    )
+    folds = build_inner_splits(100, config=TuningConfig(n_inner_splits=2, inner_test_size=15, gap=5))
 
     assert len(folds) == 2
     assert folds[0].test_end <= folds[1].test_start
@@ -43,3 +46,36 @@ def test_candidate_inner_score_uses_training_period_only():
 
     assert np.isfinite(score)
     assert score >= 0.0
+
+
+def test_default_candidate_grid_is_deterministic_and_bounded():
+    first = default_candidate_grid()
+    second = default_candidate_grid()
+
+    assert first == second
+    assert len(first) == 12
+    assert all(candidate.random_state == 42 for candidate in first)
+
+
+def test_select_best_candidate_returns_reproducible_result():
+    frame = _frame()
+    candidates = (
+        XGBoostBaselineConfig(n_estimators=10, max_depth=3, learning_rate=0.03),
+        XGBoostBaselineConfig(n_estimators=10, max_depth=4, learning_rate=0.05),
+    )
+
+    first = select_best_candidate(
+        frame,
+        asset_type="stock",
+        candidates=candidates,
+        tuning_config=TuningConfig(n_inner_splits=2, inner_test_size=15, gap=5),
+    )
+    second = select_best_candidate(
+        frame,
+        asset_type="stock",
+        candidates=candidates,
+        tuning_config=TuningConfig(n_inner_splits=2, inner_test_size=15, gap=5),
+    )
+
+    assert first == second
+    assert first.score >= 0.0
