@@ -11,7 +11,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
 - Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
 - Faz 2 historical ingestion tasarımı: `docs/phase-2-historical-ingestion.md`
-- Faz 2 ücretsiz veri sağlayıcı stratejisi: `docs/phase-2-free-data-providers.md`
+- Faz 2 ücretsiz provider stratejisi: `docs/phase-2-free-data-providers.md`
 - Güncel hedef: **borsapy/TradingView WebSocket ile BIST canlı/dinamik akışı + TEFAS JSON ile fon günlük güncellemesi**.
 
 ## Tamamlananlar
@@ -94,6 +94,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Live tick/candle upsert persistence katmanı oluşturuldu.**
 - [x] **TimescaleDB retention ayarları config'e bağlandı (tick 30 gün, candle 180 gün varsayılan).**
 - [x] Live persistence testleri oluşturuldu.
+- [x] **BIST stream watchdog oluşturuldu: stale event tespiti + otomatik reconnect + bounded exponential backoff.**
+- [x] **Reconnect sonrasında quote ve candle aboneliklerinin yeniden kurulması eklendi.**
+- [x] Watchdog health callback ve son event zamanlarının izlenmesi eklendi.
+- [x] Watchdog davranışı için birim testleri oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -112,7 +116,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Quote/candle → canonical live DTO dönüşümünü oluştur
 - [x] Live eventleri Redis Pub/Sub/Streams üzerinden yayınla
 - [x] BIST live/intraday TimescaleDB tablosunu oluştur
-- [ ] Reconnect, stale quote ve heartbeat kontrollerini oluştur
+- [x] Reconnect, stale quote ve heartbeat kontrollerini oluştur
 - [ ] Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır
 - [ ] Tüm BIST evreniyle streaming yük testi çalıştır
 - [ ] TEFAS günlük tüm fon evreni smoke testini çalıştır
@@ -125,8 +129,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Reconnect, heartbeat ve stale quote kontrollerini ekle.
-2. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
+1. Tek BIST sembolüyle gerçek WebSocket smoke testini çalıştır.
+2. Tüm BIST evreniyle streaming yük testini çalıştır.
 3. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
 4. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
 5. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
