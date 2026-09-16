@@ -21,6 +21,7 @@ class TefasSettings:
     timeout: float = 30.0
     max_days_per_request: int = 28
     discovery_lookback_days: int = 7
+    max_rows_per_request: int = 10000
 
 
 class TefasProvider(MarketDataProvider):
@@ -79,6 +80,8 @@ class TefasProvider(MarketDataProvider):
 
     @staticmethod
     def _chunks(start_date: date, end_date: date, max_days: int):
+        if max_days < 1:
+            raise ValueError("max_days must be positive")
         current = start_date
         while current <= end_date:
             chunk_end = min(current + timedelta(days=max_days - 1), end_date)
@@ -104,9 +107,15 @@ class TefasProvider(MarketDataProvider):
         except Exception as exc:
             raise TefasProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
 
-    def _fetch_range(self, fund_code: str | None, start_date: date, end_date: date) -> list[dict[str, Any]]:
+    def _fetch_range(
+        self,
+        fund_code: str | None,
+        start_date: date,
+        end_date: date,
+    ) -> list[dict[str, Any]]:
         if start_date > end_date:
             raise ValueError("start_date cannot be after end_date")
+
         rows: list[dict[str, Any]] = []
         for chunk_start, chunk_end in self._chunks(
             start_date, end_date, self._settings.max_days_per_request
@@ -123,7 +132,7 @@ class TefasProvider(MarketDataProvider):
                 "basTarih": chunk_start.strftime("%Y%m%d"),
                 "bitTarih": chunk_end.strftime("%Y%m%d"),
                 "basSira": 1,
-                "bitSira": 100000,
+                "bitSira": self._settings.max_rows_per_request,
                 "dil": "TR",
                 "sFonTurKod": "",
                 "fonKod": "",
@@ -135,6 +144,21 @@ class TefasProvider(MarketDataProvider):
                 if isinstance(row, dict):
                     rows.append(row)
         return rows
+
+    @staticmethod
+    def _to_symbol(row: dict[str, Any]) -> ProviderSymbol | None:
+        code = str(row.get("fonKodu", "")).strip().upper()
+        if not code:
+            return None
+        return ProviderSymbol(
+            provider="tefas",
+            provider_symbol=code,
+            canonical_symbol=code,
+            name=str(row.get("fonUnvan", row.get("fonAdi", code))).strip(),
+            asset_type="FUND",
+            exchange=None,
+            currency="TRY",
+        )
 
     def list_symbols(self) -> list[ProviderSymbol]:
         """Discover the current YAT fund universe from the latest available day."""
@@ -150,21 +174,11 @@ class TefasProvider(MarketDataProvider):
             result: list[ProviderSymbol] = []
             seen: set[str] = set()
             for row in rows:
-                code = str(row.get("fonKod", "")).strip().upper()
-                if not code or code in seen:
+                symbol = self._to_symbol(row)
+                if symbol is None or symbol.provider_symbol in seen:
                     continue
-                seen.add(code)
-                result.append(
-                    ProviderSymbol(
-                        provider=self.name,
-                        provider_symbol=code,
-                        canonical_symbol=code,
-                        name=str(row.get("fonUnvan", row.get("fonAdi", code))).strip(),
-                        asset_type="FUND",
-                        exchange=None,
-                        currency="TRY",
-                    )
-                )
+                seen.add(symbol.provider_symbol)
+                result.append(symbol)
             if result:
                 return result
 
@@ -179,16 +193,10 @@ class TefasProvider(MarketDataProvider):
         )
         if not rows:
             raise TefasProviderError(f"TEFAS fund not found: {provider_symbol}")
-        row = rows[0]
-        code = str(row.get("fonKod", provider_symbol)).upper()
-        return ProviderSymbol(
-            provider=self.name,
-            provider_symbol=code,
-            canonical_symbol=code,
-            name=str(row.get("fonUnvan", row.get("fonAdi", code))),
-            asset_type="FUND",
-            currency="TRY",
-        )
+        symbol = self._to_symbol(rows[0])
+        if symbol is None:
+            raise TefasProviderError(f"TEFAS fund not found: {provider_symbol}")
+        return symbol
 
     def get_daily_history(
         self,
@@ -209,19 +217,30 @@ class TefasProvider(MarketDataProvider):
     ) -> list[ProviderFundPrice]:
         records: list[ProviderFundPrice] = []
         for row in self._fetch_range(provider_symbol, start_date, end_date):
-            price = row.get("fonFiyat", row.get("fiyat", row.get("fonFiyatTarihcesi")))
+            price = row.get("fiyat")
+            if price in (None, ""):
+                price = row.get("fonFiyat")
             if price in (None, ""):
                 price = row.get("price")
             if price in (None, ""):
                 continue
+
+            pricing_value = row.get("tarih", row.get("date"))
+            if pricing_value in (None, ""):
+                continue
+
+            portfolio_size = row.get("portfoyBuyukluk")
+            if portfolio_size in (None, ""):
+                portfolio_size = row.get("portfoyBuyuklugu")
+
             records.append(
                 ProviderFundPrice(
                     provider_symbol=provider_symbol.strip().upper(),
-                    pricing_date=self._date(row.get("tarih", row.get("date"))),
+                    pricing_date=self._date(pricing_value),
                     unit_price=self._decimal(price),
                     total_net_assets=(
-                        self._decimal(row["portfoyBuyuklugu"])
-                        if row.get("portfoyBuyuklugu") is not None
+                        self._decimal(portfolio_size)
+                        if portfolio_size not in (None, "")
                         else None
                     ),
                     source_timestamp=datetime.now(timezone.utc),
