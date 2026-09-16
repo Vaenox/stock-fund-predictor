@@ -105,7 +105,7 @@ class TefasProvider(MarketDataProvider):
         try:
             return Decimal(str(value).replace(",", "."))
         except Exception as exc:
-            raise TefasProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
+            raise TefASProviderError(f"Invalid TEFAS numeric value: {value!r}") from exc
 
     def _fetch_range(
         self,
@@ -144,6 +144,14 @@ class TefasProvider(MarketDataProvider):
                 if isinstance(row, dict):
                     rows.append(row)
         return rows
+
+    def fetch_fund_history_bulk(
+        self,
+        start_date: date,
+        end_date: date,
+    ) -> list[dict[str, Any]]:
+        """Fetch daily info for the complete YAT universe in bulk."""
+        return self._fetch_range(None, start_date, end_date)
 
     @staticmethod
     def _to_symbol(row: dict[str, Any]) -> ProviderSymbol | None:
