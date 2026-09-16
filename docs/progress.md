@@ -11,6 +11,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 canonical veri modeli: `docs/phase-2-data-model.md`
 - Faz 2 provider adapter tasarımı: `docs/phase-2-provider-adapter.md`
 - Faz 2 historical ingestion tasarımı: `docs/phase-2-historical-ingestion.md`
+- Faz 2 ücretsiz veri sağlayıcı stratejisi: `docs/phase-2-free-data-providers.md`
 - Güncel hedef: **borsapy/TradingView WebSocket ile BIST canlı akışı + TEFAS JSON ile fon günlük güncellemesi**.
 
 ## Tamamlananlar
@@ -76,7 +77,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] `BorsapyProvider` ile BIST company discovery + live quote/candle streaming entegrasyonu oluşturuldu.
 - [x] `TefasProvider` ile fon evreni ve günlük fon verisi entegrasyonu oluşturuldu.
 - [x] `borsapy` bağımlılığı eklendi ve güncel release'e sabitlendi.
-- [x] Veri kaynakları dokümantasyonu ücretsiz provider kararına göre güncellendi.
+- [x] Historical ingestion tasarımı dokümante edildi.
+- [x] Ücretsiz provider stratejisi dokümante edildi.
+- [x] **BIST provider universe sync servisi oluşturuldu.**
+- [x] `assets` + `asset_provider_mappings` için idempotent seed akışı oluşturuldu.
+- [x] BIST universe sync scripti ve testleri oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -89,7 +94,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] Ücretsiz BIST provider'ını seç ve adapter'ını oluştur
 - [x] Ücretsiz TEFAS provider'ını seç ve adapter'ını oluştur
 - [x] Provider dokümantasyonunu güncelle
-- [ ] Tüm BIST sembollerini borsapy ile keşfedip asset/provider mapping'e seed et
+- [x] Tüm BIST sembollerini borsapy ile keşfedip asset/provider mapping sync servisini oluştur
+- [x] BIST universe sync scriptini ve testini oluştur
 - [ ] TradingViewStream toplu subscription manager oluştur
 - [ ] Live quote/candle → canonical live DTO → Redis akışını oluştur
 - [ ] BIST live/intraday TimescaleDB tablosunu oluştur
@@ -106,14 +112,14 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Tüm BIST sembollerini otomatik keşfedip `assets` + `asset_provider_mappings` tablolarına seed et.
-2. TradingViewStream için toplu subscription manager oluştur.
-3. Live quote/candle eventlerini Redis üzerinden yayınla.
-4. Live/intraday market-data TimescaleDB tablosunu ekle.
-5. Tek sembol → tüm BIST evreni smoke/load testlerini çalıştır.
-6. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
-7. Reconnect/staleness/data-quality kontrollerini ekle.
-8. Gerçek veriyle ingestion ve provenance doğrulamasını tamamla.
+1. `TradingViewStream` için tek persistent bağlantıda toplu subscription manager oluştur.
+2. Her quote/candle eventini canonical live DTO'ya dönüştür.
+3. Live eventleri Redis Pub/Sub/Streams üzerinden yayınla.
+4. Live/intraday market-data TimescaleDB tablosunu ve retention politikasını ekle.
+5. Reconnect, heartbeat ve stale quote kontrollerini ekle.
+6. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
+7. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
+8. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
