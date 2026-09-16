@@ -98,6 +98,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Reconnect sonrasında quote ve candle aboneliklerinin yeniden kurulması eklendi.**
 - [x] Watchdog health callback ve son event zamanlarının izlenmesi eklendi.
 - [x] Watchdog davranışı için birim testleri oluşturuldu.
+- [x] **Tek sembollü gerçek TradingView/BIST WebSocket smoke-test scripti oluşturuldu.**
+- [x] Smoke test quote ve isteğe bağlı candle eventini ayrı ayrı doğrulayacak şekilde tasarlandı.
+- [x] Gerçek WebSocket smoke testini GitHub Actions üzerinden manuel çalıştırmak için workflow eklendi.
+- [x] **Tüm BIST evreni için streaming load-test harness'i oluşturuldu.**
+- [x] Load-test, discovered tüm sembolleri tek persistent bağlantıda subscribe etmeyi ve event sayısını gözlemlemeyi destekliyor.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -129,10 +134,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Tek BIST sembolüyle gerçek WebSocket smoke testini çalıştır.
-2. Tüm BIST evreniyle streaming yük testini çalıştır.
-3. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
-4. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
+1. Erişilebilir gerçek ağ/CI ortamında tek BIST sembolüyle smoke testini çalıştır ve sonucu kayda geçir.
+2. Erişilebilir gerçek ağ/CI ortamında tüm BIST evreni load testini çalıştır ve sonuçları ölç.
+3. TEFAS günlük tüm fon evreni ingestion smoke testini çalıştır.
+4. İlk gerçek historical + live kayıtları PostgreSQL/TimescaleDB'ye yazıp provenance doğrulamasını tamamla.
 5. Incremental update pipeline ve genişletilmiş kalite kontrollerini tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
