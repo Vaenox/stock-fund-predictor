@@ -56,15 +56,27 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 
 - Faz 5 contract oluşturuldu: `docs/phase-5-model-tuning-and-signals.md`.
 - Dış test foldlarını tuning dışında tutacak inner walk-forward tasarımı oluşturuldu.
-- `backend/app/ml/tuning.py` ile `TuningConfig`, inner split üretimi ve candidate inner PR-AUC değerlendirmesi eklendi.
-- `backend/tests/ml/test_tuning.py` ile inner gap, chronological split ve candidate evaluation testleri eklendi.
+- `backend/app/ml/tuning.py` ile `TuningConfig`, inner split üretimi, candidate inner PR-AUC değerlendirmesi ve deterministic candidate selection eklendi.
+- Küçük ve reproducible XGBoost candidate grid oluşturuldu (`12` aday; depth/learning-rate/min-child-weight eksenleri).
+- `backend/app/ml/feature_importance.py` ile XGBoost `gain` importance raporlama foundation'ı eklendi.
+- `backend/tests/ml/test_tuning.py` ile inner gap, chronological split ve deterministic selection testleri eklendi.
+- `backend/tests/ml/test_feature_importance.py` ile stock feature coverage ve single-class validation testleri eklendi.
+- `backend/scripts/smoke_test_xgboost_tuning_real.py` ile gerçek BIST/TEFAS inner tuning smoke akışı eklendi.
+
+### Sonraki Test
+
+```text
+PYTHONPATH=. pytest tests/ml/test_tuning.py tests/ml/test_feature_importance.py -q
+```
+
+Bu testler PASS olduktan sonra gerçek tuning smoke çalıştırılacak ve ardından tuned candidate ile outer-fold baseline karşılaştırması eklenecek.
 
 ### Faz 5 Taskları
 
 - [x] Tuning dataset / inner-validation foundation oluştur.
-- [ ] XGBoost hyperparameter search katmanı oluştur.
+- [x] XGBoost hyperparameter candidate search katmanı oluştur.
 - [ ] Baseline vs tuned modelleri aynı outer walk-forward protokolünde karşılaştır.
-- [ ] Feature importance / gain raporlama katmanı oluştur.
+- [x] Feature importance / gain raporlama foundation'ı oluştur.
 - [ ] Model probability calibration ihtiyacını değerlendir.
 - [ ] Risk adjustment contract'ını uygulama/test aşamasına taşı.
 - [ ] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
@@ -73,14 +85,15 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 
 ### Faz 5 Tasarım Kararı
 
-Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold model seçimi sırasında görülmez. Threshold optimizasyonu ve BUY/HOLD/SELL tasarımı tuning sonuçlarından ayrı ele alınır.
+Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold model seçimi sırasında görülmez. Inner objective olarak PR-AUC kullanılır. Threshold optimizasyonu ve BUY/HOLD/SELL tasarımı tuning sonuçlarından ayrı ele alınır.
 
 ## Sıradaki İş
 
-1. Tuning candidate search katmanını ekle.
-2. Aynı outer foldlarda baseline vs tuned comparison üret.
-3. Feature importance raporlamasını ekle.
-4. Ardından calibration ve risk/signal foundation'a geç.
+1. Tuning + feature-importance unit testlerini çalıştır.
+2. Gerçek BIST üzerinde tuning smoke çalıştır.
+3. Ardından TEFAS'ta gerçek tuning smoke çalıştır.
+4. Seçilen candidate ile outer-fold baseline vs tuned comparison üret.
+5. Calibration ve risk/signal foundation'a geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
