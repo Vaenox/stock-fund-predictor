@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=30.0)
     parser.add_argument("--max-symbols", type=int, default=0)
     parser.add_argument(
+        "--require-quote-for-all",
+        action="store_true",
+        help="Fail unless every requested symbol emits at least one canonical quote event",
+    )
+    parser.add_argument(
         "--symbols-file",
         type=Path,
         help="Optional newline-delimited BIST symbol file; bypasses company discovery",
@@ -121,14 +126,18 @@ def main() -> int:
 
     quote_count = 0
     candle_count = 0
+    quoted_symbols: set[str] = set()
+    candle_symbols: set[str] = set()
 
-    def on_quote(_event) -> None:
+    def on_quote(event) -> None:
         nonlocal quote_count
         quote_count += 1
+        quoted_symbols.add(event.provider_symbol)
 
-    def on_candle(_event) -> None:
+    def on_candle(event) -> None:
         nonlocal candle_count
         candle_count += 1
+        candle_symbols.add(event.provider_symbol)
 
     manager = BistStreamManager(
         provider_name=provider.name,
@@ -139,6 +148,7 @@ def main() -> int:
     manager.add_candle_callback(on_candle)
 
     requested = [item.provider_symbol for item in symbols]
+    requested_set = set(requested)
     print(f"Universe source: {universe_source}")
     print(f"Discovered symbols: {len(requested)}")
     if skipped:
@@ -161,9 +171,29 @@ def main() -> int:
         while time.monotonic() < deadline:
             time.sleep(1.0)
 
+        missing_quote_symbols = sorted(requested_set - quoted_symbols)
+        quote_coverage = (len(quoted_symbols) / len(requested_set)) * 100.0
+
         print(f"Quote events observed: {quote_count}")
+        print(f"Unique symbols with quote: {len(quoted_symbols)}/{len(requested_set)} ({quote_coverage:.2f}%)")
         print(f"Candle events observed: {candle_count}")
-        print("LOAD TEST PASSED: subscription layer accepted the full requested universe")
+        if candle_symbols:
+            print(f"Unique symbols with candle: {len(candle_symbols)}/{len(requested_set)}")
+        if missing_quote_symbols:
+            print(f"Symbols without quote events ({len(missing_quote_symbols)}): {', '.join(missing_quote_symbols)}")
+
+        if args.require_quote_for_all and missing_quote_symbols:
+            print(
+                "LOAD TEST FAILED: strict quote coverage requested, but some symbols "
+                "did not emit a canonical quote event",
+                file=sys.stderr,
+            )
+            return 1
+
+        if args.require_quote_for_all:
+            print("LOAD TEST PASSED: every requested symbol emitted at least one canonical quote event")
+        else:
+            print("LOAD TEST PASSED: subscription layer accepted the requested universe; quote coverage reported separately")
         return 0
     except Exception as exc:
         print(f"LOAD TEST FAILED: {exc}", file=sys.stderr)
