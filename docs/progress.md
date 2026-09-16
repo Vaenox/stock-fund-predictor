@@ -102,7 +102,8 @@ Quality
 - [x] ML feature schema/leakage contract oluşturuldu: `docs/ml-feature-contract.md`.
 - [x] ML feature builder unit testleri ve smoke scripti eklendi.
 - [x] Feature smoke scriptinde gerçek stock ve fund akışlarının ikisi de `ML FEATURE SMOKE TEST PASSED` verdi.
-- [x] Feature testlerinde pandas tuple-column selection kaynaklı test hatası tespit edildi ve düzeltildi: `STOCK_FEATURE_COLUMNS` / `FUND_FEATURE_COLUMNS` seçimleri list olarak yapılıyor.
+- [x] Feature testlerinde pandas tuple-column selection kaynaklı test hatası tespit edildi ve düzeltildi.
+- [x] **16.09.2026 — `tests/analysis/test_features.py`: 6/6 test geçti (`6 passed in 0.54s`).**
 
 ### Faz 3 Taskları
 
@@ -111,22 +112,20 @@ Quality
 - [x] Stock indicator setini oluştur ve test et.
 - [x] Fund-compatible indicator setini oluştur ve test et.
 - [x] Look-ahead / warm-up davranışını test et.
+- [ ] **Gerçek BIST verisiyle ayrı indicator smoke testini çalıştır.**
 - [x] **Gerçek BIST verisiyle technical score smoke testini çalıştır — 16.09.2026 THYAO, 312 satır, geçti.**
 - [x] **Gerçek TEFAS verisiyle indicator smoke testini çalıştır — 16.09.2026 AAL, 312 satır, look-ahead check passed.**
 - [x] **Teknik skor (`0–100`) katmanını oluştur.**
 - [x] **Teknik skor için explainability bileşenlerini oluştur.**
 - [x] **ML feature dataset builder implementasyonunu oluştur.**
-- [ ] **ML feature builder unit testlerini son düzeltmeden sonra yeniden çalıştır.**
-- [ ] **Gerçek BIST verisiyle ayrı indicator smoke testini çalıştır.**
+- [x] **ML feature builder unit testlerini çalıştır — 16.09.2026, 6/6 geçti.**
 - [ ] Faz 3 kabul testlerini tamamla.
 
 ## Sıradaki İş
 
-1. Düzeltilen `test_features.py` ile tüm feature testlerini yeniden çalıştır.
-2. Gerçek BIST indicator smoke testini ayrı olarak çalıştır.
-3. Feature dataset çıktısını gerçek BIST ve TEFAS verisiyle tekrar doğrula.
-4. Faz 3 kabul testlerini tamamla.
-5. Ardından Faz 4 — İlk ML Modeli / XGBoost baseline.
+1. Gerçek BIST indicator smoke testini ayrı olarak çalıştır.
+2. Faz 3 kabul testlerini çalıştır ve kalan leakage/warm-up kontrollerini kapat.
+3. Faz 3 kabulü tamamlanınca Faz 4 — İlk ML Modeli / XGBoost baseline.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
