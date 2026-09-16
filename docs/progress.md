@@ -95,6 +95,7 @@ Quality
 - [x] Faz 3 technical-analysis contract oluşturuldu: `docs/phase-3-technical-analysis.md`.
 - [x] Gerçek provider indicator smoke scripti oluşturuldu: `backend/scripts/smoke_test_indicators.py`.
 - [x] **16.09.2026 — Gerçek TEFAS indicator smoke testi başarıyla tamamlandı: AAL için 450 günlük takvim penceresinden 312 fiyat satırı alındı; RSI/EMA/MACD üretildi, `LOOK-AHEAD CHECK: PASSED` ve `TECHNICAL INDICATOR SMOKE TEST PASSED`.**
+- [x] **16.09.2026 — Gerçek BIST indicator smoke testi başarıyla tamamlandı: THYAO için 450 günlük takvim penceresinden 312 satır; RSI 28.391162, EMA20 297.536263, EMA200 304.035495, MACD hist -1.407671, ATR14 7.655108, ADX14 16.231576, volume ratio20 0.733099; `LOOK-AHEAD CHECK: PASSED` ve `TECHNICAL INDICATOR SMOKE TEST PASSED`.**
 - [x] **Technical Score Engine oluşturuldu: `backend/app/analysis/scoring.py`; stock/fund için 0–100 skor, bileşen skorları ve açıklanabilir reason çıktısı üretilebiliyor.**
 - [x] **16.09.2026 — Gerçek TEFAS Technical Score smoke testi başarıyla tamamlandı: AAL, 312 satır; Technical Score 68.7969, Trend 76.0478, Momentum 53.9851, Volatility 83.9188; `TECHNICAL SCORE SMOKE TEST PASSED`.**
 - [x] **16.09.2026 — Gerçek BIST Technical Score smoke testi başarıyla tamamlandı: THYAO, 312 satır; Technical Score 26.5866, Trend 25.7583, Momentum 14.4255, Volatility 44.3873; `TECHNICAL SCORE SMOKE TEST PASSED`.**
@@ -112,20 +113,20 @@ Quality
 - [x] Stock indicator setini oluştur ve test et.
 - [x] Fund-compatible indicator setini oluştur ve test et.
 - [x] Look-ahead / warm-up davranışını test et.
-- [ ] **Gerçek BIST verisiyle ayrı indicator smoke testini çalıştır.**
+- [x] **Gerçek BIST verisiyle indicator smoke testini çalıştır — 16.09.2026 THYAO, 312 satır, geçti.**
 - [x] **Gerçek BIST verisiyle technical score smoke testini çalıştır — 16.09.2026 THYAO, 312 satır, geçti.**
 - [x] **Gerçek TEFAS verisiyle indicator smoke testini çalıştır — 16.09.2026 AAL, 312 satır, look-ahead check passed.**
 - [x] **Teknik skor (`0–100`) katmanını oluştur.**
 - [x] **Teknik skor için explainability bileşenlerini oluştur.**
 - [x] **ML feature dataset builder implementasyonunu oluştur.**
 - [x] **ML feature builder unit testlerini çalıştır — 16.09.2026, 6/6 geçti.**
+- [x] **Gerçek BIST + TEFAS feature smoke akışlarını doğrula — her ikisi de `ML FEATURE SMOKE TEST PASSED`.**
 - [ ] Faz 3 kabul testlerini tamamla.
 
 ## Sıradaki İş
 
-1. Gerçek BIST indicator smoke testini ayrı olarak çalıştır.
-2. Faz 3 kabul testlerini çalıştır ve kalan leakage/warm-up kontrollerini kapat.
-3. Faz 3 kabulü tamamlanınca Faz 4 — İlk ML Modeli / XGBoost baseline.
+1. Faz 3 kabul testlerini çalıştır ve kalan leakage/warm-up kontrollerini kapat.
+2. Faz 3 kabulü tamamlanınca Faz 4 — İlk ML Modeli / XGBoost baseline.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
