@@ -86,6 +86,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] **Quote/candle provider payloadlarını canonical live event DTO'larına dönüştüren katman oluşturuldu.**
 - [x] Streaming subscription işlemleri duplicate çağrılara karşı idempotent hale getirildi.
 - [x] Streaming manager için fake-stream tabanlı birim testleri oluşturuldu.
+- [x] **Canonical quote/candle eventlerini Redis Streams + Pub/Sub üzerinden yayınlayan publisher oluşturuldu.**
+- [x] **BIST streaming manager ile Redis publisher arasında pipeline bridge oluşturuldu.**
+- [x] Redis Python client bağımlılığı eklendi.
+- [x] Redis publisher ve pipeline için birim testleri oluşturuldu.
 
 ### Faz 2 Taskları
 - [x] Veri kaynaklarını araştır ve teknik adayları belirle
@@ -102,7 +106,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - [x] BIST universe sync scriptini ve testini oluştur
 - [x] TradingViewStream toplu subscription manager oluştur
 - [x] Quote/candle → canonical live DTO dönüşümünü oluştur
-- [ ] Live eventleri Redis Pub/Sub/Streams üzerinden yayınla
+- [x] Live eventleri Redis Pub/Sub/Streams üzerinden yayınla
 - [ ] BIST live/intraday TimescaleDB tablosunu oluştur
 - [ ] Reconnect, stale quote ve heartbeat kontrollerini oluştur
 - [ ] Tek BIST sembolüyle gerçek WebSocket smoke test çalıştır
@@ -117,12 +121,11 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Sıradaki İş
 
-1. Live quote/candle eventlerini Redis Pub/Sub/Streams üzerinden yayınla.
-2. Live/intraday market-data TimescaleDB tablosunu ve retention politikasını ekle.
-3. Reconnect, heartbeat ve stale quote kontrollerini ekle.
-4. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
-5. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
-6. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
+1. BIST live/intraday market-data TimescaleDB tablosunu ve retention politikasını ekle.
+2. Reconnect, heartbeat ve stale quote kontrollerini ekle.
+3. Tek sembol ve tüm BIST evreni smoke/load testlerini çalıştır.
+4. TEFAS günlük tüm fon evreni ingestion'ını çalıştır.
+5. Gerçek veriyle historical + live provenance doğrulamasını tamamla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
