@@ -21,7 +21,8 @@ class TefasSettings:
     timeout: float = 30.0
     max_days_per_request: int = 28
     discovery_lookback_days: int = 7
-    max_rows_per_request: int = 10000
+    page_size: int = 10000
+    max_pages: int = 100
 
 
 class TefasProvider(MarketDataProvider):
@@ -115,34 +116,62 @@ class TefasProvider(MarketDataProvider):
     ) -> list[dict[str, Any]]:
         if start_date > end_date:
             raise ValueError("start_date cannot be after end_date")
+        if self._settings.page_size < 1:
+            raise ValueError("page_size must be positive")
+        if self._settings.max_pages < 1:
+            raise ValueError("max_pages must be positive")
 
         rows: list[dict[str, Any]] = []
+        seen_keys: set[tuple[str, str]] = set()
+
         for chunk_start, chunk_end in self._chunks(
             start_date, end_date, self._settings.max_days_per_request
         ):
-            payload = {
-                "fonTipi": self._settings.fund_kind,
-                "fonKodu": fund_code.strip().upper() if fund_code else None,
-                "aramaMetni": None,
-                "fonTurKod": None,
-                "fonGrubu": None,
-                "sfonTurKod": None,
-                "fonTurAciklama": None,
-                "kurucuKod": None,
-                "basTarih": chunk_start.strftime("%Y%m%d"),
-                "bitTarih": chunk_end.strftime("%Y%m%d"),
-                "basSira": 1,
-                "bitSira": self._settings.max_rows_per_request,
-                "dil": "TR",
-                "sFonTurKod": "",
-                "fonKod": "",
-                "fonGrup": "",
-                "fonUnvanTip": "",
-            }
-            data = self._post(self.info_endpoint, payload)
-            for row in data.get("resultList") or []:
-                if isinstance(row, dict):
-                    rows.append(row)
+            page_start = 1
+            for _page in range(self._settings.max_pages):
+                payload = {
+                    "fonTipi": self._settings.fund_kind,
+                    "fonKodu": fund_code.strip().upper() if fund_code else None,
+                    "aramaMetni": None,
+                    "fonTurKod": None,
+                    "fonGrubu": None,
+                    "sfonTurKod": None,
+                    "fonTurAciklama": None,
+                    "kurucuKod": None,
+                    "basTarih": chunk_start.strftime("%Y%m%d"),
+                    "bitTarih": chunk_end.strftime("%Y%m%d"),
+                    "basSira": page_start,
+                    "bitSira": page_start + self._settings.page_size - 1,
+                    "dil": "TR",
+                    "sFonTurKod": "",
+                    "fonKod": "",
+                    "fonGrup": "",
+                    "fonUnvanTip": "",
+                }
+                data = self._post(self.info_endpoint, payload)
+                page_rows = [
+                    row for row in (data.get("resultList") or []) if isinstance(row, dict)
+                ]
+                if not page_rows:
+                    break
+
+                for row in page_rows:
+                    code = str(row.get("fonKodu", "")).strip().upper()
+                    row_date = str(row.get("tarih", row.get("date", ""))).strip()
+                    key = (row_date, code)
+                    if code and row_date and key not in seen_keys:
+                        seen_keys.add(key)
+                        rows.append(row)
+
+                if len(page_rows) < self._settings.page_size:
+                    break
+                page_start += self._settings.page_size
+            else:
+                raise TefasProviderError(
+                    "TEFAS pagination exceeded max_pages="
+                    f"{self._settings.max_pages} for {chunk_start}..{chunk_end}"
+                )
+
         return rows
 
     def fetch_fund_history_bulk(
@@ -150,7 +179,7 @@ class TefasProvider(MarketDataProvider):
         start_date: date,
         end_date: date,
     ) -> list[dict[str, Any]]:
-        """Fetch daily info for the complete YAT universe in bulk."""
+        """Fetch daily info for the complete YAT universe in paginated bulk requests."""
         return self._fetch_range(None, start_date, end_date)
 
     @staticmethod
