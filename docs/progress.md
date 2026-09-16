@@ -10,6 +10,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Faz 2 dokümanları: `docs/phase-2-data-sources.md`, `docs/phase-2-data-model.md`, `docs/phase-2-provider-adapter.md`, `docs/phase-2-historical-ingestion.md`, `docs/phase-2-free-data-providers.md`
 - Faz 2 canonical market data contract: `docs/data-contract.md`
 - Faz 3 teknik analiz contract: `docs/phase-3-technical-analysis.md`
+- Faz 3 ML feature contract: `docs/ml-feature-contract.md`
 
 ## Faz 0 — Proje Başlangıcı ve Roadmap
 
@@ -96,6 +97,9 @@ Quality
 - [x] **16.09.2026 — Gerçek TEFAS indicator smoke testi başarıyla tamamlandı: AAL için 450 günlük takvim penceresinden 312 fiyat satırı alındı; RSI/EMA/MACD üretildi, `LOOK-AHEAD CHECK: PASSED` ve `TECHNICAL INDICATOR SMOKE TEST PASSED`.**
 - [x] **Technical Score Engine oluşturuldu: `backend/app/analysis/scoring.py`; stock/fund için 0–100 skor, bileşen skorları ve açıklanabilir reason çıktısı üretilebiliyor.**
 - [x] **16.09.2026 — Gerçek TEFAS Technical Score smoke testi başarıyla tamamlandı: AAL, 312 satır; Technical Score 68.7969, Trend 76.0478, Momentum 53.9851, Volatility 83.9188; `TECHNICAL SCORE SMOKE TEST PASSED`.**
+- [x] ML feature dataset builder implementasyonu oluşturuldu: `backend/app/analysis/features.py`.
+- [x] ML feature schema/leakage contract oluşturuldu: `docs/ml-feature-contract.md`.
+- [x] ML feature builder unit testleri ve smoke scripti eklendi.
 
 ### Faz 3 Taskları
 
@@ -108,14 +112,15 @@ Quality
 - [x] **Gerçek TEFAS verisiyle indicator smoke testini çalıştır — 16.09.2026 AAL, 312 satır, look-ahead check passed.**
 - [x] **Teknik skor (`0–100`) katmanını oluştur.**
 - [x] **Teknik skor için explainability bileşenlerini oluştur.**
-- [ ] ML feature dataset builder oluştur.
+- [ ] **Gerçek BIST verisiyle technical score smoke testini çalıştır.**
+- [ ] **ML feature dataset builder implementasyonunu test/smoke ile doğrula.**
 - [ ] Faz 3 kabul testlerini tamamla.
 
 ## Sıradaki İş
 
 1. Gerçek BIST indicator + technical score smoke testlerini çalıştır.
-2. Indicator → ML feature dataset builder katmanını oluştur.
-3. Feature schema ve leakage/warm-up kurallarını test et.
+2. ML feature builder unit + smoke testlerini çalıştır.
+3. Feature dataset çıktısını gerçek BIST ve TEFAS verisiyle doğrula.
 4. Faz 3 kabul testlerini tamamla.
 5. Ardından Faz 4 — İlk ML Modeli / XGBoost baseline.
 
