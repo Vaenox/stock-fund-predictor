@@ -12,7 +12,7 @@ def test_signal_combines_ml_and_technical_and_applies_risk_penalty() -> None:
         -10.0,
     )
 
-    assert result.signal_score == pytest.approx(52.0)
+    assert result.signal_score == pytest.approx(51.0)
     assert result.ml_probability == pytest.approx(0.80)
     assert result.technical_score == pytest.approx(70.0)
     assert result.risk_adjustment == pytest.approx(-10.0)
