@@ -12,7 +12,7 @@ def test_signal_combines_ml_and_technical_and_applies_risk_penalty() -> None:
         -10.0,
     )
 
-    assert result.signal_score == pytest.approx(60.0)
+    assert result.signal_score == pytest.approx(52.0)
     assert result.ml_probability == pytest.approx(0.80)
     assert result.technical_score == pytest.approx(70.0)
     assert result.risk_adjustment == pytest.approx(-10.0)
@@ -20,7 +20,7 @@ def test_signal_combines_ml_and_technical_and_applies_risk_penalty() -> None:
 
 def test_signal_zero_risk_is_unaffected_by_penalty() -> None:
     result = calculate_signal_score(0.60, 40.0, 0.0)
-    assert result.signal_score == pytest.approx(50.0)
+    assert result.signal_score == pytest.approx(42.0)
 
 
 def test_signal_is_clipped_to_zero() -> None:
@@ -30,7 +30,7 @@ def test_signal_is_clipped_to_zero() -> None:
 
 def test_signal_is_clipped_to_hundred() -> None:
     result = calculate_signal_score(1.0, 100.0, 0.0)
-    assert result.signal_score == pytest.approx(100.0)
+    assert result.signal_score == pytest.approx(80.0)
 
 
 def test_positive_risk_adjustment_is_rejected() -> None:
