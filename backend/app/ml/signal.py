@@ -45,7 +45,14 @@ def calculate_signal_score(
 
     ``ml_probability`` is converted to a 0-100 contribution. ``technical_score``
     is already 0-100. ``risk_adjustment`` is a negative penalty, so it is added
-    directly before the final score is clipped to 0-100.
+    after the weighted ML + technical + risk baseline score and then clipped.
+
+    ``risk_weight`` is retained as the explicit maximum influence allocation of
+    the risk component. Because the current risk adjustment is already expressed
+    as a bounded negative score (0 .. -max_penalty), multiplying it by
+    ``risk_weight`` would double-discount the configured risk penalty. Therefore
+    the risk weight is validated as part of the configuration contract but the
+    realized penalty is applied directly.
     """
     config = config or SignalScoreConfig()
     if not 0.0 <= ml_probability <= 1.0:
@@ -54,11 +61,11 @@ def calculate_signal_score(
     if risk_adjustment > 0.0:
         raise ValueError("risk_adjustment must be non-positive")
 
-    pre_risk_score = (
+    base_score = (
         (ml_probability * 100.0 * config.ml_weight)
         + (technical_score * config.technical_weight)
-    ) / (config.ml_weight + config.technical_weight)
-    signal_score = _clip(pre_risk_score + risk_adjustment)
+    )
+    signal_score = _clip(base_score + risk_adjustment)
 
     reasons: list[str] = []
     reasons.append(f"ML olasılığı: {ml_probability * 100.0:.1f}")
