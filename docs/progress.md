@@ -40,7 +40,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - Gerçek BIST smoke coverage: `THYAO`, `ASELS`, `TUPRS`, `BIMAS` geçti.
 - Gerçek TEFAS smoke coverage: `AFA`, `AFT`, `AFS` geçti.
 - `AAL` one-class training problemi doğrulandı ve validation kuralı gevşetilmedi.
-- TEFAS smoke `chunk-delay` varsayılanı `0s` yapıldı.
+- TEFAS provider 429 için retry/backoff davranışı eklendi.
 
 ### Faz 4 Acceptance
 
@@ -68,6 +68,10 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - `backend/app/ml/comparison.py` ile aynı outer walk-forward foldlarında baseline vs tuned karşılaştırma katmanı eklendi.
 - `backend/tests/ml/test_comparison.py` ile outer-fold aynılaştırma, gap ve deterministic tuning kontrolleri eklendi.
 - Gerçek THYAO baseline vs tuned outer comparison sonucu `docs/phase-5-tuning-evaluation.md` içine kaydedildi.
+- AFA gerçek DB verisiyle baseline vs tuned outer comparison çalıştırıldı ve fold sonuçları `docs/phase-5-tuning-evaluation.md` içine kaydedildi.
+- AFA üzerinde kontrollü calibration değerlendirmesi yapıldı; raw probability ortalama Brier/LogLoss/ECE açısından sigmoid ve isotonic alternatiflerinden daha iyi çıktı. Calibration şu aşamada default pipeline'a eklenmedi.
+- `backend/app/ml/risk_adjustment.py` ile deterministik risk foundation eklendi: volatilite, trend zayıflığı, stock likidite/volume ve veri quality/stale.
+- `backend/tests/ml/test_risk_adjustment.py` ile risk ölçeği, maksimum penalty, stale etkisi, fund/stock ayrımı ve config validation testleri eklendi.
 
 ### Faz 5 THYAO Outer Comparison
 
@@ -82,23 +86,28 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - [x] XGBoost hyperparameter candidate search katmanı oluştur.
 - [x] Baseline vs tuned modelleri aynı outer walk-forward protokolünde karşılaştır.
 - [x] Feature importance / gain raporlama foundation'ı oluştur.
-- [ ] Model probability calibration ihtiyacını değerlendir.
-- [ ] Risk adjustment contract'ını uygulama/test aşamasına taşı.
+- [x] Model probability calibration ihtiyacını değerlendir.
+- [x] Risk adjustment foundation'ını uygula ve unit testlerini ekle.
+- [ ] Risk adjustment unit testlerini Codespace üzerinde çalıştır ve PASS doğrula.
+- [ ] AFA ve THYAO gerçek veri üzerinde risk smoke doğrulaması yap.
 - [ ] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
 - [ ] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
 - [ ] Faz 5 acceptance testlerini oluştur ve çalıştır.
 
-### Faz 5 Tasarım Kararı
+### Faz 5 Tasarım Kararları
 
 Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold model seçimi sırasında görülmez. Inner objective olarak PR-AUC kullanılır. Threshold optimizasyonu ve BUY/HOLD/SELL tasarımı tuning sonuçlarından ayrı ele alınır.
 
+Calibration şu aşamada zorunlu değildir; AFA kontrollü deneyinde raw probability daha iyi ortalama calibration metrikleri üretmiştir. Daha geniş veri kapsamı ile yeniden değerlendirilecektir.
+
+Risk adjustment ML probability'den ayrıdır. Risk `0–100`, adjustment `0..-20` varsayılan aralığındadır. Stock için volatilite/trend/liquidity/data quality; fund için volatilite/trend/data quality kullanılır. Risk katmanı bu aşamada tek başına BUY/HOLD/SELL üretmez.
+
 ## Sıradaki İş
 
-1. Baseline vs tuned comparison testinin PASS olduğunu doğrula.
-2. Feature importance değerlerini gerçek THYAO üzerinde üret ve kaydet.
-3. Aynı comparison'ı en az bir TEFAS fonunda çalıştır.
-4. Probability calibration ihtiyacını değerlendirmeye başla.
-5. Ardından risk adjustment ve signal foundation'a geç.
+1. `tests/ml/test_risk_adjustment.py` unit testlerini çalıştır.
+2. AFA ve THYAO gerçek veri üzerinde risk bileşenlerini smoke test et.
+3. Sonra `ML Probability + Technical Score + Risk Adjustment` için deterministic signal foundation oluştur.
+4. En son BUY/HOLD/SELL eşiklerini ve Faz 5 acceptance testlerini ele al.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
