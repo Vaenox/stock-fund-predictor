@@ -114,13 +114,6 @@ def _trend_weakness_risk(row: pd.Series) -> float:
     return float(np.mean(checks) * 100.0)
 
 
-def _data_quality_risk(*, quality_ok: bool, stale_days: int) -> float:
-    if stale_days < 0:
-        raise ValueError("stale_days cannot be negative")
-    # The configured stale thresholds are applied by the caller-aware helper.
-    return 100.0 if not quality_ok else float(stale_days)
-
-
 def _stale_risk(stale_days: int, config: RiskAdjustmentConfig) -> float:
     if stale_days < 0:
         raise ValueError("stale_days cannot be negative")
@@ -132,11 +125,11 @@ def _stale_risk(stale_days: int, config: RiskAdjustmentConfig) -> float:
     return _clip((stale_days - config.stale_warning_days) / span * 100.0)
 
 
-def _liquidity_risk(row: pd.Series) -> float:
+def _liquidity_risk(row: pd.Series, config: RiskAdjustmentConfig) -> float:
     return _inverse_linear_risk(
         _value(row, "volume_ratio_20"),
-        danger_value=0.50,
-        safe_value=1.00,
+        danger_value=config.low_volume_ratio,
+        safe_value=config.healthy_volume_ratio,
     )
 
 
@@ -206,7 +199,7 @@ def calculate_stock_risk_adjustment(
         danger_value=config.high_volatility,
     )
     trend_weakness_risk = _trend_weakness_risk(row)
-    liquidity_risk = _liquidity_risk(row)
+    liquidity_risk = _liquidity_risk(row, config)
     data_quality_risk = max(
         100.0 if not quality_ok else 0.0,
         _stale_risk(stale_days, config),
@@ -228,12 +221,16 @@ def calculate_fund_risk_adjustment(
     config: RiskAdjustmentConfig | None = None,
 ) -> RiskAdjustmentResult:
     """Calculate a fund deterministic risk score without stock volume inputs."""
-    config = config or RiskAdjustmentConfig(
-        volatility_weight=0.40,
-        trend_weakness_weight=0.35,
-        liquidity_weight=0.0,
-        data_quality_weight=0.25,
-    )
+    if config is None:
+        config = RiskAdjustmentConfig(
+            volatility_weight=0.40,
+            trend_weakness_weight=0.35,
+            liquidity_weight=0.0,
+            data_quality_weight=0.25,
+        )
+    elif config.liquidity_weight != 0:
+        raise ValueError("fund risk config must set liquidity_weight to 0")
+
     volatility_risk = _linear_risk(
         _value(row, "volatility_20"),
         safe_value=config.low_volatility,
