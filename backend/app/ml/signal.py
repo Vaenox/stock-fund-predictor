@@ -43,16 +43,9 @@ def calculate_signal_score(
 ) -> SignalScoreResult:
     """Combine model probability, technical score and risk adjustment deterministically.
 
-    ``ml_probability`` is converted to a 0-100 contribution. ``technical_score``
-    is already 0-100. ``risk_adjustment`` is a negative penalty, so it is added
-    after the weighted ML + technical + risk baseline score and then clipped.
-
-    ``risk_weight`` is retained as the explicit maximum influence allocation of
-    the risk component. Because the current risk adjustment is already expressed
-    as a bounded negative score (0 .. -max_penalty), multiplying it by
-    ``risk_weight`` would double-discount the configured risk penalty. Therefore
-    the risk weight is validated as part of the configuration contract but the
-    realized penalty is applied directly.
+    ML probability and technical score contribute their configured weighted values
+    directly to the 0-100 score. Risk adjustment is already a bounded negative
+    penalty produced by the separate risk layer, so it is added directly once.
     """
     config = config or SignalScoreConfig()
     if not 0.0 <= ml_probability <= 1.0:
