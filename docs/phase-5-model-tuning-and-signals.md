@@ -40,17 +40,40 @@ Aynı outer walk-forward fold'larında:
 
 Threshold optimizasyonundan önce olasılıkların calibration davranışı ayrıca değerlendirilecektir. Calibration, dış test verisini kullanarak tuning yapılacak şekilde tasarlanamaz.
 
+AFA üzerinde yapılan kontrollü 3-fold deneyde raw XGBoost probability; ortalama Brier (`0.1931`), LogLoss (`0.7633`) ve ECE (`0.1956`) açısından sigmoid/Platt ve isotonic alternatiflerinden daha iyi sonuç vermiştir. Sigmoid yalnızca bir outer fold'da iyileşmiş, isotonic küçük calibration setinde oynak davranmıştır. Bu nedenle calibration şu aşamada default pipeline'a zorunlu olarak eklenmemiştir; daha geniş symbol/dataset coverage sonrası yeniden değerlendirilecektir.
+
 ## Risk Adjustment
 
 Risk katmanı ML modelinden ayrı tutulur.
 
-Risk adjustment için ilk girdiler:
+İlk girdiler:
 - volatilite,
 - trend zayıflığı,
 - likidite/volume davranışı (stock için),
 - veri kalitesi / stale data durumu.
 
-Risk adjustment deterministik ve açıklanabilir olmalıdır.
+Uygulanan deterministik foundation `backend/app/ml/risk_adjustment.py` içindedir.
+
+### Risk ölçeği
+
+- Ara risk bileşenleri `0–100` aralığındadır.
+- `0` daha düşük risk, `100` daha yüksek risk anlamına gelir.
+- Birleşik `risk_score` yine `0–100` aralığındadır.
+- `adjustment`, sinyal katmanında kullanılmak üzere `0` ile `-max_penalty` arasında negatif bir ceza üretir. Varsayılan `max_penalty = 20`.
+- Eksik bir risk girdisi otomatik olarak aşırı risk kabul edilmez; ilgili bileşen nötr `50` kabul edilir. Veri kalite/stale bilgisi ayrıca cezalandırılabilir.
+
+### Bileşenler
+
+- **Volatilite:** annualized `volatility_20`; `%20` ve `%50` aralığında lineer risk (`0–100`).
+- **Trend zayıflığı:** fiyatın `EMA20` altında olması, `EMA20 < EMA50` ve `EMA50 < EMA200` kontrollerinin mevcut olanlar üzerinden ortalaması.
+- **Likidite:** stock için `volume_ratio_20`; `0.50` veya altı yüksek, `1.00` veya üstü düşük likidite riski kabul edilir ve arası lineerdir.
+- **Veri kalitesi/stale:** quality failure yüksek risk üretir. `stale_days` için varsayılan uyarı eşiği `1`, maksimum risk eşiği `3` gündür. `stale_days` çağıran katman tarafından bilinen piyasa takvimine göre hesaplanmalıdır.
+
+Fonlarda stock-specific volume/liquidity bileşeni kullanılmaz; ağırlıklar volatilite `%40`, trend zayıflığı `%35`, veri kalite/stale `%25` olacak şekilde normalleştirilir.
+
+Varsayılan stock ağırlıkları: volatilite `%35`, trend zayıflığı `%30`, likidite `%15`, veri kalite/stale `%20`.
+
+Risk adjustment deterministik, açıklanabilir ve ML probability'den bağımsızdır. Bu aşamada risk katmanı tek başına BUY/HOLD/SELL üretmez.
 
 ## Signal Foundation
 
@@ -81,3 +104,4 @@ Signal eşikleri henüz performans sonucu görülmeden sabitlenmiş “kazanan�
 - Baseline vs tuned evaluation aynı outer test foldları üzerinde karşılaştırılabilmelidir.
 - Feature importance stock/fund için ayrı üretilebilmelidir.
 - Signal-risk birleşimi deterministik unit testlerle doğrulanmalıdır.
+- Risk adjustment stock/fund ayrımını korumalı ve ML probability'yi değiştirmemelidir.
