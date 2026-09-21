@@ -66,3 +66,62 @@ def calculate_scaled_signal_base(
         + technical_scaled * config.technical_weight
     ) / denominator
     return ml_scaled, technical_scaled, float(np.clip(base, 0.0, 100.0))
+
+
+
+def derive_signal_scale_config(
+    ml_probabilities: np.ndarray,
+    technical_scores: np.ndarray,
+    *,
+    lower_quantile: float = 0.05,
+    upper_quantile: float = 0.95,
+    ml_weight: float = 0.50,
+    technical_weight: float = 0.30,
+) -> SignalScaleConfig:
+    """Derive normalization bounds from validation-period signal components.
+
+    The supplied arrays must come from data that is chronologically prior to the
+    data on which the returned configuration will be applied. This function only
+    derives descriptive quantile bounds; it does not optimize thresholds against
+    the target.
+    """
+    if not 0.0 <= lower_quantile < upper_quantile <= 1.0:
+        raise ValueError("quantile bounds must satisfy 0 <= lower < upper <= 1")
+
+    ml_values = np.asarray(ml_probabilities, dtype=float)
+    technical_values = np.asarray(technical_scores, dtype=float)
+    if ml_values.ndim != 1 or technical_values.ndim != 1:
+        raise ValueError("signal component arrays must be one-dimensional")
+    if ml_values.size == 0 or technical_values.size == 0:
+        raise ValueError("signal component arrays cannot be empty")
+    if ml_values.size != technical_values.size:
+        raise ValueError("signal component arrays must have equal length")
+    if not np.isfinite(ml_values).all():
+        raise ValueError("ml probabilities must be finite")
+    if not np.isfinite(technical_values).all():
+        raise ValueError("technical scores must be finite")
+    if ((ml_values < 0.0) | (ml_values > 1.0)).any():
+        raise ValueError("ml probabilities must be between 0 and 1")
+    if ((technical_values < 0.0) | (technical_values > 100.0)).any():
+        raise ValueError("technical scores must be between 0 and 100")
+
+    ml_floor, ml_ceiling = np.quantile(
+        ml_values, [lower_quantile, upper_quantile]
+    )
+    technical_floor, technical_ceiling = np.quantile(
+        technical_values, [lower_quantile, upper_quantile]
+    )
+
+    if ml_floor >= ml_ceiling:
+        raise ValueError("derived ml probability bounds are not distinct")
+    if technical_floor >= technical_ceiling:
+        raise ValueError("derived technical bounds are not distinct")
+
+    return SignalScaleConfig(
+        ml_floor=float(ml_floor),
+        ml_ceiling=float(ml_ceiling),
+        technical_floor=float(technical_floor),
+        technical_ceiling=float(technical_ceiling),
+        ml_weight=ml_weight,
+        technical_weight=technical_weight,
+    )
