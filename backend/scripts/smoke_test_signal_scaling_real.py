@@ -19,6 +19,7 @@ from app.ml.signal_scaling import (
     calculate_percentile_scaled_signal_base,
     calculate_scaled_signal_base,
     derive_signal_scale_config,
+    evaluate_signal_scaling_stability,
 )
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, build_inner_splits, select_best_candidate
@@ -271,6 +272,17 @@ def _run(
 
     oos = pd.concat(rows, ignore_index=True)
 
+    quantile_folds = tuple(
+        group["scaled_signal_score"].to_numpy(dtype=float)
+        for _, group in oos.groupby("fold", sort=True)
+    )
+    percentile_folds = tuple(
+        group["percentile_signal_score"].to_numpy(dtype=float)
+        for _, group in oos.groupby("fold", sort=True)
+    )
+    quantile_stability = evaluate_signal_scaling_stability(quantile_folds)
+    percentile_stability = evaluate_signal_scaling_stability(percentile_folds)
+
     print(f"Asset type: {asset_type}")
     print(f"Symbol: {symbol.strip().upper()}")
     print(f"Raw rows: {len(raw)}")
@@ -283,6 +295,20 @@ def _run(
     print(f"Quantile technical distribution:     {_describe(oos['technical_scaled'])}")
     print(f"Percentile technical distribution:   {_describe(oos['percentile_technical'])}")
     print(f"Overall target rate: {oos['target'].mean():.3f}")
+    print(
+        "Quantile stability: "
+        f"median_spread={quantile_stability.median_spread:.3f}, "
+        f"median_std={quantile_stability.median_std:.3f}, "
+        f"iqr_spread={quantile_stability.iqr_spread:.3f}, "
+        f"saturation={quantile_stability.saturation_rate:.1%}"
+    )
+    print(
+        "Percentile stability: "
+        f"median_spread={percentile_stability.median_spread:.3f}, "
+        f"median_std={percentile_stability.median_std:.3f}, "
+        f"iqr_spread={percentile_stability.iqr_spread:.3f}, "
+        f"saturation={percentile_stability.saturation_rate:.1%}"
+    )
 
     print("Threshold coverage — quantile scaling (descriptive; no winner selected):")
     for config in CANDIDATES:
