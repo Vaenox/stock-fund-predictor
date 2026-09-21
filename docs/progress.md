@@ -77,8 +77,9 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - `backend/app/ml/signal.py` ile ML probability + technical score + risk adjustment birleşim foundation'ı eklendi.
 - `backend/app/ml/signal_scaling.py` ile ML probability ve technical score için configurable normalization foundation'ı eklendi; default bounds geçici validation değerleridir.
 - `derive_signal_scale_config` ile outer test dışındaki kronolojik OOF component dağılımlarından quantile tabanlı scaling config türetme eklendi; üretim bound optimizasyonu yapılmaz.
+- `calculate_percentile_scaled_signal_base` ile target bağımsız empirical-percentile normalization eklendi; referans dağılımı yalnızca geçmiş OOF componentlerinden alınır.
 - `backend/tests/ml/test_signal.py` oluşturuldu ve **7/7 geçti**.
-- Tüm ML test suite güncel durumda **56/56 geçti**.
+- Tüm ML test suite güncel durumda **59/59 geçti**.
 - `backend/scripts/smoke_test_signal_real.py` ile gerçek veri üzerinde tuning + inference + technical score + risk + signal zinciri oluşturuldu.
 - `backend/tests/ml/test_phase5_acceptance.py` ile Phase 5 risk/signal acceptance testleri oluşturuldu.
 - `backend/app/ml/signal_rules.py` ile parametrik ve deterministik BUY/HOLD/SELL sınıflandırma kuralları eklendi; varsayılan eşikler validation sonucu değil, konfigürasyon değeridir.
@@ -133,7 +134,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
 - [x] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
 - [x] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
-- [ ] Fold-stability/robust normalization yaklaşımını değerlendir.
+- [x] Fold-stability/robust normalization yaklaşımını değerlendir; empirical-percentile scaling comparison smoke akışı eklendi.
 - [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
@@ -142,7 +143,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 1. `tests/ml/test_signal_scaling.py` ve `tests/ml` suite sonuçlarını doğrula.
 2. `scripts/smoke_test_signal_scaling_real.py` ile leakage-safe scaling validation'ı THYAO ve AFA üzerinde çalıştır.
 3. Raw vs scaled signal dağılımlarını ve threshold coverage'ı karşılaştır.
-4. Scaling sonuçlarına göre `signal.py` entegrasyonu için validation kararı ver; bound değerlerini otomatik winner olarak sabitleme.
+4. Quantile vs empirical-percentile scaling gerçek OOS sonuçlarını karşılaştır; henüz production yöntemi seçme.
 5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
 
 ## Yeni Sohbette Devam Etme Kuralı
