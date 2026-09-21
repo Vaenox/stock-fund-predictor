@@ -125,3 +125,68 @@ def derive_signal_scale_config(
         ml_weight=ml_weight,
         technical_weight=technical_weight,
     )
+
+
+
+def _empirical_percentile(value: float, reference: np.ndarray) -> float:
+    """Map a value to its empirical percentile in a historical reference sample."""
+    ordered = np.sort(reference)
+    n = ordered.size
+    if n < 2:
+        raise ValueError("reference sample must contain at least two observations")
+
+    left = np.searchsorted(ordered, value, side="left")
+    right = np.searchsorted(ordered, value, side="right")
+    average_rank = ((left + right) / 2.0) - 1.0
+    return float(np.clip(average_rank / (n - 1.0) * 100.0, 0.0, 100.0))
+
+
+def calculate_percentile_scaled_signal_base(
+    ml_probability: float,
+    technical_score: float,
+    reference_ml_probabilities: np.ndarray,
+    reference_technical_scores: np.ndarray,
+    *,
+    ml_weight: float = 0.50,
+    technical_weight: float = 0.30,
+) -> tuple[float, float, float]:
+    """Scale signal components by their empirical percentile in prior OOF data.
+
+    Reference samples must be chronologically prior to the observation being
+    scored. No target or forward-return information is used.
+    """
+    if not 0.0 <= ml_probability <= 1.0:
+        raise ValueError("ml_probability must be between 0 and 1")
+    if not np.isfinite(technical_score):
+        raise ValueError("technical_score must be finite")
+    if ml_weight < 0 or technical_weight < 0:
+        raise ValueError("score weights cannot be negative")
+    denominator = ml_weight + technical_weight
+    if denominator <= 0:
+        raise ValueError("at least one score weight must be positive")
+
+    ml_reference = np.asarray(reference_ml_probabilities, dtype=float)
+    technical_reference = np.asarray(reference_technical_scores, dtype=float)
+    if ml_reference.ndim != 1 or technical_reference.ndim != 1:
+        raise ValueError("reference arrays must be one-dimensional")
+    if ml_reference.size < 2 or technical_reference.size < 2:
+        raise ValueError("reference samples must contain at least two observations")
+    if not np.isfinite(ml_reference).all():
+        raise ValueError("ml reference probabilities must be finite")
+    if not np.isfinite(technical_reference).all():
+        raise ValueError("technical reference scores must be finite")
+    if ((ml_reference < 0.0) | (ml_reference > 1.0)).any():
+        raise ValueError("ml reference probabilities must be between 0 and 1")
+    if ((technical_reference < 0.0) | (technical_reference > 100.0)).any():
+        raise ValueError("technical reference scores must be between 0 and 100")
+
+    ml_scaled = _empirical_percentile(float(ml_probability), ml_reference)
+    technical_scaled = _empirical_percentile(
+        float(technical_score),
+        technical_reference,
+    )
+    base = (
+        ml_scaled * ml_weight
+        + technical_scaled * technical_weight
+    ) / denominator
+    return ml_scaled, technical_scaled, float(np.clip(base, 0.0, 100.0))
