@@ -15,7 +15,11 @@ from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.signal_rules import SignalRuleConfig
-from app.ml.signal_validation import evaluate_signal_thresholds
+from app.ml.signal_validation import (
+    evaluate_signal_score_association,
+    evaluate_signal_score_bins,
+    evaluate_signal_thresholds,
+)
 from app.ml.signal_scaling import (
     calculate_percentile_scaled_signal_base,
     calculate_scaled_signal_base,
@@ -336,6 +340,31 @@ def _run(
         f"iqr_spread={percentile_stability.iqr_spread:.3f}, "
         f"saturation={percentile_stability.saturation_rate:.1%}"
     )
+
+    for column, label in (
+        ("scaled_signal_score", "quantile scaling"),
+        ("percentile_signal_score", "percentile scaling"),
+    ):
+        diagnostic_frame = oos[
+            [column, "target", "forward_return_5d"]
+        ].rename(columns={column: "signal_score"})
+        target_corr, return_corr = evaluate_signal_score_association(
+            diagnostic_frame
+        )
+        print(
+            f"Score association — {label}: "
+            f"spearman_target={target_corr:.4f}, "
+            f"spearman_forward_return={return_corr:.4f}"
+        )
+        print(f"Score bins — {label} (ascending score):")
+        for item in evaluate_signal_score_bins(diagnostic_frame, n_bins=5):
+            print(
+                f"  Bin {item.bin_index}: "
+                f"score={item.lower_score:.2f}..{item.upper_score:.2f}, "
+                f"n={item.count}, mean={item.mean_score:.2f}, "
+                f"target={item.target_rate:.3f}, "
+                f"fwd={item.mean_forward_return:.4f}"
+            )
 
     _print_threshold_validation(oos, "scaled_signal_score", "quantile scaling")
     _print_threshold_validation(oos, "percentile_signal_score", "percentile scaling")
