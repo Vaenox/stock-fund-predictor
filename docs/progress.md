@@ -92,6 +92,24 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - Fold 3: baseline ROC `0.8947`, PR `0.3333`; tuned ROC `0.9474`, PR `0.5000`; accuracy ikisinde de `0.9500`.
 - Bu tek sembol sonucunda tuning iki ölçülebilir outer fold'da ROC-AUC ve PR-AUC'yi yükseltti; ancak sample size sınırlı ve Fold 2 tek sınıflı olduğu için genellenebilirlik sonucu çıkarılmadı.
 
+### Faz 5 Signal Scaling Validation — THYAO / AFA
+
+Gerçek 3-fold OOS scaling smoke testi başarıyla geçti. Quantile bound'lar her outer fold için yalnızca outer training içindeki inner OOF observations üzerinden türetildi; outer test observations scaling bound seçiminde kullanılmadı.
+
+**THYAO — 120 OOS**
+- Raw signal: median 11.607, mean 12.292, max 33.248.
+- Scaled signal: median 19.955, mean 20.494, max 63.360.
+- Scaled threshold coverage: 30/70 -> BUY 0%, HOLD 27.5%, SELL 72.5%; 40/60 -> BUY 1.7%, HOLD 5.8%, SELL 92.5%.
+- Fold-specific scaling değişiyor; Fold 2 ve Fold 3 farklı probability rejimleri gösteriyor.
+
+**AFA — 120 OOS**
+- Raw signal: median 24.330, mean 24.392, max 48.309.
+- Scaled signal: median 39.030, mean 45.977, max 100.000.
+- Scaled threshold coverage: 30/70 -> BUY 27.5%, HOLD 32.5%, SELL 40.0%; 40/60 -> BUY 30.8%, HOLD 13.3%, SELL 55.8%.
+- Fold 2 scaled signal median 88.926, Fold 3 median 25.583; bu nedenle tek global bound setinin OOS dönemlerindeki rejim değişimini tam olarak sabitlemediği görüldü.
+
+**Karar:** Quantile scaling teknik olarak çalışıyor ve raw signal compression'ı azaltıyor; ancak fold/rejim stabilitesi yetersiz olduğu için bu .05/.95 bounds değerleri production default olarak sabitlenmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. Bir sonraki adım signal aggregation/scaling'in fold-stability ölçümlerini genişletmek ve gerekirse time-robust normalization tasarlamaktır.
+
 ### Faz 5 Tasarım Kararları
 
 Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold model seçimi sırasında görülmez. Inner objective olarak PR-AUC kullanılır. Threshold optimizasyonu ve BUY/HOLD/SELL tasarımı tuning sonuçlarından ayrı ele alınır.
@@ -114,8 +132,9 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] AFA ve THYAO gerçek veri üzerinde risk smoke doğrulaması yap.
 - [x] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
 - [x] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
-- [ ] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
-- [ ] Scaling sonrası gerçek threshold validation sonuçlarını çalıştır ve kaydet.
+- [x] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
+- [ ] Fold-stability/robust normalization yaklaşımını değerlendir.
+- [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
