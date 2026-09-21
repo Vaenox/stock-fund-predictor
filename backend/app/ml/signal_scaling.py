@@ -194,3 +194,53 @@ def calculate_percentile_scaled_signal_base(
         + technical_scaled * technical_weight
     ) / denominator
     return ml_scaled, technical_scaled, float(np.clip(base, 0.0, 100.0))
+
+
+
+@dataclass(frozen=True, slots=True)
+class SignalScalingStability:
+    """Descriptive stability statistics across chronological validation folds."""
+
+    median_spread: float
+    median_std: float
+    iqr_spread: float
+    saturation_rate: float
+
+
+def evaluate_signal_scaling_stability(
+    fold_scores: tuple[np.ndarray, ...],
+) -> SignalScalingStability:
+    """Summarize cross-fold score stability without using targets.
+
+    The input contains one score vector per chronological fold. This is a
+    diagnostic only; it does not select a scaling method or thresholds.
+    """
+    if not fold_scores:
+        raise ValueError("fold_scores cannot be empty")
+
+    medians: list[float] = []
+    iqrs: list[float] = []
+    boundary_count = 0
+    total_count = 0
+
+    for scores in fold_scores:
+        values = np.asarray(scores, dtype=float)
+        if values.ndim != 1 or values.size == 0:
+            raise ValueError("each fold score array must be one-dimensional and non-empty")
+        if not np.isfinite(values).all():
+            raise ValueError("fold scores must be finite")
+        values = np.clip(values, 0.0, 100.0)
+        medians.append(float(np.median(values)))
+        q25, q75 = np.quantile(values, [0.25, 0.75])
+        iqrs.append(float(q75 - q25))
+        boundary_count += int(((values <= 1.0) | (values >= 99.0)).sum())
+        total_count += values.size
+
+    median_values = np.asarray(medians, dtype=float)
+    iqr_values = np.asarray(iqrs, dtype=float)
+    return SignalScalingStability(
+        median_spread=float(median_values.max() - median_values.min()),
+        median_std=float(median_values.std(ddof=0)),
+        iqr_spread=float(iqr_values.max() - iqr_values.min()),
+        saturation_rate=float(boundary_count / total_count),
+    )
