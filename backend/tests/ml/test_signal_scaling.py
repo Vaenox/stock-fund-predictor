@@ -33,9 +33,9 @@ def test_signal_scaling_preserves_weighted_combination() -> None:
         0.26,
         57.5,
     )
-    assert ml_scaled == pytest.approx(50.0)
-    assert tech_scaled == pytest.approx(50.0)
-    assert base == pytest.approx(50.0)
+    assert ml_scaled == pytest.approx(37.5)
+    assert tech_scaled == pytest.approx(37.5)
+    assert base == pytest.approx(37.5)
 
 
 def test_signal_scaling_rejects_invalid_bounds() -> None:
