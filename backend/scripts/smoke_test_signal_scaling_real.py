@@ -15,7 +15,11 @@ from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.signal_rules import SignalRuleConfig
-from app.ml.signal_scaling import calculate_scaled_signal_base, derive_signal_scale_config
+from app.ml.signal_scaling import (
+    calculate_percentile_scaled_signal_base,
+    calculate_scaled_signal_base,
+    derive_signal_scale_config,
+)
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, build_inner_splits, select_best_candidate
 from app.ml.xgboost_baseline import XGBoostBaselineConfig, fit_baseline_model
@@ -219,16 +223,30 @@ def _run(
             scaled_signal_score = float(
                 np.clip(scaled_base + risk.adjustment, 0.0, 100.0)
             )
+            percentile_ml, percentile_technical, percentile_base = (
+                calculate_percentile_scaled_signal_base(
+                    float(probability[index]),
+                    float(latest["technical_score"]),
+                    inner_ml,
+                    inner_technical,
+                )
+            )
+            percentile_signal_score = float(
+                np.clip(percentile_base + risk.adjustment, 0.0, 100.0)
+            )
 
             fold_rows.append(
                 {
                     "fold": fold_number,
                     "raw_signal_score": raw_signal.signal_score,
                     "scaled_signal_score": scaled_signal_score,
+                    "percentile_signal_score": percentile_signal_score,
                     "ml_probability": float(probability[index]),
                     "ml_scaled": ml_scaled,
+                    "percentile_ml": percentile_ml,
                     "technical_score": float(latest["technical_score"]),
                     "technical_scaled": technical_scaled,
+                    "percentile_technical": percentile_technical,
                     "risk_adjustment": float(risk.adjustment),
                     "target": int(test_row["target"]),
                     "forward_return_5d": float(test_row["forward_return_5d"]),
@@ -247,8 +265,9 @@ def _run(
             f"mcw={tuning.config.min_child_weight:.1f} | "
             f"inner PR-AUC={tuning.score:.4f}"
         )
-        print(f"  raw signal:    {_describe(fold_frame['raw_signal_score'])}")
-        print(f"  scaled signal: {_describe(fold_frame['scaled_signal_score'])}")
+        print(f"  raw signal:         {_describe(fold_frame['raw_signal_score'])}")
+        print(f"  quantile signal:    {_describe(fold_frame['scaled_signal_score'])}")
+        print(f"  percentile signal:  {_describe(fold_frame['percentile_signal_score'])}")
 
     oos = pd.concat(rows, ignore_index=True)
 
@@ -256,13 +275,16 @@ def _run(
     print(f"Symbol: {symbol.strip().upper()}")
     print(f"Raw rows: {len(raw)}")
     print(f"OOS rows: {len(oos)}")
-    print(f"Raw signal distribution:       {_describe(oos['raw_signal_score'])}")
-    print(f"Scaled signal distribution:    {_describe(oos['scaled_signal_score'])}")
-    print(f"Scaled ML distribution:         {_describe(oos['ml_scaled'])}")
-    print(f"Scaled technical distribution: {_describe(oos['technical_scaled'])}")
+    print(f"Raw signal distribution:             {_describe(oos['raw_signal_score'])}")
+    print(f"Quantile signal distribution:        {_describe(oos['scaled_signal_score'])}")
+    print(f"Percentile signal distribution:      {_describe(oos['percentile_signal_score'])}")
+    print(f"Quantile ML distribution:            {_describe(oos['ml_scaled'])}")
+    print(f"Percentile ML distribution:          {_describe(oos['percentile_ml'])}")
+    print(f"Quantile technical distribution:     {_describe(oos['technical_scaled'])}")
+    print(f"Percentile technical distribution:   {_describe(oos['percentile_technical'])}")
     print(f"Overall target rate: {oos['target'].mean():.3f}")
 
-    print("Threshold coverage on scaled signal (descriptive; no winner selected):")
+    print("Threshold coverage — quantile scaling (descriptive; no winner selected):")
     for config in CANDIDATES:
         buy = oos["scaled_signal_score"] >= config.buy_threshold
         sell = oos["scaled_signal_score"] <= config.sell_threshold
@@ -274,11 +296,24 @@ def _run(
             f"SELL={int(sell.sum())} ({sell.mean():.1%})"
         )
 
+    print("Threshold coverage — percentile scaling (descriptive; no winner selected):")
+    for config in CANDIDATES:
+        buy = oos["percentile_signal_score"] >= config.buy_threshold
+        sell = oos["percentile_signal_score"] <= config.sell_threshold
+        hold = ~(buy | sell)
+        print(
+            f"  SELL<={config.sell_threshold:.0f} / BUY>={config.buy_threshold:.0f} | "
+            f"BUY={int(buy.sum())} ({buy.mean():.1%}) | "
+            f"HOLD={int(hold.sum())} ({hold.mean():.1%}) | "
+            f"SELL={int(sell.sum())} ({sell.mean():.1%})"
+        )
+
     assert len(oos) > 0
     assert oos["scaled_signal_score"].between(0.0, 100.0).all()
+    assert oos["percentile_signal_score"].between(0.0, 100.0).all()
     assert oos["ml_scaled"].between(0.0, 100.0).all()
     assert oos["technical_scaled"].between(0.0, 100.0).all()
-    print("REAL SIGNAL SCALING VALIDATION SMOKE TEST PASSED")
+    print("REAL SIGNAL SCALING COMPARISON SMOKE TEST PASSED")
 
 
 def main() -> None:
