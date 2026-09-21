@@ -79,6 +79,9 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - Tüm ML test suite güncel durumda **31/31 geçti**.
 - `backend/scripts/smoke_test_signal_real.py` ile gerçek veri üzerinde tuning + inference + technical score + risk + signal zinciri oluşturuldu.
 - `backend/tests/ml/test_phase5_acceptance.py` ile Phase 5 risk/signal acceptance testleri oluşturuldu.
+- `backend/app/ml/signal_rules.py` ile parametrik ve deterministik BUY/HOLD/SELL sınıflandırma kuralları eklendi; varsayılan eşikler validation sonucu değil, konfigürasyon değeridir.
+- `backend/app/ml/signal_validation.py` ile aday threshold'lar için BUY/HOLD/SELL coverage, target rate ve forward-return metriklerini kazanan seçmeden raporlayan validation katmanı eklendi.
+- `backend/scripts/smoke_test_signal_thresholds_real.py` ile model/tuning dış test foldlarından aday signal threshold metriklerini gözlemlemek için gerçek veri walk-forward smoke akışı eklendi.
 
 ### Faz 5 THYAO Outer Comparison
 
@@ -108,7 +111,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Risk adjustment unit testlerini Codespace üzerinde çalıştır ve PASS doğrula.
 - [x] AFA ve THYAO gerçek veri üzerinde risk smoke doğrulaması yap.
 - [x] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
-- [ ] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
+- [x] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
+- [ ] Gerçek walk-forward threshold validation smoke testlerini çalıştır ve sonuçları kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
@@ -116,7 +120,9 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 1. `tests/ml/test_phase5_acceptance.py` acceptance testini çalıştır.
 2. `scripts/smoke_test_signal_real.py` ile gerçek THYAO ve AFA signal zincirini doğrula.
 3. Sonuçları Phase 5 evaluation kaydına ekle.
-4. Ardından BUY/HOLD/SELL eşik tasarımını ayrı validation olarak ele al.
+4. `scripts/smoke_test_signal_thresholds_real.py` ile THYAO ve AFA aday threshold sonuçlarını çıkar.
+5. Threshold sonuçlarını değerlendir; henüz otomatik winner seçme.
+6. Sonrasında Faz 5 acceptance kapanışını yap.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
