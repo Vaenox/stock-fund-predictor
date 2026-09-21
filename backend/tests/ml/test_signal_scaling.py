@@ -7,6 +7,7 @@ from app.ml.signal_scaling import (
     calculate_scaled_signal_base,
     derive_signal_scale_config,
     calculate_percentile_scaled_signal_base,
+    evaluate_signal_scaling_stability,
 )
 
 
@@ -132,3 +133,28 @@ def test_percentile_scaling_rejects_invalid_reference_inputs() -> None:
         calculate_percentile_scaled_signal_base(
             0.1, 50.0, [[0.1, 0.2]], [50.0, 60.0]
         )
+
+
+
+def test_signal_scaling_stability_metrics_are_target_free() -> None:
+    result = evaluate_signal_scaling_stability(
+        (
+            [10.0, 20.0, 30.0, 40.0],
+            [20.0, 30.0, 40.0, 50.0],
+        )
+    )
+    assert result.median_spread == pytest.approx(10.0)
+    assert result.median_std == pytest.approx(5.0)
+    assert result.iqr_spread == pytest.approx(0.0)
+    assert result.saturation_rate == pytest.approx(0.0)
+
+
+def test_signal_scaling_stability_rejects_invalid_folds() -> None:
+    with pytest.raises(ValueError, match="cannot be empty"):
+        evaluate_signal_scaling_stability(())
+
+    with pytest.raises(ValueError, match="one-dimensional"):
+        evaluate_signal_scaling_stability(([[10.0, 20.0]],))
+
+    with pytest.raises(ValueError, match="finite"):
+        evaluate_signal_scaling_stability(([10.0, float("nan")],))
