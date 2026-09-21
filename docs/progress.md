@@ -109,7 +109,7 @@ Gerçek 3-fold OOS scaling smoke testi başarıyla geçti. Quantile bound'lar he
 - Scaled threshold coverage: 30/70 -> BUY 27.5%, HOLD 32.5%, SELL 40.0%; 40/60 -> BUY 30.8%, HOLD 13.3%, SELL 55.8%.
 - Fold 2 scaled signal median 88.926, Fold 3 median 25.583; bu nedenle tek global bound setinin OOS dönemlerindeki rejim değişimini tam olarak sabitlemediği görüldü.
 
-**Karar:** Quantile scaling teknik olarak çalışıyor ve raw signal compression'ı azaltıyor; ancak fold/rejim stabilitesi yetersiz olduğu için bu .05/.95 bounds değerleri production default olarak sabitlenmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. Bir sonraki adım signal aggregation/scaling'in fold-stability ölçümlerini genişletmek ve gerekirse time-robust normalization tasarlamaktır.
+**Karar:** Quantile ve empirical-percentile scaling ikisi de teknik olarak çalışıyor; ancak AFA ve THYAO üzerinde fold/rejim stabilitesi farklı davranıyor. Bu nedenle hiçbir yöntem production default olarak seçilmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. OOS target/forward-return ile score monotonicity değerlendirmesi bir sonraki karar noktasıdır.
 
 ### Faz 5 Tasarım Kararları
 
@@ -135,6 +135,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
 - [x] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
 - [x] Fold-stability/robust normalization yaklaşımını değerlendir; empirical-percentile scaling comparison smoke akışı eklendi.
+- [x] THYAO ve AFA gerçek OOS scaling comparison sonuçlarını çıkardı; quantile vs percentile için stability ve threshold outcome metrikleri kaydedildi.
+- [ ] Signal score monotonicity / bin association analizini gerçek OOS veride çalıştır.
 - [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
@@ -144,6 +146,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 2. `scripts/smoke_test_signal_scaling_real.py` ile leakage-safe scaling validation'ı THYAO ve AFA üzerinde çalıştır.
 3. Raw vs scaled signal dağılımlarını ve threshold coverage'ı karşılaştır.
 4. Quantile vs empirical-percentile scaling gerçek OOS sonuçlarını karşılaştır; henüz production yöntemi seçme.
+5. Score monotonicity diagnostic smoke sonuçlarını çıkar.
+6. Sonuç yeterli sinyal yönlülüğü gösterirse threshold validation'a geç; aksi halde signal aggregation/model tarafını düzelt.
 5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
 
 ## Yeni Sohbette Devam Etme Kuralı
