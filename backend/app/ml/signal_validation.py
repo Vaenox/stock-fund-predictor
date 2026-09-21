@@ -121,3 +121,76 @@ def evaluate_signal_thresholds(
         )
 
     return tuple(results)
+
+
+
+@dataclass(frozen=True, slots=True)
+class SignalScoreBinMetrics:
+    bin_index: int
+    lower_score: float
+    upper_score: float
+    count: int
+    mean_score: float
+    target_rate: float
+    mean_forward_return: float
+
+
+def evaluate_signal_score_bins(
+    frame: pd.DataFrame,
+    *,
+    n_bins: int = 5,
+) -> tuple[SignalScoreBinMetrics, ...]:
+    """Evaluate target/return behavior across ascending signal-score bins.
+
+    Bins are formed from score ranks so equal-sized groups remain available even
+    when many observations share identical scores. The function is descriptive
+    and does not choose thresholds or a scaling method.
+    """
+    _validate_frame(frame)
+    if n_bins <= 0:
+        raise ValueError("n_bins must be positive")
+
+    ordered = frame.reset_index(drop=True).copy()
+    if len(ordered) < n_bins:
+        n_bins = len(ordered)
+
+    scores = ordered["signal_score"].astype(float)
+    targets = ordered["target"].astype(int)
+    forward_returns = ordered["forward_return_5d"].astype(float)
+
+    ranks = scores.rank(method="first")
+    bin_ids = np.floor((ranks - 1.0) * n_bins / len(ordered)).astype(int)
+
+    results: list[SignalScoreBinMetrics] = []
+    for bin_index in range(n_bins):
+        mask = bin_ids == bin_index
+        values = scores.loc[mask]
+        if values.empty:
+            continue
+        results.append(
+            SignalScoreBinMetrics(
+                bin_index=bin_index + 1,
+                lower_score=float(values.min()),
+                upper_score=float(values.max()),
+                count=int(mask.sum()),
+                mean_score=float(values.mean()),
+                target_rate=float(targets.loc[mask].mean()),
+                mean_forward_return=float(forward_returns.loc[mask].mean()),
+            )
+        )
+
+    return tuple(results)
+
+
+def evaluate_signal_score_association(
+    frame: pd.DataFrame,
+) -> tuple[float, float]:
+    """Return descriptive Spearman correlations with target and forward return."""
+    _validate_frame(frame)
+    scores = frame["signal_score"].astype(float)
+    target = frame["target"].astype(float)
+    forward_returns = frame["forward_return_5d"].astype(float)
+    return (
+        float(scores.corr(target, method="spearman")),
+        float(scores.corr(forward_returns, method="spearman")),
+    )
