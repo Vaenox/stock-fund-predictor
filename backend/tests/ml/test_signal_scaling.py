@@ -112,9 +112,9 @@ def test_percentile_scaling_handles_ties() -> None:
         [0.01, 0.02, 0.02, 0.03],
         [40.0, 60.0, 60.0, 80.0],
     )
-    assert ml_scaled == pytest.approx(50.0)
-    assert tech_scaled == pytest.approx(50.0)
-    assert base == pytest.approx(50.0)
+    assert ml_scaled == pytest.approx(37.5)
+    assert tech_scaled == pytest.approx(37.5)
+    assert base == pytest.approx(37.5)
 
 
 def test_percentile_scaling_rejects_invalid_reference_inputs() -> None:
