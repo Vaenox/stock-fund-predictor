@@ -75,8 +75,10 @@ PYTHONPATH=. pytest tests/ml/test_phase4_acceptance.py -q
 - AFA gerçek veri risk smoke testi geçti: risk score `0.000000`, adjustment `-0.000000`.
 - THYAO gerçek veri risk smoke testi geçti: risk score `45.713769`, adjustment `-9.142754`.
 - `backend/app/ml/signal.py` ile ML probability + technical score + risk adjustment birleşim foundation'ı eklendi.
+- `backend/app/ml/signal_scaling.py` ile ML probability ve technical score için configurable normalization foundation'ı eklendi; default bounds geçici validation değerleridir.
+- `derive_signal_scale_config` ile outer test dışındaki kronolojik OOF component dağılımlarından quantile tabanlı scaling config türetme eklendi; üretim bound optimizasyonu yapılmaz.
 - `backend/tests/ml/test_signal.py` oluşturuldu ve **7/7 geçti**.
-- Tüm ML test suite güncel durumda **31/31 geçti**.
+- Tüm ML test suite güncel durumda **56/56 geçti**.
 - `backend/scripts/smoke_test_signal_real.py` ile gerçek veri üzerinde tuning + inference + technical score + risk + signal zinciri oluşturuldu.
 - `backend/tests/ml/test_phase5_acceptance.py` ile Phase 5 risk/signal acceptance testleri oluşturuldu.
 - `backend/app/ml/signal_rules.py` ile parametrik ve deterministik BUY/HOLD/SELL sınıflandırma kuralları eklendi; varsayılan eşikler validation sonucu değil, konfigürasyon değeridir.
@@ -112,17 +114,17 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] AFA ve THYAO gerçek veri üzerinde risk smoke doğrulaması yap.
 - [x] ML probability + technical score + risk adjustment birleşim sözleşmesini uygula.
 - [x] Deterministik BUY/HOLD/SELL signal rules tasarla ve test et.
-- [ ] Gerçek walk-forward threshold validation smoke testlerini çalıştır ve sonuçları kaydet.
+- [ ] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
+- [ ] Scaling sonrası gerçek threshold validation sonuçlarını çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
 
-1. `tests/ml/test_phase5_acceptance.py` acceptance testini çalıştır.
-2. `scripts/smoke_test_signal_real.py` ile gerçek THYAO ve AFA signal zincirini doğrula.
-3. Sonuçları Phase 5 evaluation kaydına ekle.
-4. `scripts/smoke_test_signal_thresholds_real.py` ile THYAO ve AFA aday threshold sonuçlarını çıkar.
-5. Threshold sonuçlarını değerlendir; henüz otomatik winner seçme.
-6. Sonrasında Faz 5 acceptance kapanışını yap.
+1. `tests/ml/test_signal_scaling.py` ve `tests/ml` suite sonuçlarını doğrula.
+2. `scripts/smoke_test_signal_scaling_real.py` ile leakage-safe scaling validation'ı THYAO ve AFA üzerinde çalıştır.
+3. Raw vs scaled signal dağılımlarını ve threshold coverage'ı karşılaştır.
+4. Scaling sonuçlarına göre `signal.py` entegrasyonu için validation kararı ver; bound değerlerini otomatik winner olarak sabitleme.
+5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
