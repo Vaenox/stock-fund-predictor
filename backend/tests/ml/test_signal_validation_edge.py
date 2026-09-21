@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -38,4 +37,4 @@ def test_threshold_validation_handles_all_empty_classes() -> None:
     )[0]
     assert result.buy_count == 0
     assert result.buy_target_rate is None
-    assert np.isnan(result.buy_mean_forward_return) or result.buy_mean_forward_return is None
+    assert result.buy_mean_forward_return is None
