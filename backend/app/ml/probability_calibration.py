@@ -31,6 +31,14 @@ def _clip_probability(values: np.ndarray) -> np.ndarray:
     return np.clip(np.asarray(values, dtype=float), 1e-6, 1.0 - 1e-6)
 
 
+def _probability_for_ece(values: np.ndarray) -> np.ndarray:
+    """Preserve exact 0/1 values for ECE while retaining finite inputs."""
+    probability = np.asarray(values, dtype=float)
+    if not np.all(np.isfinite(probability)):
+        raise ValueError("probability must contain only finite values")
+    return np.clip(probability, 0.0, 1.0)
+
+
 def _logit(values: np.ndarray) -> np.ndarray:
     probability = _clip_probability(values)
     return np.log(probability / (1.0 - probability))
@@ -43,7 +51,7 @@ def expected_calibration_error(
     n_bins: int = 10,
 ) -> float:
     y = np.asarray(y_true, dtype=int)
-    p = _clip_probability(probability)
+    p = _probability_for_ece(probability)
     if y.shape != p.shape:
         raise ValueError("y_true and probability must have the same shape")
     if y.size == 0:
