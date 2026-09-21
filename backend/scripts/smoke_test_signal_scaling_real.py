@@ -15,6 +15,7 @@ from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.signal_rules import SignalRuleConfig
+from app.ml.signal_validation import evaluate_signal_thresholds
 from app.ml.signal_scaling import (
     calculate_percentile_scaled_signal_base,
     calculate_scaled_signal_base,
@@ -134,6 +135,32 @@ def _inner_training_components(
         raise ValueError("outer training period has no two-class inner OOF folds")
 
     return np.asarray(ml_values, dtype=float), np.asarray(technical_values, dtype=float)
+
+
+
+def _print_threshold_validation(
+    oos: pd.DataFrame,
+    column: str,
+    label: str,
+) -> None:
+    validation_frame = oos[
+        [column, "target", "forward_return_5d"]
+    ].rename(columns={column: "signal_score"})
+    results = evaluate_signal_thresholds(validation_frame, CANDIDATES)
+    print(f"Threshold outcome — {label} (descriptive; no winner selected):")
+    for row in results:
+        print(
+            f"  SELL<={row.sell_threshold:.0f} / BUY>={row.buy_threshold:.0f} | "
+            f"BUY={row.buy_count} ({row.buy_coverage:.1%}, target="
+            f"{row.buy_target_rate if row.buy_target_rate is not None else float('nan'):.3f}, "
+            f"fwd={row.buy_mean_forward_return if row.buy_mean_forward_return is not None else float('nan'):.4f}) | "
+            f"HOLD={row.hold_count} ({row.hold_coverage:.1%}, target="
+            f"{row.hold_target_rate if row.hold_target_rate is not None else float('nan'):.3f}, "
+            f"fwd={row.hold_mean_forward_return if row.hold_mean_forward_return is not None else float('nan'):.4f}) | "
+            f"SELL={row.sell_count} ({row.sell_coverage:.1%}, target="
+            f"{row.sell_target_rate if row.sell_target_rate is not None else float('nan'):.3f}, "
+            f"fwd={row.sell_mean_forward_return if row.sell_mean_forward_return is not None else float('nan'):.4f})"
+        )
 
 
 def _run(
@@ -309,6 +336,9 @@ def _run(
         f"iqr_spread={percentile_stability.iqr_spread:.3f}, "
         f"saturation={percentile_stability.saturation_rate:.1%}"
     )
+
+    _print_threshold_validation(oos, "scaled_signal_score", "quantile scaling")
+    _print_threshold_validation(oos, "percentile_signal_score", "percentile scaling")
 
     print("Threshold coverage — quantile scaling (descriptive; no winner selected):")
     for config in CANDIDATES:
