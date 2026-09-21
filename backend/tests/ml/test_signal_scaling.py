@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from app.ml.signal_scaling import SignalScaleConfig, calculate_scaled_signal_base
+from app.ml.signal_scaling import (
+    SignalScaleConfig,
+    calculate_scaled_signal_base,
+    derive_signal_scale_config,
+)
 
 
 def test_signal_scaling_maps_configured_bounds_to_zero_and_hundred() -> None:
@@ -41,3 +45,37 @@ def test_signal_scaling_rejects_invalid_bounds() -> None:
 def test_signal_scaling_rejects_invalid_probability() -> None:
     with pytest.raises(ValueError, match="between 0 and 1"):
         calculate_scaled_signal_base(1.2, 50.0)
+
+
+def test_signal_scaling_derives_bounds_from_quantiles() -> None:
+    config = derive_signal_scale_config(
+        [0.01, 0.02, 0.03, 0.04, 0.05],
+        [40.0, 50.0, 60.0, 70.0, 80.0],
+        lower_quantile=0.0,
+        upper_quantile=1.0,
+    )
+    assert config.ml_floor == pytest.approx(0.01)
+    assert config.ml_ceiling == pytest.approx(0.05)
+    assert config.technical_floor == pytest.approx(40.0)
+    assert config.technical_ceiling == pytest.approx(80.0)
+
+
+def test_signal_scaling_derivation_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="quantile bounds"):
+        derive_signal_scale_config([0.1, 0.2], [50.0, 60.0], lower_quantile=0.8, upper_quantile=0.2)
+
+    with pytest.raises(ValueError, match="cannot be empty"):
+        derive_signal_scale_config([], [])
+
+    with pytest.raises(ValueError, match="equal length"):
+        derive_signal_scale_config([0.1], [50.0, 60.0])
+
+
+def test_signal_scaling_derivation_rejects_constant_component() -> None:
+    with pytest.raises(ValueError, match="ml probability bounds"):
+        derive_signal_scale_config(
+            [0.1, 0.1, 0.1],
+            [40.0, 50.0, 60.0],
+            lower_quantile=0.0,
+            upper_quantile=1.0,
+        )
