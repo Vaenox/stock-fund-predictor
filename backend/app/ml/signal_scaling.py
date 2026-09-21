@@ -134,11 +134,15 @@ def _empirical_percentile(value: float, reference: np.ndarray) -> float:
     n = ordered.size
     if n < 2:
         raise ValueError("reference sample must contain at least two observations")
+    if value <= ordered[0]:
+        return 0.0
+    if value >= ordered[-1]:
+        return 100.0
 
     left = np.searchsorted(ordered, value, side="left")
     right = np.searchsorted(ordered, value, side="right")
-    average_rank = ((left + right) / 2.0) - 1.0
-    return float(np.clip(average_rank / (n - 1.0) * 100.0, 0.0, 100.0))
+    average_rank = ((left + right) / 2.0) - 0.5
+    return float(np.clip(average_rank / n * 100.0, 0.0, 100.0))
 
 
 def calculate_percentile_scaled_signal_base(
