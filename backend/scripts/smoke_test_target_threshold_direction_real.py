@@ -331,15 +331,19 @@ def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) ->
                     f"Spearman={row['inverse_spearman']:.4f}"
                 )
 
-        folds_ok = [row for row in metrics if row["fold"] != "aggregate"]
+        fold_results = {}
+        for row in metrics:
+            fold = row.get("fold")
+            if isinstance(fold, int) and row.get("model") == "baseline":
+                fold_results[fold] = row
         direct_positive = sum(
             1
-            for row in folds_ok
+            for row in fold_results.values()
             if row.get("status") == "ok" and row.get("direct_spearman", 0.0) > 0
         )
         print(
-            f"  OOS fold direction: "
-            f"{direct_positive}/{len(folds_ok)} folds have positive direct Spearman"
+            f"  Baseline OOS fold direction: "
+            f"{direct_positive}/{len(fold_results)} folds have positive direct Spearman"
         )
 
     print("TARGET THRESHOLD DIRECTION DIAGNOSTIC PASSED")
