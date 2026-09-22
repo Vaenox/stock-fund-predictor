@@ -29,7 +29,6 @@ PRICE_LEVEL_FEATURES = {
     "bb_mid",
     "bb_upper",
     "bb_lower",
-    "volume_sma_20",
     "atr_14",
 }
 
@@ -104,10 +103,7 @@ def _normalize_levels(dataset: pd.DataFrame, asset_type: str) -> pd.DataFrame:
     for column in PRICE_LEVEL_FEATURES:
         if column not in result.columns:
             continue
-        if column.startswith("volume_sma_"):
-            base = result["volume_sma_20"].replace(0, np.nan)
-            result[column] = result[column] / base
-        elif column == "atr_14":
+        if column == "atr_14":
             result[column] = result[column] / price.replace(0, np.nan)
         elif column in {"bb_width", "bb_position"}:
             continue
