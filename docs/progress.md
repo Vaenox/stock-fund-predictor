@@ -171,6 +171,14 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 
 İlk threshold smoke sonuçlarında THYAO ve AFA'da tüm 120 OOS gözlem SELL sınıfına düşerken ASELS/TUPRS/BIMAS/AFT'te BUY coverage çoğunlukla `0%` veya `1.7%` seviyesinde kaldı. Bu sonuçlar eşik seçimi olarak kaydedilmedi. İncelemede signal foundation'ın pre-risk teorik üst sınırının `80` olduğu görüldü; formula düzeltildi ve threshold validation yeniden çalıştırılacak.
 
+### Faz 5 Threshold Validation — THYAO Güncel Smoke
+
+Düzeltilmiş 0–100 raw signal foundation ile THYAO üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 2.580, p25 11.625, median 16.478, mean 16.524, p75 21.171, max 33.904 oldu.
+
+Aday eşiklerin tamamında BUY coverage 0% seviyesinde kaldı; SELL<=30 / BUY>=70 eşiğinde yalnızca 1 HOLD ve 119 SELL gözlemi oluştu. Daha yüksek SELL eşiklerinde tüm OOS gözlemleri SELL'e düştü. Bu nedenle THYAO sonucu herhangi bir BUY/HOLD/SELL threshold seçimini desteklemiyor.
+
+**Karar:** THYAO threshold sonucu descriptive validation olarak kaydedildi; winner seçilmedi. Signal ölçeğinin mevcut OOS dağılımı ile klasik 30/70, 35/65, 40/60, 45/55 eşikleri uyumlu görünmüyor. Multi-symbol threshold validation devam edecek; global eşik kararı henüz alınmayacak.
+
 ### Faz 5 Meta-Aggregation Outer OOS Değerlendirmesi
 
 Gerçek 3-fold outer OOS meta-aggregation smoke testi **THYAO, AFA, ASELS ve TUPRS** üzerinde değerlendirildi. Meta model outer test foldlarına erişmedi; ancak her foldda meta training için yalnızca 40 inner OOF gözlemi bulunduğu için sonuçlar düşük örneklemli deney olarak ele alınmalıdır.
@@ -185,7 +193,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 **Karar:** Meta-aggregation **production signal pipeline'ına alınmadı**. Deneysel foundation olarak kodda tutulacak; Phase 5 kapanışı için sabit/raw signal foundation kullanılacaktır. Bu karar meta yöntemin teknik olarak başarısız olduğu iddiası değil, mevcut outer OOS coverage ve fold instability ile production default seçmek için yeterli tutarlılık görülmediği anlamına gelir.
 
 - [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
-- [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet.
+- [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet. THYAO ilk smoke tamamlandı; BUY coverage 0% ve mevcut aday eşikler uygun görünmedi.
 - [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
