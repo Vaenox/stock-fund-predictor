@@ -11,9 +11,31 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from app.analysis.features import build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_fund_indicators, calculate_stock_indicators
 from app.core.settings import get_settings
+from app.data.providers.borsapy import BorsapyProvider
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, select_best_candidate
 from app.ml.xgboost_baseline import XGBoostBaselineConfig, build_model
+
+
+def _load_stock_frame_provider(symbol: str, days: int) -> pd.DataFrame:
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+    records = BorsapyProvider().get_daily_history(symbol, start_date, end_date)
+    if not records:
+        raise ValueError(f"no Borsapy history found for {symbol}")
+    return pd.DataFrame(
+        {
+            "trading_date": [record.trading_date for record in records],
+            "open": [float(record.open) for record in records],
+            "high": [float(record.high) for record in records],
+            "low": [float(record.low) for record in records],
+            "close": [float(record.close) for record in records],
+            "volume": [
+                float(record.volume) if record.volume is not None else float("nan")
+                for record in records
+            ],
+        }
+    )
 
 
 def _load_stock_frame(symbol: str, days: int) -> pd.DataFrame:
@@ -105,7 +127,7 @@ def _describe(name: str, y: np.ndarray, probability: np.ndarray) -> None:
     )
 
 
-def _run(asset_type: str, symbol: str, days: int, gap: int) -> None:
+def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) -> None:
     if asset_type == "stock":
         raw = _load_stock_frame(symbol, days)
         indicators = calculate_stock_indicators(raw)
@@ -176,7 +198,7 @@ def _run(asset_type: str, symbol: str, days: int, gap: int) -> None:
 
     print(f"Asset type: {asset_type}")
     print(f"Symbol: {symbol.strip().upper()}")
-    print(f"Data source: PostgreSQL canonical history")
+    print(f"Data source: {source}")
     print(f"Raw rows: {len(raw)}")
     print(f"Raw range: {raw.iloc[0].iloc[0]} -> {raw.iloc[-1].iloc[0]}")
     print(f"Training rows: {len(dataset)}")
@@ -204,18 +226,22 @@ def main() -> None:
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--days", type=int, default=1000)
     parser.add_argument("--gap", type=int, default=5)
+    parser.add_argument("--min-db-rows", type=int, default=365)
     args = parser.parse_args()
 
     if args.days < 260:
         raise SystemExit("days must be at least 260")
     if args.gap < 5:
         raise SystemExit("gap must be at least 5")
+    if args.min_db_rows <= 0:
+        raise SystemExit("min-db-rows must be positive")
 
     _run(
         args.asset_type,
         args.symbol.strip().upper(),
         args.days,
         args.gap,
+        args.min_db_rows,
     )
 
 
