@@ -176,6 +176,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [x] AFT canonical history bootstrap edildi (`683` rows) ve target threshold direction diagnostic tamamlandı: +1/+2/+3% direct yön pozitif, +5% ters yöne döndü.
 - [x] Ham feature auditinde AFA/AFT/THYAO'da SMA/EMA/BB gibi fiyat-seviyesi özelliklerinin çoğunda negatif OOS korelasyon görülmesi üzerine level-normalization diagnostic eklendi; henüz production feature değişikliği yapılmadı.
 - [x] AFT/ASELS/TUPRS/BIMAS raw-vs-normalized model OOS karşılaştırmaları tamamlandı; normalize yaklaşım AFT/ASELS/TUPRS'da aggregate ROC/PR açısından genel üstünlük göstermedi, BIMAS'ta mixed davranış gösterdi. Bu nedenle normalize model henüz production default seçilmedi.
+- [x] Normalized model diagnostic import bağımlılığı self-contained hale getirildi; `PRICE_LEVEL_FEATURES` rename/import hatası düzeltildi ve volume/price normalization dönüşümleri ortak helper kopyasıyla hizalandı.
 - [x] Normalized diagnostics içinde fold Spearman index alignment ve `volume_sma_20` self-normalization kusurları düzeltildi; MACD/momentum gibi price-difference özelliklerinin de doğru şekilde fiyatla ölçeklenmesi için diagnostic dönüşümü ayrıştırıldı.
 - [ ] Düzeltilmiş normalized feature/model audit'i AFA/AFT/THYAO/AFT/ASELS/TUPRS/BIMAS coverage'ında çalıştır; price-level, price-difference ve volume-level dönüşümlerini aynı contract üzerinden doğrula.
 
