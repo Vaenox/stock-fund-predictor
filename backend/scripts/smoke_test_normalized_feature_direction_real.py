@@ -19,7 +19,7 @@ from app.data.providers.borsapy import BorsapyProvider
 from app.ml.splitting import build_walk_forward_splits
 
 
-PRICE_LEVEL_FEATURES = {
+PRICE_RATIO_FEATURES = {
     "sma_20",
     "sma_50",
     "sma_200",
@@ -29,7 +29,12 @@ PRICE_LEVEL_FEATURES = {
     "bb_mid",
     "bb_upper",
     "bb_lower",
+}
+PRICE_PER_PRICE_FEATURES = {
     "atr_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
 }
 
 
@@ -98,17 +103,19 @@ def _load_fund(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
 def _normalize_levels(dataset: pd.DataFrame, asset_type: str) -> pd.DataFrame:
     result = dataset.copy()
     price = result["close"] if asset_type == "stock" else result["unit_price"]
-    eps = 1e-12
+    price_safe = price.replace(0, np.nan)
 
-    for column in PRICE_LEVEL_FEATURES:
-        if column not in result.columns:
-            continue
-        if column == "atr_14":
-            result[column] = result[column] / price.replace(0, np.nan)
-        elif column in {"bb_width", "bb_position"}:
-            continue
-        else:
-            result[column] = result[column] / price.replace(0, np.nan) - 1.0
+    for column in PRICE_RATIO_FEATURES:
+        if column in result.columns:
+            result[column] = result[column] / price_safe - 1.0
+
+    for column in PRICE_PER_PRICE_FEATURES:
+        if column in result.columns:
+            result[column] = result[column] / price_safe
+
+    if "volume_sma_20" in result.columns and "volume" in result.columns:
+        volume = pd.to_numeric(result["volume"], errors="coerce").replace(0, np.nan)
+        result["volume_sma_20"] = result["volume_sma_20"] / volume - 1.0
 
     return result.replace([np.inf, -np.inf], np.nan)
 
