@@ -18,12 +18,7 @@ from app.analysis.indicators import calculate_fund_indicators, calculate_stock_i
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
 from app.ml.splitting import build_walk_forward_splits
-from app.ml.tuning import (
-    TuningCandidate,
-    TuningConfig,
-    build_inner_splits,
-    default_candidate_grid,
-)
+from app.ml.tuning import TuningCandidate, TuningConfig, default_candidate_grid
 from app.ml.xgboost_baseline import XGBoostBaselineConfig, build_model
 
 
@@ -219,7 +214,12 @@ def _score_candidate_inner(
     candidate: XGBoostBaselineConfig,
     tuning_config: TuningConfig,
 ) -> float:
-    folds = build_inner_splits(len(frame), config=tuning_config)
+    folds = build_walk_forward_splits(
+        len(frame),
+        n_splits=tuning_config.n_inner_splits,
+        test_size=tuning_config.inner_test_size,
+        gap=tuning_config.gap,
+    )
     fold_scores: list[float] = []
 
     for fold in folds:
