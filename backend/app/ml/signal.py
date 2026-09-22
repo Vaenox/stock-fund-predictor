@@ -7,22 +7,28 @@ import numpy as np
 
 @dataclass(frozen=True, slots=True)
 class SignalScoreConfig:
-    """Deterministic relative weights for ML and technical signal inputs.
+    """Deterministic relative weights for ML, technical and risk inputs.
 
-    Risk is intentionally kept as a separate bounded negative adjustment. The
-    ML and technical weights are normalized to their own total so the
-    pre-risk signal remains on the full 0-100 scale.
+    Risk remains a separate bounded negative adjustment. The ML and technical
+    weights are normalized to their own total so the pre-risk signal uses the
+    full 0-100 range. risk_weight is retained as the documented share of the
+    original three-part contract and is validated for configuration
+    consistency; the risk adjustment itself is already expressed in score
+    points and is therefore not multiplied a second time.
     """
 
     ml_weight: float = 0.50
     technical_weight: float = 0.30
+    risk_weight: float = 0.20
 
     def __post_init__(self) -> None:
-        weights = (self.ml_weight, self.technical_weight)
+        weights = (self.ml_weight, self.technical_weight, self.risk_weight)
         if any(weight < 0 for weight in weights):
             raise ValueError("signal weights cannot be negative")
         if not np.isclose(sum(weights), 1.0):
             raise ValueError("signal weights must sum to 1.0")
+        if np.isclose(self.ml_weight + self.technical_weight, 0.0):
+            raise ValueError("ml and technical weights cannot both be zero")
 
 
 @dataclass(frozen=True, slots=True)
