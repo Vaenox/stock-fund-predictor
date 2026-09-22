@@ -111,6 +111,22 @@ Gerçek 3-fold OOS scaling smoke testi başarıyla geçti. Quantile bound'lar he
 
 **Karar:** Quantile ve empirical-percentile scaling ikisi de teknik olarak çalışıyor; ancak AFA ve THYAO üzerinde fold/rejim stabilitesi farklı davranıyor. Bu nedenle hiçbir yöntem production default olarak seçilmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. OOS monotonicity testinde hem quantile hem percentile signal skorlarında THYAO ve AFA için güçlü pozitif yönlü ilişki görülmedi; bu nedenle threshold seçimi ertelendi ve aggregation bileşenleri ayrı ayrı teşhis edilecek.
 
+### Faz 5 Feature Representation Ablation — Güncel Sonuç
+
+Düzeltilmiş normalization dönüşümleriyle gerçek 3-fold outer OOS feature ablation **AFA, AFT, THYAO, ASELS, TUPRS ve BIMAS** üzerinde tamamlandı. AAL, canonical history yalnızca 22 satır olduğu ve feature dataset 0 satıra düştüğü için veri yetersizliği nedeniyle bu deneyden dışarıda bırakıldı; validation kuralı gevşetilmedi.
+
+Tuned aggregate PR-AUC liderleri:
+- **AFA:** normalized_all `0.3923` > stationary_core `0.2699` > raw_all `0.2285`
+- **AFT:** normalized_all `0.5136` > stationary_core `0.4722` > raw_all `0.4100`
+- **THYAO:** raw_all `0.2006` > normalized_all `0.1867` > stationary_core `0.1773`
+- **ASELS:** raw_all `0.4416` > normalized_all `0.4271` > stationary_core `0.3710`
+- **TUPRS:** normalized_all `0.4127` > raw_all `0.4018` > stationary_core `0.3761`
+- **BIMAS:** stationary_core `0.4556` > normalized_all `0.4341` > raw_all `0.3834`
+
+Altı sembolün basit ortalama tuned PR-AUC değerleri raw_all `0.3443`, normalized_all `0.3944`, stationary_core `0.3537` oldu. Buna rağmen symbol-level ve fold-level davranışlar homojen olmadığı için normalized_all production default seçilmedi. Representation seçimi ileride yapılacaksa seçim outer test gözlemlerine göre değil, inner walk-forward validation içinde leakage-safe şekilde yapılmalıdır.
+
+**Karar:** raw_all, normalized_all ve stationary_core üçü de candidate representation olarak korunacak; mevcut production feature contract sessizce değiştirilmeyecek. Representation selection ayrı bir validation/model-selection taskı olarak ele alınacaktır.
+
 ### Faz 5 Tasarım Kararları
 
 Tuning yalnızca outer fold training periodu içinde yapılır. Outer test fold model seçimi sırasında görülmez. Inner objective olarak PR-AUC kullanılır. Threshold optimizasyonu ve BUY/HOLD/SELL tasarımı tuning sonuçlarından ayrı ele alınır.
@@ -180,25 +196,18 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [x] Normalized diagnostics içinde fold Spearman index alignment ve `volume_sma_20` self-normalization kusurları düzeltildi; MACD/momentum gibi price-difference özelliklerinin de doğru şekilde fiyatla ölçeklenmesi için diagnostic dönüşümü ayrıştırıldı.
 - [ ] Düzeltilmiş normalized feature/model audit'i AFA/AFT/THYAO/AFT/ASELS/TUPRS/BIMAS coverage'ında çalıştır; price-level, price-difference ve volume-level dönüşümlerini aynı contract üzerinden doğrula.
 
-- [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
+- [x] Faz 5 acceptance testleri çalıştırıldı: `PYTHONPATH=. pytest tests/ml/test_phase5_acceptance.py -q` → **3 passed**.
+- [x] Tüm ML test suite çalıştırıldı: `PYTHONPATH=. pytest tests/ml -q` → **75 passed in 6.15s**.
 
 ## Sıradaki İş
 
-1. `tests/ml/test_signal_scaling.py` ve `tests/ml` suite sonuçlarını doğrula.
-2. `scripts/smoke_test_signal_scaling_real.py` ile leakage-safe scaling validation'ı THYAO ve AFA üzerinde çalıştır.
-3. Raw vs scaled signal dağılımlarını ve threshold coverage'ı karşılaştır.
-4. Quantile vs empirical-percentile scaling gerçek OOS sonuçlarını karşılaştır; henüz production yöntemi seçme.
-5. Score monotonicity ve component association diagnostic sonuçlarını çıkar.
-6. Bileşenlerin OOS bin davranışlarını THYAO/AFA dışındaki sembollerle doğrula.
-7. Directionality yeterli değilse threshold yerine ML target/model veya technical/risk scoring tasarımını düzelt.
-8. Meta-aggregation dış OOS sonuçlarını değerlendir; production default seçme kararı alındı.
-9. Sabit/raw signal foundation için çoklu sembol threshold validation çalıştır.
-10. Sonuçları `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
-11. Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
-12. Baseline vs tuned model direction diagnostic'i değerlendir.
-13. Target/model revizyonu gerekiyorsa validation-only deneyini çalıştır; production target değişikliğini outer test ile seçme.
-14. Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
-15. Ardından Phase 5'i kapatıp Phase 6'ya geç.
+1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme.
+2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır.
+3. Direction sonucu gerekiyorsa target/model revizyonunu yalnızca validation evidence ile ve outer test seçimi yapmadan deneysel olarak değerlendir.
+4. Representation selection'ı production'a almadan önce gerekirse inner walk-forward içine raw_all / normalized_all / stationary_core seçimini leakage-safe candidate olarak dahil et.
+5. Threshold ve gerçek signal-chain sonuçlarını `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
+6. Phase 5 gerçek signal-chain kapanışını doğrula.
+7. Phase 5 tamamlandıktan sonra Phase 6'ya geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
