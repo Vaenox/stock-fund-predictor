@@ -138,7 +138,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] THYAO ve AFA gerçek OOS scaling comparison sonuçlarını çıkardı; quantile vs percentile için stability ve threshold outcome metrikleri kaydedildi.
 - [x] Signal score monotonicity / bin association analizini gerçek OOS veride çalıştır.
 - [x] THYAO ve AFA OOS sonuçlarında signal score'un target/forward-return ile monoton yönlü ilişki göstermediği gözlendi; aggregation bileşenleri için ayrı association diagnostic eklendi.
-- [ ] ML probability / technical score / risk adjustment bileşen association sonuçlarını gerçek OOS veride çıkar.
+- [x] ML probability / technical score / risk adjustment bileşen association sonuçlarını gerçek OOS veride çıkardı.
+- [ ] Bileşenlerin OOS bin davranışlarını ve model directionality'yi geniş symbol coverage ile doğrula.
 - [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
@@ -148,8 +149,9 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 2. `scripts/smoke_test_signal_scaling_real.py` ile leakage-safe scaling validation'ı THYAO ve AFA üzerinde çalıştır.
 3. Raw vs scaled signal dağılımlarını ve threshold coverage'ı karşılaştır.
 4. Quantile vs empirical-percentile scaling gerçek OOS sonuçlarını karşılaştır; henüz production yöntemi seçme.
-5. Score monotonicity diagnostic smoke sonuçlarını çıkar.
-6. Sonuç yeterli sinyal yönlülüğü gösterirse threshold validation'a geç; aksi halde signal aggregation/model tarafını düzelt.
+5. Score monotonicity ve component association diagnostic sonuçlarını çıkar.
+6. Bileşenlerin OOS bin davranışlarını THYAO/AFA dışındaki sembollerle doğrula.
+7. Directionality yeterli değilse threshold yerine ML target/model veya technical/risk scoring tasarımını düzelt.
 5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
 
 ## Yeni Sohbette Devam Etme Kuralı
