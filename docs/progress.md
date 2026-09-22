@@ -144,6 +144,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Gerçek threshold smoke testinde raw signal ölçeğinin 0–100 eşikleriyle uyumsuz olduğu tespit edildi; ML+technical weighted base skorunun kendi toplam ağırlığına normalize edilmesiyle signal ölçeği düzeltildi. Risk adjustment ayrı negatif penalty olarak uygulanmaya devam ediyor.
 - [x] AFA ve THYAO direction diagnostic ile ML probability / technical score yönlerinin sembole göre değiştiği doğrulandı; target/model katmanı threshold'dan önce yeniden incelenmeye alındı.
 - [x] Model direction diagnostic canlı TEFAS bağımlılığından çıkarıldı; stock/fund canonical history artık PostgreSQL'den okunuyor. Böylece Phase 5 direction validation veri sağlayıcı TLS erişiminden ayrıştırıldı.
+- [x] AFA DB-backed baseline vs tuned direction diagnostic: baseline aggregate direct ROC `0.3360`, inverse ROC `0.6640`; tuned direct ROC `0.3377`, inverse ROC `0.6623`. Her iki model de inverse yönde daha yüksek ayrıştırma gösterdi; tuning yön problemini düzeltmedi.
+- [x] Direction diagnostic stock tarafında DB history yetersizse Borsapy fallback kullanacak şekilde düzeltildi; böylece THYAO testinin yalnızca kısa DB incremental verisi nedeniyle başarısız olması engellendi.
 
 
 ### Faz 5 Threshold Smoke — İlk Deneme
