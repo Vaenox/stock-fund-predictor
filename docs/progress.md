@@ -143,6 +143,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Sabit signal ağırlıklarının yeterince robust olmadığı görüldü; leakage-safe inner-OOF logistic meta-aggregation foundation'ı eklendi.
 - [x] Gerçek threshold smoke testinde raw signal ölçeğinin 0–100 eşikleriyle uyumsuz olduğu tespit edildi; ML+technical weighted base skorunun kendi toplam ağırlığına normalize edilmesiyle signal ölçeği düzeltildi. Risk adjustment ayrı negatif penalty olarak uygulanmaya devam ediyor.
 - [x] AFA ve THYAO direction diagnostic ile ML probability / technical score yönlerinin sembole göre değiştiği doğrulandı; target/model katmanı threshold'dan önce yeniden incelenmeye alındı.
+- [x] Model direction diagnostic canlı TEFAS bağımlılığından çıkarıldı; stock/fund canonical history artık PostgreSQL'den okunuyor. Böylece Phase 5 direction validation veri sağlayıcı TLS erişiminden ayrıştırıldı.
 
 
 ### Faz 5 Threshold Smoke — İlk Deneme
