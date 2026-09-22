@@ -358,6 +358,15 @@ def _run(
             f"spearman_target={target_corr:.4f}, "
             f"spearman_forward_return={return_corr:.4f}"
         )
+        print(f"Component bins — {label} (ascending component):")
+        for item in evaluate_signal_score_bins(diagnostic_frame, n_bins=5):
+            print(
+                f"  Bin {item.bin_index}: "
+                f"value={item.lower_score:.4f}..{item.upper_score:.4f}, "
+                f"n={item.count}, mean={item.mean_score:.4f}, "
+                f"target={item.target_rate:.3f}, "
+                f"fwd={item.mean_forward_return:.4f}"
+            )
 
     for column, label in (
         ("scaled_signal_score", "quantile scaling"),
