@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
 from datetime import date, timedelta
 
 import numpy as np
@@ -17,11 +16,110 @@ from app.analysis.features import (
 from app.analysis.indicators import calculate_fund_indicators, calculate_stock_indicators
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
-from app.ml.comparison import ModelComparison
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, select_best_candidate
-from app.ml.xgboost_baseline import FoldMetrics, XGBoostBaselineConfig, build_model
-from scripts.smoke_test_normalized_feature_direction_real import PRICE_LEVEL_FEATURES, _load_fund, _load_stock, _normalize_levels
+from app.ml.xgboost_baseline import XGBoostBaselineConfig, build_model
+
+PRICE_RATIO_FEATURES = {
+    "sma_20",
+    "sma_50",
+    "sma_200",
+    "ema_20",
+    "ema_50",
+    "ema_200",
+    "bb_mid",
+    "bb_upper",
+    "bb_lower",
+}
+PRICE_PER_PRICE_FEATURES = {
+    "atr_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+}
+
+
+def _load_stock(symbol: str, days: int, min_db_rows: int) -> tuple[pd.DataFrame, str]:
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+    engine = create_engine(get_settings().database_url, future=True)
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT b.trading_date, b.open, b.high, b.low, b.close, b.volume
+                FROM stock_daily_bars b
+                JOIN assets a ON a.id = b.asset_id
+                WHERE a.canonical_symbol = :symbol
+                  AND b.trading_date BETWEEN :start_date AND :end_date
+                ORDER BY b.trading_date
+                """
+            ),
+            {"symbol": symbol, "start_date": start_date, "end_date": end_date},
+        ).mappings().all()
+    if len(rows) >= min_db_rows:
+        return pd.DataFrame(rows), "PostgreSQL canonical history"
+    records = BorsapyProvider().get_daily_history(symbol, start_date, end_date)
+    if not records:
+        raise ValueError(f"no Borsapy history found for {symbol}")
+    return pd.DataFrame(
+        {
+            "trading_date": [r.trading_date for r in records],
+            "open": [float(r.open) for r in records],
+            "high": [float(r.high) for r in records],
+            "low": [float(r.low) for r in records],
+            "close": [float(r.close) for r in records],
+            "volume": [
+                float(r.volume) if r.volume is not None else float("nan")
+                for r in records
+            ],
+        }
+    ), "Borsapy provider (DB history insufficient)"
+
+
+def _load_fund(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+    engine = create_engine(get_settings().database_url, future=True)
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT p.pricing_date, p.unit_price
+                FROM fund_daily_prices p
+                JOIN assets a ON a.id = p.asset_id
+                WHERE a.canonical_symbol = :symbol
+                  AND p.pricing_date BETWEEN :start_date AND :end_date
+                ORDER BY p.pricing_date
+                """
+            ),
+            {"symbol": symbol, "start_date": start_date, "end_date": end_date},
+        ).mappings().all()
+    if not rows:
+        raise ValueError(f"no DB fund history found for {symbol}")
+    return pd.DataFrame(rows), "PostgreSQL canonical history"
+
+
+def _normalize_levels(dataset: pd.DataFrame, asset_type: str) -> pd.DataFrame:
+    result = dataset.copy()
+    price = result["close"] if asset_type == "stock" else result["unit_price"]
+    price_safe = price.replace(0, np.nan)
+
+    for column in PRICE_RATIO_FEATURES:
+        if column in result.columns:
+            result[column] = result[column] / price_safe - 1.0
+
+    for column in PRICE_PER_PRICE_FEATURES:
+        if column in result.columns:
+            result[column] = result[column] / price_safe
+
+    if "volume_sma_20" in result.columns and "volume" in result.columns:
+        volume = pd.to_numeric(result["volume"], errors="coerce").replace(0, np.nan)
+        result["volume_sma_20"] = result["volume_sma_20"] / volume - 1.0
+
+    return result.replace([np.inf, -np.inf], np.nan)
+
+
 
 
 def _safe_roc_auc(y_true: pd.Series, probability: np.ndarray) -> float | None:
