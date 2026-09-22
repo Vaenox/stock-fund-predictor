@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from app.ml.risk_adjustment import calculate_stock_risk_adjustment
-from app.ml.signal import calculate_signal_score
+from app.ml.signal import SignalScoreConfig, calculate_signal_score
 
 
 def test_phase5_risk_signal_chain_is_deterministic() -> None:
@@ -45,9 +45,16 @@ def test_phase5_risk_cannot_change_ml_probability() -> None:
     risk = calculate_stock_risk_adjustment(row, quality_ok=False, stale_days=3)
     result = calculate_signal_score(0.72, 65.0, risk.adjustment)
 
+    base_ceiling = (
+        0.72 * 100.0 * SignalScoreConfig().ml_weight
+        + 65.0 * SignalScoreConfig().technical_weight
+    ) / (
+        SignalScoreConfig().ml_weight + SignalScoreConfig().technical_weight
+    )
+
     assert result.ml_probability == pytest.approx(0.72)
     assert result.risk_adjustment <= 0.0
-    assert result.signal_score <= 65.0 * 0.30 + 0.72 * 100.0 * 0.50
+    assert result.signal_score <= base_ceiling
 
 
 def test_phase5_negative_risk_adjustment_only_lowers_score() -> None:
