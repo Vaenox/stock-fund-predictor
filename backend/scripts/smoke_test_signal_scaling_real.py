@@ -341,6 +341,24 @@ def _run(
         f"saturation={percentile_stability.saturation_rate:.1%}"
     )
 
+    component_columns = (
+        ("ml_probability", "ML probability"),
+        ("technical_score", "technical score"),
+        ("risk_adjustment", "risk adjustment"),
+    )
+    for column, label in component_columns:
+        diagnostic_frame = oos[
+            [column, "target", "forward_return_5d"]
+        ].rename(columns={column: "signal_score"})
+        target_corr, return_corr = evaluate_signal_score_association(
+            diagnostic_frame
+        )
+        print(
+            f"Component association — {label}: "
+            f"spearman_target={target_corr:.4f}, "
+            f"spearman_forward_return={return_corr:.4f}"
+        )
+
     for column, label in (
         ("scaled_signal_score", "quantile scaling"),
         ("percentile_signal_score", "percentile scaling"),
