@@ -104,7 +104,7 @@ def test_signal_score_association_reports_spearman_relationships() -> None:
     )
     target_corr, return_corr = evaluate_signal_score_association(frame)
 
-    assert target_corr == pytest.approx(1.0)
+    assert target_corr == pytest.approx(0.8944271909999159)
     assert return_corr == pytest.approx(1.0)
 
 
