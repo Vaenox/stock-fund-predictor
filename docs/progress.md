@@ -226,6 +226,30 @@ Aday eşikler descriptive olarak:
 
 **Karar:** TUPRS'ta klasik 30/70 eşiği hiç BUY üretmedi; daha düşük BUY eşiklerinde coverage yalnızca 0.8–2.5% oldu ve örneklem çok küçük. BUY target/forward-return metrikleri bu aşamada threshold winner seçmek için yeterli değil. Cross-symbol validation devam edecek; global threshold kararı alınmayacak.
 
+### Faz 5 Threshold Validation — BIMAS Güncel Smoke
+
+Düzeltilmiş 0–100 raw signal foundation ile BIMAS üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 17.006, p25 28.267, median 33.693, mean 38.189, p75 47.759, max 71.204 oldu.
+
+Aday eşikler descriptive olarak:
+- SELL<=30 / BUY>=70: BUY 1 (0.8%), HOLD 79 (65.8%), SELL 40 (33.3%); BUY target 1.000; SELL target 0.300; BUY mean fwd 0.0309.
+- SELL<=35 / BUY>=65: BUY 7 (5.8%), HOLD 42 (35.0%), SELL 71 (59.2%); BUY target 0.571; SELL target 0.310; BUY mean fwd 0.0359.
+- SELL<=40 / BUY>=60: BUY 14 (11.7%), HOLD 24 (20.0%), SELL 82 (68.3%); BUY target 0.357; SELL target 0.317; BUY mean fwd 0.0242.
+- SELL<=45 / BUY>=55: BUY 19 (15.8%), HOLD 17 (14.2%), SELL 84 (70.0%); BUY target 0.263; SELL target 0.310; BUY mean fwd 0.0137.
+
+**Karar:** BIMAS, ASELS ile birlikte daha yüksek signal bandına çıkan sembollerden biri oldu; ancak threshold seviyeleri arasında BUY coverage artarken BUY target rate düşüyor ve örneklem hâlâ küçük. Bu sonuç descriptive validation olarak kaydedildi; threshold winner seçilmedi. Böylece THYAO, AFA, AFT, ASELS, TUPRS ve BIMAS olmak üzere altı sembolde 3-fold / 120 OOS threshold smoke coverage tamamlandı. Global BUY/HOLD/SELL threshold kararı henüz alınmadı.
+
+### Faz 5 Threshold Validation — 6 Symbol Aggregate Observation
+
+Altı sembolün mevcut 120 OOS gözlemli raw signal dağılımları birlikte değerlendirildiğinde signal ölçeğinin sembolden sembole belirgin biçimde değiştiği görülüyor. Mevcut değerler:
+- **THYAO:** p25 11.625, median 16.478, p75 21.171, min 2.580, max 33.904.
+- **AFA:** p25 28.904, median 30.997, p75 33.449, min 11.744, max 48.242.
+- **AFT:** p25 22.545, median 27.375, p75 32.020, min 12.056, max 54.051.
+- **ASELS:** p25 26.041, median 36.524, p75 49.179, min 7.881, max 72.313.
+- **TUPRS:** p25 24.539, median 28.651, p75 33.231, min 11.633, max 65.288.
+- **BIMAS:** p25 28.267, median 33.693, p75 47.759, min 17.006, max 71.204.
+
+**Karar:** Klasik global 30/70, 35/65, 40/60, 45/55 eşikleri altı sembolde ortak ve dengeli BUY/HOLD/SELL coverage üretmiyor. Özellikle THYAO/AFA/AFT'de BUY coverage yok veya çok düşükken ASELS/BIMAS daha yüksek bölgelere çıkabiliyor; TUPRS ise yüksek eşiklerde yalnızca çok küçük BUY örnekleri üretiyor. Bu, mevcut raw signal ölçeğinin cross-symbol threshold standardizasyonunun ayrıca ele alınması gerektiğini gösteriyor. Ancak yalnızca bu descriptive dağılımlara dayanarak percentile/rank veya başka bir representation production default olarak seçilmiyor. Böyle bir seçim yapılırsa inner walk-forward içinde leakage-safe model/representation selection olarak tasarlanmalıdır.
+
 ### Faz 5 Meta-Aggregation Outer OOS Değerlendirmesi
 
 Gerçek 3-fold outer OOS meta-aggregation smoke testi **THYAO, AFA, ASELS ve TUPRS** üzerinde değerlendirildi. Meta model outer test foldlarına erişmedi; ancak her foldda meta training için yalnızca 40 inner OOF gözlemi bulunduğu için sonuçlar düşük örneklemli deney olarak ele alınmalıdır.
@@ -240,7 +264,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 **Karar:** Meta-aggregation **production signal pipeline'ına alınmadı**. Deneysel foundation olarak kodda tutulacak; Phase 5 kapanışı için sabit/raw signal foundation kullanılacaktır. Bu karar meta yöntemin teknik olarak başarısız olduğu iddiası değil, mevcut outer OOS coverage ve fold instability ile production default seçmek için yeterli tutarlılık görülmediği anlamına gelir.
 
 - [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
-- [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet. THYAO ilk smoke tamamlandı; BUY coverage 0% ve mevcut aday eşikler uygun görünmedi.
+- [x] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet. THYAO/AFA/AFT/ASELS/TUPRS/BIMAS olmak üzere altı sembolde 3-fold / 120 OOS coverage tamamlandı; global threshold winner seçilmedi.
 - [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
@@ -256,7 +280,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 
 ## Sıradaki İş
 
-1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme.
+1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme. **Altı sembolün smoke coverage'ı tamamlandı; sıradaki adım aggregate sonuçların teknik değerlendirmesidir.**
 2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır.
 3. Direction sonucu gerekiyorsa target/model revizyonunu yalnızca validation evidence ile ve outer test seçimi yapmadan deneysel olarak değerlendir.
 4. Representation selection'ı production'a almadan önce gerekirse inner walk-forward içine raw_all / normalized_all / stationary_core seçimini leakage-safe candidate olarak dahil et.
