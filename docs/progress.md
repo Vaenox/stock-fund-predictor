@@ -148,6 +148,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Direction diagnostic stock tarafında DB history yetersizse Borsapy fallback kullanacak şekilde düzeltildi; böylece THYAO testinin yalnızca kısa DB incremental verisi nedeniyle başarısız olması engellendi.
 - [x] Target distribution diagnostic de aynı DB/Borsapy fallback davranışına getirildi ve indicator warm-up sonrası boş dataset için açık hata eklendi.
 - [x] `+1%`, `+2%`, `+3%`, `+5%` target threshold'ları için aynı chronological outer/inner protokolünde baseline/tuned direction karşılaştırması yapacak diagnostic eklendi; bu aşama target seçimi yapmaz, yalnızca yön ve base-rate davranışını raporlar.
+- [x] THYAO ve AFA üzerinde `+1/+2/+3/+5%` target direction diagnostic çalıştırıldı; threshold değişiminin model yönünü materially değiştirebildiği, ancak iki asset arasında ortak bir production target desteklenmediği görüldü. Mevcut `+3%` contract şimdilik korunuyor.
 
 
 ### Faz 5 Threshold Smoke — İlk Deneme
@@ -171,6 +172,8 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet.
 - [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
+- [ ] Target threshold direction diagnostic'ini ASELS, TUPRS, BIMAS ve AFT ile genişlet; asset-independent target davranışını test et.
+
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
