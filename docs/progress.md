@@ -172,7 +172,8 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet.
 - [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
-- [ ] Target threshold direction diagnostic'ini ASELS, TUPRS, BIMAS ve AFT ile genişlet; asset-independent target davranışını test et.
+- [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
+- [ ] AFT target threshold direction diagnostic için canonical DB history bootstrap et; ardından aynı test protokolünü çalıştır.
 
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
