@@ -109,7 +109,7 @@ Gerçek 3-fold OOS scaling smoke testi başarıyla geçti. Quantile bound'lar he
 - Scaled threshold coverage: 30/70 -> BUY 27.5%, HOLD 32.5%, SELL 40.0%; 40/60 -> BUY 30.8%, HOLD 13.3%, SELL 55.8%.
 - Fold 2 scaled signal median 88.926, Fold 3 median 25.583; bu nedenle tek global bound setinin OOS dönemlerindeki rejim değişimini tam olarak sabitlemediği görüldü.
 
-**Karar:** Quantile ve empirical-percentile scaling ikisi de teknik olarak çalışıyor; ancak AFA ve THYAO üzerinde fold/rejim stabilitesi farklı davranıyor. Bu nedenle hiçbir yöntem production default olarak seçilmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. OOS target/forward-return ile score monotonicity değerlendirmesi bir sonraki karar noktasıdır.
+**Karar:** Quantile ve empirical-percentile scaling ikisi de teknik olarak çalışıyor; ancak AFA ve THYAO üzerinde fold/rejim stabilitesi farklı davranıyor. Bu nedenle hiçbir yöntem production default olarak seçilmedi. BUY/HOLD/SELL eşikleri hâlâ seçilmedi. OOS monotonicity testinde hem quantile hem percentile signal skorlarında THYAO ve AFA için güçlü pozitif yönlü ilişki görülmedi; bu nedenle threshold seçimi ertelendi ve aggregation bileşenleri ayrı ayrı teşhis edilecek.
 
 ### Faz 5 Tasarım Kararları
 
@@ -136,7 +136,9 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Leakage-safe signal scaling walk-forward smoke testini THYAO/AFA üzerinde çalıştır ve sonuçları değerlendir.
 - [x] Fold-stability/robust normalization yaklaşımını değerlendir; empirical-percentile scaling comparison smoke akışı eklendi.
 - [x] THYAO ve AFA gerçek OOS scaling comparison sonuçlarını çıkardı; quantile vs percentile için stability ve threshold outcome metrikleri kaydedildi.
-- [ ] Signal score monotonicity / bin association analizini gerçek OOS veride çalıştır.
+- [x] Signal score monotonicity / bin association analizini gerçek OOS veride çalıştır.
+- [x] THYAO ve AFA OOS sonuçlarında signal score'un target/forward-return ile monoton yönlü ilişki göstermediği gözlendi; aggregation bileşenleri için ayrı association diagnostic eklendi.
+- [ ] ML probability / technical score / risk adjustment bileşen association sonuçlarını gerçek OOS veride çıkar.
 - [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
