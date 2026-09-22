@@ -95,6 +95,12 @@ BUY / HOLD / SELL
 
 Signal eşikleri henüz performans sonucu görülmeden sabitlenmiş “kazanan” değerler olarak kabul edilmeyecektir.
 
+### Signal Scale Düzeltmesi
+
+Gerçek threshold smoke testinde aday 30/70, 35/65, 40/60 ve 45/55 eşiklerinin birçok varlıkta BUY üretmediği görüldü. İncelemede önceki signal uygulamasının ML `%50` + technical `%30` ağırlığını doğrudan topladığı, risk adjustment'ı ise ayrıca eklediği; böylece pre-risk skorun teorik üst sınırının `80` kaldığı tespit edildi. Bu durum 0–100 signal ölçeğinin eşiklerle uyumsuz kalmasına neden oluyordu.
+
+Bu nedenle signal foundation, ML ve technical ağırlıklarını kendi toplamlarına göre normalize edecek şekilde düzeltildi. Risk adjustment yine ayrı, bounded negatif penalty olarak bir kez uygulanıyor. Böylece risk cezası yokken signal teorik olarak `0–100` aralığının tamamını kullanabiliyor. Önceki formülle üretilen threshold sonuçları production kararı olarak kullanılmayacak; düzeltme sonrası yeniden değerlendirilecek.
+
 ## Kabul Kriterleri
 
 - Inner validation dış test foldunu kullanmamalıdır.
