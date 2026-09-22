@@ -139,7 +139,9 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Signal score monotonicity / bin association analizini gerçek OOS veride çalıştır.
 - [x] THYAO ve AFA OOS sonuçlarında signal score'un target/forward-return ile monoton yönlü ilişki göstermediği gözlendi; aggregation bileşenleri için ayrı association diagnostic eklendi.
 - [x] ML probability / technical score / risk adjustment bileşen association sonuçlarını gerçek OOS veride çıkardı.
-- [ ] Bileşenlerin OOS bin davranışlarını ve model directionality'yi geniş symbol coverage ile doğrula.
+- [x] Bileşenlerin OOS bin davranışlarını geniş symbol coverage ile doğruladı; THYAO, ASELS, TUPRS, BIMAS, AFA ve AFT üzerinde bileşen yönlerinin sembolden sembole değiştiği görüldü.
+- [x] Sabit signal ağırlıklarının yeterince robust olmadığı görüldü; leakage-safe inner-OOF logistic meta-aggregation foundation'ı eklendi.
+- [ ] Meta-aggregation outer OOS sonuçlarını değerlendir.
 - [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
@@ -152,6 +154,8 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 5. Score monotonicity ve component association diagnostic sonuçlarını çıkar.
 6. Bileşenlerin OOS bin davranışlarını THYAO/AFA dışındaki sembollerle doğrula.
 7. Directionality yeterli değilse threshold yerine ML target/model veya technical/risk scoring tasarımını düzelt.
+8. `smoke_test_signal_meta_real.py` ile fixed signal vs meta signal outer OOS sonuçlarını karşılaştır.
+9. Meta sonuçları yeterli değilse target/model veya component semantics revizyonuna dön.
 5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
 
 ## Yeni Sohbette Devam Etme Kuralı
