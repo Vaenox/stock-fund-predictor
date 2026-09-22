@@ -142,6 +142,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] Bileşenlerin OOS bin davranışlarını geniş symbol coverage ile doğruladı; THYAO, ASELS, TUPRS, BIMAS, AFA ve AFT üzerinde bileşen yönlerinin sembolden sembole değiştiği görüldü.
 - [x] Sabit signal ağırlıklarının yeterince robust olmadığı görüldü; leakage-safe inner-OOF logistic meta-aggregation foundation'ı eklendi.
 - [x] Gerçek threshold smoke testinde raw signal ölçeğinin 0–100 eşikleriyle uyumsuz olduğu tespit edildi; ML+technical weighted base skorunun kendi toplam ağırlığına normalize edilmesiyle signal ölçeği düzeltildi. Risk adjustment ayrı negatif penalty olarak uygulanmaya devam ediyor.
+- [x] AFA ve THYAO direction diagnostic ile ML probability / technical score yönlerinin sembole göre değiştiği doğrulandı; target/model katmanı threshold'dan önce yeniden incelenmeye alındı.
 
 
 ### Faz 5 Threshold Smoke — İlk Deneme
@@ -163,6 +164,8 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 
 - [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
 - [ ] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet.
+- [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
+- [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
@@ -178,7 +181,10 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 9. Sabit/raw signal foundation için çoklu sembol threshold validation çalıştır.
 10. Sonuçları `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
 11. Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
-12. Ardından Phase 5'i kapatıp Phase 6'ya geç.
+12. Baseline vs tuned model direction diagnostic'i değerlendir.
+13. Target/model revizyonu gerekiyorsa validation-only deneyini çalıştır; production target değişikliğini outer test ile seçme.
+14. Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
+15. Ardından Phase 5'i kapatıp Phase 6'ya geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
