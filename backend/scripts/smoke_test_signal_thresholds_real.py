@@ -133,6 +133,13 @@ def _run(asset_type: str, symbol: str, days: int, gap: int, chunk_delay: float) 
     print(f"Symbol: {symbol.strip().upper()}")
     print(f"Raw rows: {len(raw)}")
     print(f"OOS rows: {len(oos)}")
+    scores = oos["signal_score"]
+    print(
+        "Signal distribution: "
+        f"min={scores.min():.3f}, p25={scores.quantile(0.25):.3f}, "
+        f"median={scores.median():.3f}, mean={scores.mean():.3f}, "
+        f"p75={scores.quantile(0.75):.3f}, max={scores.max():.3f}"
+    )
     print("Candidate threshold validation (descriptive; no winner selected):")
     for row in results:
         print(
