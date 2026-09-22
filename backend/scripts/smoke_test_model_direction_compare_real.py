@@ -1,68 +1,83 @@
 from __future__ import annotations
 
 import argparse
-import time
 from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
+from sqlalchemy import create_engine, text
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from app.analysis.features import build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_fund_indicators, calculate_stock_indicators
-from app.data.providers.borsapy import BorsapyProvider
-from app.data.providers.tefas import TefasProvider
+from app.core.settings import get_settings
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, select_best_candidate
 from app.ml.xgboost_baseline import XGBoostBaselineConfig, build_model
 
 
-def _stock_frame(symbol: str, days: int) -> pd.DataFrame:
+def _load_stock_frame(symbol: str, days: int) -> pd.DataFrame:
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
-    records = BorsapyProvider().get_daily_history(symbol, start_date, end_date)
-    return pd.DataFrame(
-        {
-            "trading_date": [r.trading_date for r in records],
-            "open": [float(r.open) for r in records],
-            "high": [float(r.high) for r in records],
-            "low": [float(r.low) for r in records],
-            "close": [float(r.close) for r in records],
-            "volume": [
-                float(r.volume) if r.volume is not None else float("nan")
-                for r in records
-            ],
-        }
+    engine = create_engine(get_settings().database_url, future=True)
+
+    query = text(
+        """
+        SELECT
+            b.trading_date,
+            b.open,
+            b.high,
+            b.low,
+            b.close,
+            b.volume
+        FROM stock_daily_bars AS b
+        JOIN assets AS a ON a.id = b.asset_id
+        WHERE a.canonical_symbol = :symbol
+          AND b.trading_date BETWEEN :start_date AND :end_date
+        ORDER BY b.trading_date
+        """
     )
 
+    with engine.connect() as conn:
+        rows = conn.execute(
+            query,
+            {"symbol": symbol, "start_date": start_date, "end_date": end_date},
+        ).mappings().all()
 
-def _fund_frame(code: str, days: int, chunk_delay: float) -> pd.DataFrame:
-    provider = TefasProvider()
+    if not rows:
+        raise ValueError(f"no DB stock history found for {symbol}")
+
+    return pd.DataFrame(rows)
+
+
+def _load_fund_frame(symbol: str, days: int) -> pd.DataFrame:
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
-    records: list = []
-    chunks = tuple(
-        provider._chunks(
-            start_date,
-            end_date,
-            provider._settings.max_days_per_request,
-        )
+    engine = create_engine(get_settings().database_url, future=True)
+
+    query = text(
+        """
+        SELECT
+            p.pricing_date,
+            p.unit_price
+        FROM fund_daily_prices AS p
+        JOIN assets AS a ON a.id = p.asset_id
+        WHERE a.canonical_symbol = :symbol
+          AND p.pricing_date BETWEEN :start_date AND :end_date
+        ORDER BY p.pricing_date
+        """
     )
-    for index, (chunk_start, chunk_end) in enumerate(chunks):
-        records.extend(provider.get_fund_history(code, chunk_start, chunk_end))
-        if index < len(chunks) - 1 and chunk_delay > 0:
-            time.sleep(chunk_delay)
-    return (
-        pd.DataFrame(
-            {
-                "pricing_date": [r.pricing_date for r in records],
-                "unit_price": [float(r.unit_price) for r in records],
-            }
-        )
-        .drop_duplicates(subset=["pricing_date"])
-        .sort_values("pricing_date")
-        .reset_index(drop=True)
-    )
+
+    with engine.connect() as conn:
+        rows = conn.execute(
+            query,
+            {"symbol": symbol, "start_date": start_date, "end_date": end_date},
+        ).mappings().all()
+
+    if not rows:
+        raise ValueError(f"no DB fund history found for {symbol}")
+
+    return pd.DataFrame(rows)
 
 
 def _safe_metrics(
@@ -90,18 +105,12 @@ def _describe(name: str, y: np.ndarray, probability: np.ndarray) -> None:
     )
 
 
-def _run(
-    asset_type: str,
-    symbol: str,
-    days: int,
-    gap: int,
-    chunk_delay: float,
-) -> None:
+def _run(asset_type: str, symbol: str, days: int, gap: int) -> None:
     if asset_type == "stock":
-        raw = _stock_frame(symbol, days)
+        raw = _load_stock_frame(symbol, days)
         indicators = calculate_stock_indicators(raw)
     else:
-        raw = _fund_frame(symbol, days, chunk_delay)
+        raw = _load_fund_frame(symbol, days)
         indicators = calculate_fund_indicators(raw)
 
     dataset = build_ml_feature_dataset(indicators, asset_type=asset_type)
@@ -167,8 +176,12 @@ def _run(
 
     print(f"Asset type: {asset_type}")
     print(f"Symbol: {symbol.strip().upper()}")
+    print(f"Data source: PostgreSQL canonical history")
     print(f"Raw rows: {len(raw)}")
+    print(f"Raw range: {raw.iloc[0].iloc[0]} -> {raw.iloc[-1].iloc[0]}")
+    print(f"Training rows: {len(dataset)}")
     print(f"OOS rows: {len(oos)}")
+    print(f"Target distribution: {dataset['target'].value_counts().sort_index().to_dict()}")
     print(f"Target rate: {y.mean():.3f}")
     _describe(
         "baseline aggregate",
@@ -191,17 +204,19 @@ def main() -> None:
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--days", type=int, default=1000)
     parser.add_argument("--gap", type=int, default=5)
-    parser.add_argument("--chunk-delay", type=float, default=3.0)
     args = parser.parse_args()
 
     if args.days < 260:
         raise SystemExit("days must be at least 260")
     if args.gap < 5:
         raise SystemExit("gap must be at least 5")
-    if args.chunk_delay < 0:
-        raise SystemExit("chunk-delay cannot be negative")
 
-    _run(args.asset_type, args.symbol, args.days, args.gap, args.chunk_delay)
+    _run(
+        args.asset_type,
+        args.symbol.strip().upper(),
+        args.days,
+        args.gap,
+    )
 
 
 if __name__ == "__main__":
