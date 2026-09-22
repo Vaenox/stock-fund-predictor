@@ -190,6 +190,18 @@ Aday eşikler descriptive olarak:
 
 **Karar:** AFA da BUY coverage `0%` kaldı ve aday eşikler yalnızca HOLD/SELL dağılımını değiştirdi. Bu sonuç herhangi bir threshold winner seçimini desteklemiyor. THYAO ile birlikte signal ölçeğinin semboller arasında belirgin biçimde aşağıda kümelendiğini gösteriyor. Multi-symbol validation devam edecek; global threshold kararı alınmayacak.
 
+### Faz 5 Threshold Validation — ASELS Güncel Smoke
+
+Düzeltilmiş 0–100 raw signal foundation ile ASELS üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 7.881, p25 26.041, median 36.524, mean 37.844, p75 49.179, max 72.313 oldu.
+
+Aday eşikler descriptive olarak:
+- SELL<=30 / BUY>=70: BUY 3 (2.5%), HOLD 72 (60.0%), SELL 45 (37.5%); BUY target 0.000; SELL target 0.311; BUY mean fwd -0.0971.
+- SELL<=35 / BUY>=65: BUY 8 (6.7%), HOLD 55 (45.8%), SELL 57 (47.5%); BUY target 0.125; SELL target 0.263; BUY mean fwd -0.0471.
+- SELL<=40 / BUY>=60: BUY 15 (12.5%), HOLD 38 (31.7%), SELL 67 (55.8%); BUY target 0.400; SELL target 0.254; BUY mean fwd -0.0019.
+- SELL<=45 / BUY>=55: BUY 20 (16.7%), HOLD 22 (18.3%), SELL 78 (65.0%); BUY target 0.400; SELL target 0.295; BUY mean fwd 0.0008.
+
+**Karar:** ASELS, THYAO/AFA/AFT'ten farklı olarak 55–70+ signal bandına anlamlı coverage üreten ilk sembol oldu. Ancak aday threshold'larda BUY coverage ile birlikte BUY target/forward-return davranışı istikrarlı biçimde pozitif değil; bu nedenle bu sonuç da threshold winner seçimini desteklemiyor. Cross-symbol validation devam edecek ve global threshold kararı alınmayacak.
+
 ### Faz 5 Threshold Validation — AFT Güncel Smoke
 
 Düzeltilmiş 0–100 raw signal foundation ile AFT üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 12.056, p25 22.545, median 27.375, mean 27.801, p75 32.020, max 54.051 oldu.
