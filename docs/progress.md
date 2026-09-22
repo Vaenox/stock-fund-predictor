@@ -190,6 +190,18 @@ Aday eşikler descriptive olarak:
 
 **Karar:** AFA da BUY coverage `0%` kaldı ve aday eşikler yalnızca HOLD/SELL dağılımını değiştirdi. Bu sonuç herhangi bir threshold winner seçimini desteklemiyor. THYAO ile birlikte signal ölçeğinin semboller arasında belirgin biçimde aşağıda kümelendiğini gösteriyor. Multi-symbol validation devam edecek; global threshold kararı alınmayacak.
 
+### Faz 5 Threshold Validation — AFT Güncel Smoke
+
+Düzeltilmiş 0–100 raw signal foundation ile AFT üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 12.056, p25 22.545, median 27.375, mean 27.801, p75 32.020, max 54.051 oldu.
+
+Aday eşikler descriptive olarak:
+- SELL<=30 / BUY>=70: BUY 0 (0.0%), HOLD 44 (36.7%), SELL 76 (63.3%); BUY target N/A; SELL target 0.303.
+- SELL<=35 / BUY>=65: BUY 0 (0.0%), HOLD 17 (14.2%), SELL 103 (85.8%); BUY target N/A; SELL target 0.282.
+- SELL<=40 / BUY>=60: BUY 0 (0.0%), HOLD 6 (5.0%), SELL 114 (95.0%); BUY target N/A; SELL target 0.289.
+- SELL<=45 / BUY>=55: BUY 0 (0.0%), HOLD 4 (3.3%), SELL 116 (96.7%); BUY target N/A; SELL target 0.302.
+
+**Karar:** AFT'de de BUY coverage `0%` kaldı. AFA ve THYAO ile birlikte üç sembolde klasik BUY eşikleri hiç tetiklenmedi; ancak AFT'nin maksimum signal değeri AFA'dan yüksek olsa da 55 üzeri bölgeye çıkmadı. Bu sonuç threshold winner seçimini desteklemiyor. Multi-symbol validation devam edecek; global threshold kararı alınmayacak.
+
 ### Faz 5 Meta-Aggregation Outer OOS Değerlendirmesi
 
 Gerçek 3-fold outer OOS meta-aggregation smoke testi **THYAO, AFA, ASELS ve TUPRS** üzerinde değerlendirildi. Meta model outer test foldlarına erişmedi; ancak her foldda meta training için yalnızca 40 inner OOF gözlemi bulunduğu için sonuçlar düşük örneklemli deney olarak ele alınmalıdır.
