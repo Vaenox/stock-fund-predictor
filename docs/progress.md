@@ -147,6 +147,7 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] AFA DB-backed baseline vs tuned direction diagnostic: baseline aggregate direct ROC `0.3360`, inverse ROC `0.6640`; tuned direct ROC `0.3377`, inverse ROC `0.6623`. Her iki model de inverse yönde daha yüksek ayrıştırma gösterdi; tuning yön problemini düzeltmedi.
 - [x] Direction diagnostic stock tarafında DB history yetersizse Borsapy fallback kullanacak şekilde düzeltildi; böylece THYAO testinin yalnızca kısa DB incremental verisi nedeniyle başarısız olması engellendi.
 - [x] Target distribution diagnostic de aynı DB/Borsapy fallback davranışına getirildi ve indicator warm-up sonrası boş dataset için açık hata eklendi.
+- [x] `+1%`, `+2%`, `+3%`, `+5%` target threshold'ları için aynı chronological outer/inner protokolünde baseline/tuned direction karşılaştırması yapacak diagnostic eklendi; bu aşama target seçimi yapmaz, yalnızca yön ve base-rate davranışını raporlar.
 
 
 ### Faz 5 Threshold Smoke — İlk Deneme
