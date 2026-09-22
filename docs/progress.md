@@ -174,7 +174,8 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
 - [x] AFT canonical history bootstrap edildi (`683` rows) ve target threshold direction diagnostic tamamlandı: +1/+2/+3% direct yön pozitif, +5% ters yöne döndü.
-- [ ] Feature-level OOS direction audit'i AFA/AFT/THYAO/ASELS/TUPRS/BIMAS üzerinde çalıştır; feature semantiği ile model direction arasındaki ilişkiyi ayır.
+- [x] Ham feature auditinde AFA/AFT/THYAO'da SMA/EMA/BB gibi fiyat-seviyesi özelliklerinin çoğunda negatif OOS korelasyon görülmesi üzerine level-normalization diagnostic eklendi; henüz production feature değişikliği yapılmadı.
+- [ ] Ham fiyat-seviyesi feature'larının etkisini ayırmak için normalized feature direction audit'i AFA/AFT/THYAO/ASELS/TUPRS/BIMAS üzerinde çalıştır; SMA/EMA/BB/ATR gibi level özelliklerini mevcut fiyatına göre normalize et ve yön değişimini gözlemle.
 
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
