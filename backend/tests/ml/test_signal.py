@@ -12,7 +12,7 @@ def test_signal_combines_ml_and_technical_and_applies_risk_penalty() -> None:
         -10.0,
     )
 
-    assert result.signal_score == pytest.approx(51.0)
+    assert result.signal_score == pytest.approx(66.25)
     assert result.ml_probability == pytest.approx(0.80)
     assert result.technical_score == pytest.approx(70.0)
     assert result.risk_adjustment == pytest.approx(-10.0)
@@ -20,7 +20,7 @@ def test_signal_combines_ml_and_technical_and_applies_risk_penalty() -> None:
 
 def test_signal_zero_risk_is_unaffected_by_penalty() -> None:
     result = calculate_signal_score(0.60, 40.0, 0.0)
-    assert result.signal_score == pytest.approx(42.0)
+    assert result.signal_score == pytest.approx(52.5)
 
 
 def test_signal_is_clipped_to_zero() -> None:
@@ -28,9 +28,9 @@ def test_signal_is_clipped_to_zero() -> None:
     assert result.signal_score == pytest.approx(0.0)
 
 
-def test_signal_is_clipped_to_hundred() -> None:
+def test_signal_can_reach_full_100_before_risk_penalty() -> None:
     result = calculate_signal_score(1.0, 100.0, 0.0)
-    assert result.signal_score == pytest.approx(80.0)
+    assert result.signal_score == pytest.approx(100.0)
 
 
 def test_positive_risk_adjustment_is_rejected() -> None:
@@ -45,4 +45,11 @@ def test_invalid_probability_is_rejected() -> None:
 
 def test_signal_config_weights_must_sum_to_one() -> None:
     with pytest.raises(ValueError, match="signal weights must sum to 1.0"):
-        SignalScoreConfig(ml_weight=0.6, technical_weight=0.3, risk_weight=0.3)
+        SignalScoreConfig(ml_weight=0.6, technical_weight=0.3)
+
+
+def test_signal_risk_penalty_is_applied_once_after_normalization() -> None:
+    no_risk = calculate_signal_score(0.70, 60.0, 0.0)
+    risk = calculate_signal_score(0.70, 60.0, -10.0)
+
+    assert risk.signal_score == pytest.approx(no_risk.signal_score - 10.0)
