@@ -130,9 +130,14 @@ def _describe(name: str, y: np.ndarray, probability: np.ndarray) -> None:
 def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) -> None:
     if asset_type == "stock":
         raw = _load_stock_frame(symbol, days)
+        source = "PostgreSQL canonical history"
+        if len(raw) < min_db_rows:
+            raw = _load_stock_frame_provider(symbol, days)
+            source = "Borsapy provider (DB history insufficient)"
         indicators = calculate_stock_indicators(raw)
     else:
         raw = _load_fund_frame(symbol, days)
+        source = "PostgreSQL canonical history"
         indicators = calculate_fund_indicators(raw)
 
     dataset = build_ml_feature_dataset(indicators, asset_type=asset_type)
