@@ -141,8 +141,22 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] ML probability / technical score / risk adjustment bileşen association sonuçlarını gerçek OOS veride çıkardı.
 - [x] Bileşenlerin OOS bin davranışlarını geniş symbol coverage ile doğruladı; THYAO, ASELS, TUPRS, BIMAS, AFA ve AFT üzerinde bileşen yönlerinin sembolden sembole değiştiği görüldü.
 - [x] Sabit signal ağırlıklarının yeterince robust olmadığı görüldü; leakage-safe inner-OOF logistic meta-aggregation foundation'ı eklendi.
-- [ ] Meta-aggregation outer OOS sonuçlarını değerlendir.
-- [ ] Scaling sonrası gerçek threshold validation sonuçlarını, normalization yaklaşımı doğrulandıktan sonra çalıştır ve kaydet.
+
+### Faz 5 Meta-Aggregation Outer OOS Değerlendirmesi
+
+Gerçek 3-fold outer OOS meta-aggregation smoke testi **THYAO, AFA, ASELS ve TUPRS** üzerinde değerlendirildi. Meta model outer test foldlarına erişmedi; ancak her foldda meta training için yalnızca 40 inner OOF gözlemi bulunduğu için sonuçlar düşük örneklemli deney olarak ele alınmalıdır.
+
+- **THYAO:** fixed raw ROC-AUC `0.5289`, PR-AUC `0.2269`; meta ROC-AUC `0.4292`, PR-AUC `0.1631`. Meta yaklaşımı bu örnekte geriledi.
+- **AFA:** fixed raw ROC-AUC `0.2935`, PR-AUC `0.2221`; meta ROC-AUC `0.3377`, PR-AUC `0.1561`. ROC-AUC yükselirken PR-AUC geriledi.
+- **ASELS:** fixed raw ROC-AUC `0.5514`, PR-AUC `0.3819`; meta ROC-AUC `0.6039`, PR-AUC `0.5211`. Bu örnekte meta yaklaşımı iyileşti.
+- **TUPRS:** fixed raw ROC-AUC `0.5573`, PR-AUC `0.4687`; meta ROC-AUC `0.4968`, PR-AUC `0.4729`. ROC-AUC gerilerken PR-AUC yalnızca sınırlı arttı.
+
+Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir. THYAO ve TUPRS örneklerinde ML/technical/risk katsayılarının foldlar arasında yön değiştirmesi bu aggregation katmanının mevcut örneklemde kararlı olmadığını göstermektedir.
+
+**Karar:** Meta-aggregation **production signal pipeline'ına alınmadı**. Deneysel foundation olarak kodda tutulacak; Phase 5 kapanışı için sabit/raw signal foundation kullanılacaktır. Bu karar meta yöntemin teknik olarak başarısız olduğu iddiası değil, mevcut outer OOS coverage ve fold instability ile production default seçmek için yeterli tutarlılık görülmediği anlamına gelir.
+
+- [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
+- [ ] Sabit/raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile çalıştır ve kaydet.
 - [ ] Faz 5 acceptance testlerini çalıştır ve PASS doğrula.
 
 ## Sıradaki İş
@@ -154,9 +168,11 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 5. Score monotonicity ve component association diagnostic sonuçlarını çıkar.
 6. Bileşenlerin OOS bin davranışlarını THYAO/AFA dışındaki sembollerle doğrula.
 7. Directionality yeterli değilse threshold yerine ML target/model veya technical/risk scoring tasarımını düzelt.
-8. `smoke_test_signal_meta_real.py` ile fixed signal vs meta signal outer OOS sonuçlarını karşılaştır.
-9. Meta sonuçları yeterli değilse target/model veya component semantics revizyonuna dön.
-5. Ardından Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
+8. Meta-aggregation dış OOS sonuçlarını değerlendir; production default seçme kararı alındı.
+9. Sabit/raw signal foundation için çoklu sembol threshold validation çalıştır.
+10. Sonuçları `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
+11. Faz 5 acceptance ve gerçek signal zinciri kapanış testlerini çalıştır.
+12. Ardından Phase 5'i kapatıp Phase 6'ya geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
