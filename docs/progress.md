@@ -166,7 +166,6 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] `+1%`, `+2%`, `+3%`, `+5%` target threshold'ları için aynı chronological outer/inner protokolünde baseline/tuned direction karşılaştırması yapacak diagnostic eklendi; bu aşama target seçimi yapmaz, yalnızca yön ve base-rate davranışını raporlar.
 - [x] THYAO ve AFA üzerinde `+1/+2/+3/+5%` target direction diagnostic çalıştırıldı; threshold değişiminin model yönünü materially değiştirebildiği, ancak iki asset arasında ortak bir production target desteklenmediği görüldü. Mevcut `+3%` contract şimdilik korunuyor.
 
-
 ### Faz 5 Threshold Smoke — İlk Deneme
 
 İlk threshold smoke sonuçlarında THYAO ve AFA'da tüm 120 OOS gözlem SELL sınıfına düşerken ASELS/TUPRS/BIMAS/AFT'te BUY coverage çoğunlukla `0%` veya `1.7%` seviyesinde kaldı. Bu sonuçlar eşik seçimi olarak kaydedilmedi. İncelemede signal foundation'ın pre-risk teorik üst sınırının `80` olduğu görüldü; formula düzeltildi ve threshold validation yeniden çalıştırılacak.
@@ -178,6 +177,18 @@ Düzeltilmiş 0–100 raw signal foundation ile THYAO üzerinde gerçek 3-fold O
 Aday eşiklerin tamamında BUY coverage 0% seviyesinde kaldı; SELL<=30 / BUY>=70 eşiğinde yalnızca 1 HOLD ve 119 SELL gözlemi oluştu. Daha yüksek SELL eşiklerinde tüm OOS gözlemleri SELL'e düştü. Bu nedenle THYAO sonucu herhangi bir BUY/HOLD/SELL threshold seçimini desteklemiyor.
 
 **Karar:** THYAO threshold sonucu descriptive validation olarak kaydedildi; winner seçilmedi. Signal ölçeğinin mevcut OOS dağılımı ile klasik 30/70, 35/65, 40/60, 45/55 eşikleri uyumlu görünmüyor. Multi-symbol threshold validation devam edecek; global eşik kararı henüz alınmayacak.
+
+### Faz 5 Threshold Validation — AFA Güncel Smoke
+
+Düzeltilmiş 0–100 raw signal foundation ile AFA üzerinde gerçek 3-fold OOS threshold validation başarıyla çalıştı. OOS 120 gözlemde signal dağılımı min 11.744, p25 28.904, median 30.997, mean 30.621, p75 33.449, max 48.242 oldu.
+
+Aday eşikler descriptive olarak:
+- SELL<=30 / BUY>=70: BUY 0 (0.0%), HOLD 77 (64.2%), SELL 43 (35.8%); BUY target N/A; SELL target 0.372.
+- SELL<=35 / BUY>=65: BUY 0 (0.0%), HOLD 24 (20.0%), SELL 96 (80.0%); BUY target N/A; SELL target 0.229.
+- SELL<=40 / BUY>=60: BUY 0 (0.0%), HOLD 10 (8.3%), SELL 110 (91.7%); BUY target N/A; SELL target 0.209.
+- SELL<=45 / BUY>=55: BUY 0 (0.0%), HOLD 2 (1.7%), SELL 118 (98.3%); BUY target N/A; SELL target 0.195.
+
+**Karar:** AFA da BUY coverage `0%` kaldı ve aday eşikler yalnızca HOLD/SELL dağılımını değiştirdi. Bu sonuç herhangi bir threshold winner seçimini desteklemiyor. THYAO ile birlikte signal ölçeğinin semboller arasında belirgin biçimde aşağıda kümelendiğini gösteriyor. Multi-symbol validation devam edecek; global threshold kararı alınmayacak.
 
 ### Faz 5 Meta-Aggregation Outer OOS Değerlendirmesi
 
@@ -202,7 +213,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 - [x] AFT/ASELS/TUPRS/BIMAS raw-vs-normalized model OOS karşılaştırmaları tamamlandı; normalize yaklaşım AFT/ASELS/TUPRS'da aggregate ROC/PR açısından genel üstünlük göstermedi, BIMAS'ta mixed davranış gösterdi. Bu nedenle normalize model henüz production default seçilmedi.
 - [x] Normalized model diagnostic import bağımlılığı self-contained hale getirildi; `PRICE_LEVEL_FEATURES` rename/import hatası düzeltildi ve volume/price normalization dönüşümleri ortak helper kopyasıyla hizalandı.
 - [x] Normalized diagnostics içinde fold Spearman index alignment ve `volume_sma_20` self-normalization kusurları düzeltildi; MACD/momentum gibi price-difference özelliklerinin de doğru şekilde fiyatla ölçeklenmesi için diagnostic dönüşümü ayrıştırıldı.
-- [ ] Düzeltilmiş normalized feature/model audit'i AFA/AFT/THYAO/AFT/ASELS/TUPRS/BIMAS coverage'ında çalıştır; price-level, price-difference ve volume-level dönüşümlerini aynı contract üzerinden doğrula.
+- [ ] Düzeltilmiş normalized feature/model audit'i AFA/AFT/THYAO/AFT/ASELS/TUPRS/BIMAS coverage'ında çalıştır; price-level, price-difference ve volume-level dönüşümleri aynı contract üzerinden doğrula.
 
 - [x] Faz 5 acceptance testleri çalıştırıldı: `PYTHONPATH=. pytest tests/ml/test_phase5_acceptance.py -q` → **3 passed**.
 - [x] Tüm ML test suite çalıştırıldı: `PYTHONPATH=. pytest tests/ml -q` → **75 passed in 6.15s**.
