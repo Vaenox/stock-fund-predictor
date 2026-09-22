@@ -5,7 +5,6 @@ from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
 from sqlalchemy import create_engine, text
 
 from app.analysis.features import build_ml_feature_dataset
@@ -119,9 +118,8 @@ def _metrics(frame: pd.DataFrame, threshold: float) -> None:
         f"non_positive={int(negative_or_equal.sum())} ({negative_or_equal.mean():.3f})"
     )
 
-    print("Rolling target-rate snapshots:")
+    print("Recent target-rate snapshot:")
     window = min(120, len(forward))
-    snapshot_count = min(4, max(1, len(forward) // max(window // 2, 1)))
     if len(forward) >= window:
         recent = forward[-window:]
         print(
@@ -129,8 +127,7 @@ def _metrics(frame: pd.DataFrame, threshold: float) -> None:
             f"target_rate={(recent > threshold).mean():.3f}"
         )
 
-    del spearmanr
-
+    
 
 def _run(
     asset_type: str,
