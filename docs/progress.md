@@ -166,6 +166,19 @@ Signal foundation'da ML probability `0–1` değeri `0–100` ölçeğine çevri
 - [x] `+1%`, `+2%`, `+3%`, `+5%` target threshold'ları için aynı chronological outer/inner protokolünde baseline/tuned direction karşılaştırması yapacak diagnostic eklendi; bu aşama target seçimi yapmaz, yalnızca yön ve base-rate davranışını raporlar.
 - [x] THYAO ve AFA üzerinde `+1/+2/+3/+5%` target direction diagnostic çalıştırıldı; threshold değişiminin model yönünü materially değiştirebildiği, ancak iki asset arasında ortak bir production target desteklenmediği görüldü. Mevcut `+3%` contract şimdilik korunuyor.
 
+### Faz 5 Direction Diagnostic — 6 Symbol OOS
+
+Canonical PostgreSQL history üzerinden gerçek 3-fold / 120 OOS direction diagnostic tamamlandı. Direction metricleri direct/inverse karşılaştırması olarak raporlandı; bu sonuçlar production yön seçimi değildir.
+
+- **AFA:** ML direct ROC-AUC 0.3339 / inverse 0.6661; Technical direct 0.3122 / inverse 0.6878. Her iki bileşen de inverse yönde daha yüksek ayrıştırma gösterdi.
+- **THYAO:** ML direct 0.4210 / inverse 0.5790; Technical direct 0.5230 / inverse 0.4770. ML inverse yönde, Technical ROC-AUC direct yönde; Technical PR-AUC inverse yönde olduğundan teknik yön karışık.
+- **ASELS:** ML direct 0.6117 / inverse 0.3883; Technical direct 0.3223 / inverse 0.6777. ML direct, Technical inverse yönde daha güçlü.
+- **TUPRS:** ML direct 0.4531 / inverse 0.5469; Technical direct 0.5929 / inverse 0.4071. ML inverse, Technical direct yönde daha güçlü.
+- **BIMAS:** ML direct 0.5949 / inverse 0.4051; Technical direct 0.3948 / inverse 0.6052. ML direct, Technical inverse yönde daha güçlü.
+- **AFT:** ML direct 0.5607 / inverse 0.4393; Technical direct 0.4194 / inverse 0.5806. ML direct, Technical inverse yönde daha güçlü.
+
+**Karar:** ML probability için 6 sembolde 3 direct / 3 inverse ayrışması görüldüğü için global direct veya inverse yön seçilmedi. Technical Score için 4 sembolde inverse, 2 sembolde direct ROC yönü görülmesine rağmen THYAO'daki ROC/PR ayrışması ve sembol heterojenliği nedeniyle global inversion seçilmedi. Mevcut production signal direction değiştirilmedi. Direction bulguları target/model katmanını ayrıca incelemek için evidence olarak tutuluyor.
+
 ### Faz 5 Threshold Smoke — İlk Deneme
 
 İlk threshold smoke sonuçlarında THYAO ve AFA'da tüm 120 OOS gözlem SELL sınıfına düşerken ASELS/TUPRS/BIMAS/AFT'te BUY coverage çoğunlukla `0%` veya `1.7%` seviyesinde kaldı. Bu sonuçlar eşik seçimi olarak kaydedilmedi. İncelemede signal foundation'ın pre-risk teorik üst sınırının `80` olduğu görüldü; formula düzeltildi ve threshold validation yeniden çalıştırılacak.
@@ -265,7 +278,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 
 - [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
 - [x] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet. THYAO/AFA/AFT/ASELS/TUPRS/BIMAS olmak üzere altı sembolde 3-fold / 120 OOS coverage tamamlandı; global threshold winner seçilmedi.
-- [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır. **AFA direction scripti ilk denemede eski TEFAS provider yoluna gitti ve TLS timeout ile durdu; script canonical PostgreSQL history kullanacak şekilde düzeltildi. Yeni smoke sonucu bekleniyor.**
+- [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır. Direction diagnostic 6 sembolde tamamlandı; baseline-vs-tuned ayrıştırması hâlâ ayrı task olarak açık.
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
 - [x] AFT canonical history bootstrap edildi (`683` rows) ve target threshold direction diagnostic tamamlandı: +1/+2/+3% direct yön pozitif, +5% ters yöne döndü.
@@ -280,8 +293,8 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 
 ## Sıradaki İş
 
-1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme. **Altı sembolün smoke coverage'ı tamamlandı; sıradaki adım aggregate sonuçların teknik değerlendirmesidir.**
-2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır. **AFA scripti DB canonical history fix sonrası yeniden çalıştırılacak.**
+1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme. **Altı sembolün smoke coverage'ı tamamlandı; aggregate değerlendirme direction bulguları ile birlikte sürdürülecek.**
+2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır. **Direction diagnostic tamamlandı; şimdi baseline vs tuned karşılaştırması çalıştırılacak.**
 3. Direction sonucu gerekiyorsa target/model revizyonunu yalnızca validation evidence ile ve outer test seçimi yapmadan deneysel olarak değerlendir.
 4. Representation selection'ı production'a almadan önce gerekirse inner walk-forward içine raw_all / normalized_all / stationary_core seçimini leakage-safe candidate olarak dahil et.
 5. Threshold ve gerçek signal-chain sonuçlarını `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
