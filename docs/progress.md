@@ -265,7 +265,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 
 - [x] Meta-aggregation outer OOS sonuçlarını THYAO, AFA, ASELS ve TUPRS üzerinde değerlendirdi; production default olarak seçmedi.
 - [x] Düzeltilmiş 0–100 raw signal foundation üzerinde gerçek threshold validation sonuçlarını çoklu BIST/TEFAS OOS coverage ile yeniden çalıştır ve kaydet. THYAO/AFA/AFT/ASELS/TUPRS/BIMAS olmak üzere altı sembolde 3-fold / 120 OOS coverage tamamlandı; global threshold winner seçilmedi.
-- [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır.
+- [ ] Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde çalıştır; tuning'in ters yön davranışındaki etkisini ayır. **AFA direction scripti ilk denemede eski TEFAS provider yoluna gitti ve TLS timeout ile durdu; script canonical PostgreSQL history kullanacak şekilde düzeltildi. Yeni smoke sonucu bekleniyor.**
 - [ ] Direction sonucu uygunsa target/model revizyonunu yalnızca validation evidence ile yap.
 - [x] ASELS, TUPRS ve BIMAS target threshold direction diagnostic sonuçları çıkarıldı; direct/inverse yönler sembole göre değişiyor ve tek global threshold ile açıklanamıyor.
 - [x] AFT canonical history bootstrap edildi (`683` rows) ve target threshold direction diagnostic tamamlandı: +1/+2/+3% direct yön pozitif, +5% ters yöne döndü.
@@ -281,7 +281,7 @@ Foldlar arasındaki meta logistic katsayılarının yönleri de stabil değildir
 ## Sıradaki İş
 
 1. Düzeltilmiş 0–100 raw signal foundation üzerinde çoklu BIST/TEFAS gerçek OOS threshold validation'ı çalıştır; BUY/HOLD/SELL eşiklerini henüz kazanan olarak seçme. **Altı sembolün smoke coverage'ı tamamlandı; sıradaki adım aggregate sonuçların teknik değerlendirmesidir.**
-2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır.
+2. Baseline vs tuned model direction OOS karşılaştırmasını AFA ve THYAO üzerinde değerlendir; tuning'in ters yön davranışına etkisini ayır. **AFA scripti DB canonical history fix sonrası yeniden çalıştırılacak.**
 3. Direction sonucu gerekiyorsa target/model revizyonunu yalnızca validation evidence ile ve outer test seçimi yapmadan deneysel olarak değerlendir.
 4. Representation selection'ı production'a almadan önce gerekirse inner walk-forward içine raw_all / normalized_all / stationary_core seçimini leakage-safe candidate olarak dahil et.
 5. Threshold ve gerçek signal-chain sonuçlarını `docs/phase-5-tuning-evaluation.md` veya ilgili Phase 5 raporuna kaydet.
