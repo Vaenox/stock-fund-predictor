@@ -530,6 +530,10 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Faz 6 sözleşmesi docs/phase-6-backtesting.md içinde kayıtlıdır.
 - Henüz Codespace test sonucu alınmadı. İlk doğrulama Phase 6 targeted tests, ardından full backend suite olmalıdır.
 
+
+- Backtest buy sizing transaction costs/slippage dahil edilerek nakdin negatife düşmesini önleyecek şekilde düzeltildi; target weight maliyet sonrası küçük sapma gösterebilir.
+- Bu davranış için backtest engine unit testi eklendi.
+
 ## Sıradaki İş
 
 1. Codespace'te Phase 6 backtesting tests'lerini çalıştır; ardından full backend suite ile regression kontrolü yap.
