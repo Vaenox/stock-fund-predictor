@@ -193,19 +193,31 @@ def _candidate_score(
 
 def _select_candidate(
     candidates: list[CandidateScore],
+    *,
+    required_valid_folds: int = 2,
 ) -> CandidateScore:
     if not candidates:
         raise ValueError("no target candidate has valid inner folds")
 
-    # PR-AUC is the primary objective. The remaining terms are deterministic
-    # tie-breakers/diagnostics, not an attempt to optimize a trading outcome.
+    stable = [
+        candidate
+        for candidate in candidates
+        if candidate.valid_folds >= required_valid_folds
+    ]
+    if not stable:
+        raise ValueError(
+            "no target candidate has the required number of valid inner folds"
+        )
+
+    # PR-AUC is the primary objective. ROC-AUC and fold stability are
+    # deterministic secondary criteria. Class balance is reported but is not
+    # optimized toward an arbitrary target rate.
     return max(
-        candidates,
+        stable,
         key=lambda item: (
             item.mean_pr_auc,
             item.mean_roc_auc,
             -item.fold_pr_std,
-            -abs(item.positive_rate - 0.20),
             item.valid_folds,
             -item.candidate.horizon,
             -item.candidate.threshold,
