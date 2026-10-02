@@ -25,6 +25,8 @@ from smoke_test_feature_ablation_real import (
 
 
 REPRESENTATIONS = ("raw_all", "normalized_all", "stationary_core")
+REPRESENTATION_INNER_TEST_SIZE = 40
+REPRESENTATION_TUNING_TEST_SIZE = 20
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,9 +143,14 @@ def _select_best_candidate_for_representation(
             score = _safe_auc("pr", validation["target"].astype(int).to_numpy(), probability)
             if score is not None:
                 fold_scores.append(score)
-        if not fold_scores:
-            raise ValueError("inner validation has no two-class fold")
+        if len(fold_scores) < tuning_config.n_inner_splits:
+            continue
         scored.append(TuningCandidate(config=candidate, score=float(np.mean(fold_scores))))
+
+    if not scored:
+        raise ValueError(
+            "representation tuning has no candidate with two valid inner folds"
+        )
 
     return max(
         scored,
@@ -167,12 +174,12 @@ def _score_representation(
     folds = build_walk_forward_splits(
         len(prepared),
         n_splits=2,
-        test_size=20,
+        test_size=REPRESENTATION_INNER_TEST_SIZE,
         gap=gap,
     )
     tuning_config = TuningConfig(
         n_inner_splits=2,
-        inner_test_size=20,
+        inner_test_size=REPRESENTATION_TUNING_TEST_SIZE,
         gap=gap,
     )
 
@@ -200,7 +207,7 @@ def _score_representation(
         except ValueError as exc:
             print(
                 f"[representation={representation}] "
-                f"inner fold train={len(train)} validation={len(validation)} "
+                f"representation-fold train={len(train)} validation={len(validation)} "
                 f"train_pos={train['target'].mean():.3f} "
                 f"validation_pos={validation['target'].mean():.3f} "
                 f"skipped: {exc}"
@@ -299,7 +306,7 @@ def _evaluate_outer(
         columns=tuple(columns),
         tuning_config=TuningConfig(
             n_inner_splits=2,
-            inner_test_size=20,
+            inner_test_size=REPRESENTATION_TUNING_TEST_SIZE,
             gap=gap,
         ),
     )
