@@ -294,6 +294,7 @@ def _run(
     symbol: str,
     days: int,
     gap: int,
+    threshold: float,
     min_db_rows: int,
 ) -> None:
     if asset_type == "stock":
@@ -308,7 +309,7 @@ def _run(
         asset_type=asset_type,
         config=MLFeatureConfig(
             horizon=5,
-            positive_return_threshold=0.03,
+            positive_return_threshold=threshold,
         ),
     )
 
@@ -317,7 +318,7 @@ def _run(
     print(f"Data source: {source}")
     print(f"Raw rows: {len(raw)}")
     print(f"Dataset rows: {len(dataset)}")
-    print("Production target: horizon=5, threshold=+3%")
+    print(f"Target: horizon=5, threshold=+{threshold:.1%}")
     print("Representations:", ", ".join(REPRESENTATIONS))
 
     outer_results: list[dict[str, object]] = []
@@ -349,17 +350,32 @@ def _run(
             else:
                 columns = _stationary_core_columns(asset_type)
 
-            score = _score_representation(
-                outer_train,
-                asset_type=asset_type,
-                representation=representation,
-                columns=tuple(columns),
-                gap=gap,
-            )
+            try:
+                score = _score_representation(
+                    outer_train,
+                    asset_type=asset_type,
+                    representation=representation,
+                    columns=tuple(columns),
+                    gap=gap,
+                )
+            except ValueError as exc:
+                print(
+                    f"Outer fold {outer_number} representation={representation}: "
+                    f"skipped ({exc})"
+                )
+                continue
             if score is not None:
                 scores.append(score)
 
-        winner = _select_representation(scores)
+        try:
+            winner = _select_representation(scores)
+        except ValueError as exc:
+            print(
+                f"Outer fold {outer_number}: skipped ({exc}). "
+                "Target is too rare for stable representation selection; "
+                "try a lower --threshold or more history."
+            )
+            continue
 
         print(
             f"Outer fold {outer_number}: selected {winner.representation} | "
@@ -370,14 +386,29 @@ def _run(
             f"valid_folds={winner.valid_folds}"
         )
 
-        result = _evaluate_outer(
-            dataset,
-            asset_type=asset_type,
-            representation=winner.representation,
-            outer_fold_number=outer_number,
-            gap=gap,
-        )
+        try:
+            result = _evaluate_outer(
+                dataset,
+                asset_type=asset_type,
+                representation=winner.representation,
+                outer_fold_number=outer_number,
+                gap=gap,
+            )
+        except ValueError as exc:
+            print(
+                f"Outer fold {outer_number}: outer evaluation skipped ({exc})"
+            )
+            continue
+
         outer_results.append(result)
+
+    if not outer_results:
+        print(
+            "\nNESTED REPRESENTATION SELECTION INCONCLUSIVE: "
+            "no outer fold produced a valid representation result. "
+            "The target may be too rare for this symbol/history window."
+        )
+        raise SystemExit(2)
 
     print("\nNESTED REPRESENTATION SELECTION RESULTS")
     for result in outer_results:
@@ -405,6 +436,12 @@ def main() -> None:
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--days", type=int, default=1000)
     parser.add_argument("--gap", type=int, default=5)
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.03,
+        help="positive forward-return threshold, e.g. 0.01 for +1%",
+    )
     parser.add_argument("--min-db-rows", type=int, default=365)
     args = parser.parse_args()
 
@@ -412,6 +449,8 @@ def main() -> None:
         raise SystemExit("days must be at least 260")
     if args.gap < 5:
         raise SystemExit("gap must be at least 5")
+    if not 0.0 <= args.threshold < 1.0:
+        raise SystemExit("threshold must be in [0, 1)")
     if args.min_db_rows <= 0:
         raise SystemExit("min-db-rows must be positive")
 
@@ -420,6 +459,7 @@ def main() -> None:
         args.symbol.strip().upper(),
         args.days,
         args.gap,
+        args.threshold,
         args.min_db_rows,
     )
 
