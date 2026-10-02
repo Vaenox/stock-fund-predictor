@@ -20,6 +20,7 @@ from smoke_test_feature_ablation_real import (
     FUND_FEATURE_COLUMNS,
     STOCK_FEATURE_COLUMNS,
     _prepare_variant,
+    _select_best_candidate,
     _stationary_core_columns,
 )
 
@@ -117,104 +118,6 @@ def _safe_auc(metric: str, y: np.ndarray, probability: np.ndarray) -> float | No
     return float(roc_auc_score(y, probability))
 
 
-def _build_inner_selection_folds(
-    frame: pd.DataFrame,
-    *,
-    n_splits: int,
-    gap: int,
-    test_size: int,
-    min_validation_positives: int,
-    min_validation_negatives: int,
-):
-    folds = build_walk_forward_splits(
-        len(frame),
-        n_splits=n_splits,
-        test_size=test_size,
-        gap=gap,
-    )
-    valid = []
-    diagnostics = []
-    for fold_number, fold in enumerate(folds, start=1):
-        train = frame.iloc[fold.train_start : fold.train_end]
-        validation = frame.iloc[fold.test_start : fold.test_end]
-        train_pos = int(train["target"].sum())
-        validation_pos = int(validation["target"].sum())
-        train_neg = len(train) - train_pos
-        validation_neg = len(validation) - validation_pos
-        if (
-            train_pos >= 2
-            and train_neg >= 2
-            and validation_pos >= min_validation_positives
-            and validation_neg >= min_validation_negatives
-        ):
-            valid.append(fold)
-        else:
-            diagnostics.append(
-                f"fold={fold_number} train_pos={train_pos} train_neg={train_neg} "
-                f"validation_pos={validation_pos} validation_neg={validation_neg}"
-            )
-    if len(valid) < n_splits:
-        raise ValueError(
-            "insufficient stable inner folds: " + " | ".join(diagnostics)
-        )
-    return tuple(valid)
-
-
-def _select_best_candidate_for_representation(
-    frame: pd.DataFrame,
-    *,
-    columns: tuple[str, ...],
-    tuning_config: TuningConfig,
-):
-    from app.ml.tuning import TuningCandidate, default_candidate_grid
-
-    folds = _build_inner_selection_folds(
-        frame,
-        n_splits=tuning_config.n_inner_splits,
-        gap=tuning_config.gap,
-        test_size=tuning_config.inner_test_size,
-        min_validation_positives=1,
-        min_validation_negatives=2,
-    )
-
-    scored = []
-    for candidate in default_candidate_grid():
-        fold_scores = []
-        for inner_fold in folds:
-            train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
-            validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
-            model = build_model(candidate)
-            model.fit(train[list(columns)], train["target"].astype(int))
-            probability = model.predict_proba(validation[list(columns)])[:, 1]
-            score = _safe_auc(
-                "pr",
-                validation["target"].astype(int).to_numpy(),
-                probability,
-            )
-            if score is not None:
-                fold_scores.append(score)
-        if len(fold_scores) == len(folds):
-            scored.append(
-                TuningCandidate(
-                    config=candidate,
-                    score=float(np.mean(fold_scores)),
-                )
-            )
-    if not scored:
-        raise ValueError("representation tuning produced no valid candidate")
-    best = max(
-        scored,
-        key=lambda item: (
-            item.score,
-            -item.config.max_depth,
-            -item.config.learning_rate,
-            -item.config.min_child_weight,
-        ),
-    )
-    return best
-
-
-
 def _score_representation(
     prepared: pd.DataFrame,
     *,
@@ -251,7 +154,7 @@ def _score_representation(
             continue
 
         try:
-            tuning = _select_best_candidate_for_representation(
+            tuning = _select_best_candidate(
                 train,
                 columns=columns,
                 tuning_config=tuning_config,
@@ -354,12 +257,12 @@ def _evaluate_outer(
             f"{representation} fold {outer_fold_number} outer training target contains one class"
         )
 
-    tuning, _ = _select_best_candidate_for_representation(
+    tuning = _select_best_candidate(
         train,
         columns=tuple(columns),
         tuning_config=TuningConfig(
             n_inner_splits=2,
-            inner_test_size=40,
+            inner_test_size=20,
             gap=gap,
         ),
     )
