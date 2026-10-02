@@ -440,7 +440,7 @@ def main() -> None:
         "--threshold",
         type=float,
         default=0.03,
-        help="positive forward-return threshold, e.g. 0.01 for +1%",
+        help="positive forward-return threshold, e.g. 0.01 for +1 percent",
     )
     parser.add_argument("--min-db-rows", type=int, default=365)
     args = parser.parse_args()
