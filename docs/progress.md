@@ -74,6 +74,34 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 
 **Karar:** Tuning THYAO'da aggregate ROC-AUC'yi çok sınırlı artırdı; PR-AUC 0.2883 -> 0.2731 düştü. Aggregate direction direct kaldı. Production direction değiştirilmedi.
 
+### Faz 5 Nested Target-Contract Selection — Düzeltilmiş Gerçek Çalıştırma
+
+Selection stability düzeltmesinden sonra AFA ve THYAO nested smoke tekrar çalıştırıldı. Candidate selection artık yalnızca en az 2 valid inner fold'a sahip adaylar arasından yapılıyor; PR-AUC primary objective, ROC-AUC ve fold PR std secondary criteria. Class balance raporlanıyor ancak keyfi bir hedef orana göre optimize edilmiyor.
+
+**AFA — PostgreSQL canonical history, 674 raw rows**
+
+- Outer 1: h=5, threshold=1%; inner PR 0.4419, ROC 0.7578, PR std 0.1373, positive 0.200, direction 100%, valid folds 2.
+- Outer 2: h=5, threshold=1%; inner PR 0.7127, ROC 0.5463, PR std 0.0855, positive 0.625, direction 50%, valid folds 2.
+- Outer 3: h=10, threshold=3%; inner PR 0.9037, ROC 0.7679, PR std 0.0963, positive 0.375, direction 100%, valid folds 2.
+- Outer fold sonuçları: fold 1 h=5/+1% ROC 0.4258 / PR 0.6247 / Spearman -0.1226; fold 2 h=5/+1% ROC 0.5514 / PR 0.5209 / Spearman +0.0889; fold 3 h=10/+3% ROC 0.3354 / PR 0.2513 / Spearman -0.2546.
+- AFA selection tek bir contract üzerinde sabit kalmadı; ilk iki fold +1%, son fold +3% seçildi. Inner skorların outer OOS'a aynı ölçüde taşınmadığı görüldü.
+- Bu nedenle AFA sonucu production target değişimi için yeterli değildir.
+
+**THYAO — Borsapy provider fallback, 685 raw rows**
+
+- Outer 1: h=10, threshold=1%; inner PR 0.7033, ROC 0.4825, PR std 0.0097, positive 0.525, direction 50%, valid folds 2.
+- Outer 2: h=5, threshold=1%; inner PR 0.7282, ROC 0.6836, PR std 0.1646, positive 0.375, direction 50%, valid folds 2.
+- Outer 3: h=10, threshold=1%; inner PR 0.5567, ROC 0.3737, PR std 0.0023, positive 0.550, direction 50%, valid folds 2.
+- Outer fold sonuçları: fold 1 h=10/+1% ROC 0.5556 / PR 0.4393 / Spearman +0.0902; fold 2 h=5/+1% ROC 0.4036 / PR 0.3459 / Spearman -0.1636; fold 3 h=10/+1% ROC 0.9737 / PR 0.7500 / Spearman +0.3577.
+- THYAO'da threshold +1% üç fold'un tamamında seçildi ancak horizon 5/10 arasında değişti ve outer sonuçlar belirgin heterojen kaldı.
+- Fold 3'te %5 pozitif oranı ile ROC 0.9737 / PR 0.7500 gözlenmesi örneklem/regime etkisinin güçlü olabileceğini gösteriyor; tek fold üzerinden contract seçimi yapılmadı.
+
+**Nested selection kararı:**
+- En az 2 valid inner fold kuralı gerekli ve korunuyor.
+- AFA + THYAO sonuçları ortak, stable bir horizon/threshold contract göstermiyor.
+- Mevcut production contract **horizon=5, threshold=+3%** olarak korunuyor.
+- Nested çalışma, target contract'ın sembol/fold rejimine duyarlı olabileceğini gösteren deneysel kanıt olarak kaydedildi; production değişikliği olarak kabul edilmedi.
+
 ### Faz 5 Target Threshold Direction — AFA
 
 Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic çalıştırıldı. Bu çalışma **descriptive diagnostic** olarak değerlendirildi; production target seçimi yapılmadı.
