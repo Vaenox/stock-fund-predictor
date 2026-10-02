@@ -84,6 +84,16 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Mevcut Tuning Sözleşmesine Geri Dönüş
+
+- Gemini/harici analiz, AFA'da `validation_pos` değerinin çok düşük olmasının temel class-imbalance nedenini doğru teşhis ediyor; ancak mevcut repository kodu açısından çözümün stratified split veya `validation_pos >= 0` fallback olması uygun değil.
+- Önceki nested script, sparse AFA hedefinde representation-level ve hyperparameter-level foldlara gereğinden fazla minimum-event şartı koyarak deneyin tamamını kilitlemişti.
+- Düzeltme: representation nested smoke artık projede daha önce gerçek veride kullanılan `smoke_test_feature_ablation_real.py` içindeki `_select_best_candidate(...)` tuning davranışını yeniden kullanıyor. Bu helper representation-specific `columns` ile çalışıyor ve mevcut chronological inner folds içinde iki-sınıflı validation bulunan fold skorlarını kullanıyor; mevcut tuning sözleşmesini yeniden icat etmiyor.
+- Representation selection dışındaki `outer` protokolü korunuyor: chronological walk-forward, outer test size 40, gap=5, production target h5/+3%. Representation seçiminde 2 validation fold şartı ayrıca korunuyor; tek/çiftsınıfsız representation foldları skorlanmıyor.
+- Böylece class imbalance için zamanı bozan stratification kullanılmıyor ve production target +3% sadece smoke testi çalışsın diye değiştirilmemiş oluyor.
+- Düzeltme commit: `d164a82d844d2e61d028459abda98f51ca3b37e0`.
+- Yeni AFA gerçek sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
+
 ### Faz 5 Nested Representation Selection — Sparse AFA Fold Tasarımı Düzeltmesi
 
 - Son AFA çıktısı kök nedeni kesinleştirdi: 470 dataset satırında h5/+3% target yalnızca yaklaşık 36–37 pozitif event içeriyor ve son kronolojik validation pencerelerinde 40/60/80 gözlem içinde yalnızca 0–1 pozitif event bulunuyor.
