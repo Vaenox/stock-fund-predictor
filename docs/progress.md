@@ -84,6 +84,15 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Hyperparameter Inner Validation Penceresi Düzeltmesi
+
+- AFA gerçek çalıştırmasında yeni diagnostic log kök nedeni netleştirdi: representation-level validation 40 gözleme çıkarılmış olmasına rağmen, representation-specific hyperparameter tuning içinde validation boyutu hâlâ 20 idi.
+- AFA'nın h5/+3% target'ında representation training frame'lerinin pozitif oranı yaklaşık %12–14 iken, son 20 gözlemli inner validation pencereleri tek sınıfa düşebiliyor. Bu durumda 12 XGBoost candidate'ın tamamı iki valid inner fold şartını karşılayamıyor; representation seçimi başlamadan `no representation has the required number of valid inner folds` oluşuyor.
+- Düzeltme: representation-specific hyperparameter tuning validation boyutu 20 -> 40 yapıldı. Representation selection validation boyutu da 40 olarak kalıyor. Inner tuning ve representation selection artık aynı yeterli olay örnekleme penceresini kullanıyor; outer test yine 40 ve gap=5.
+- Ayrıca tuning foldları candidate loop'tan önce kontrol edilerek tek-sınıflı foldların nedeni doğrudan hata mesajında raporlanacak. Selection stability kuralı gevşetilmedi; iki valid inner fold hâlâ zorunlu.
+- Düzeltme commit: `6ff8464c7d980b82bf92f52f077f30988638b799`.
+- Production representation hâlâ `raw_all`; yeni AFA nested sonuçları henüz alınmadı.
+
 ### Faz 5 Nested Representation Selection — AFA'da Tek Sınıflı Validation Fold Teşhisi ve Stabilizasyon
 
 - Üçüncü AFA rerun'da veri hazırlama yine aynı: 674 raw rows, 470 dataset rows; failure yine `_select_representation` seviyesinde oluştu.
