@@ -421,3 +421,15 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
 
 > Kural: Her faz tamamlandığında kısa özet, alınan teknik/ürün kararları, tamamlanan tasklar ve sıradaki faz/tasklar burada tutulur.
+
+
+### Faz 5 Signal Chain — AFS Sparse Inner Validation Window Fallback
+
+- AFS rerun TEFAS transport retry düzeltmesinden sonra veri/model hazırlığını geçti ancak smoke-only sparse candidate selection aşamasında `inner validation has no two-class fold` ile durdu.
+- İnceleme sonucunda AFS'in mevcut +3% target olaylarının production tuning'deki 20-observation inner validation pencerelerine iki sınıflı gözlem bırakmadığı doğrulandı; sorun provider veya XGBoost değil, sparse validation coverage.
+- Production `app.ml.tuning.select_best_candidate()` ve 20-observation inner tuning contract'ı değiştirilmedi.
+- `backend/scripts/smoke_test_signal_chain_real.py` içindeki sparse-event helper artık önce mevcut 20-observation chronological inner split'lerini dener; tüm validation pencereleri single-class ise yalnızca bu smoke için 40, ardından 60 observation'lık chronological validation pencerelerini sırasıyla dener.
+- Gap=5 korunuyor, random/stratified split kullanılmıyor ve inner training fold tek-sınıflıysa yine hata veriliyor. Böylece fallback yalnızca sparse-event validation coverage'ını artırıyor; outer test verisi seçimde kullanılmıyor.
+- Kullanılan validation window ve her foldun train/validation class cardinality bilgisi loglanıyor.
+- Kod commitleri: `8503e20d45c6c4868484ae62047d06caef1a0645`, ardından typing temizliği `3943b349602756a756f9b3970b5049e52da497f6`.
+- Bu fallback'in AFS çalışmasını çözüp çözmediği henüz Codespace çıktısıyla doğrulanmadı; sonraki adım AFS smoke'u yeniden çalıştırmaktır.
