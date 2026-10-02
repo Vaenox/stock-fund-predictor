@@ -84,6 +84,16 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Sparse Target için Inconclusive Handling ve Threshold Parametresi
+
+- AFA +3% nested representation çalışmasının temel sonucu veri/sınıf yoğunluğu nedeniyle representation selection'ın bazı outer foldlarda geçerli sonuç üretememesidir; bunu kod hatası gibi göstermek yerine açıkça `INCONCLUSIVE` olarak raporlamak üzere hata yönetimi eklendi.
+- `smoke_test_representation_nested_real.py` artık `--threshold` parametresini destekliyor; varsayılan production-compatible değer `0.03` (+3%). Parametre dataset target oluşturulurken `MLFeatureConfig.positive_return_threshold` içine aktarılıyor.
+- `_score_representation()` kaynaklı `ValueError` outer fold bazında yakalanıyor. `_select_representation()` geçerli aday bulamazsa ilgili outer fold atlanıyor; hiçbir outer fold sonuç vermezse traceback yerine `NESTED REPRESENTATION SELECTION INCONCLUSIVE` yazıp exit code 2 dönüyor.
+- `_evaluate_outer()` içindeki tuning/evaluation `ValueError` da outer fold bazında yakalanıyor.
+- Bu değişiklik representation veya target'ı otomatik olarak değiştirmiyor; amaç sparse target durumunu sessiz failure yerine açık deney sonucu olarak raporlamak.
+- +1% gibi daha yüksek event yoğunluklu thresholdlar yalnızca diagnostic/representation smoke amacıyla ayrıca çalıştırılabilir; production target contract hâlâ h5/+3%.
+- Kod commit: `db757c206f68df5cc80a836d901737546691778f`.
+
 ### Faz 5 Nested Representation Selection — Mevcut Tuning Sözleşmesine Geri Dönüş
 
 - Gemini/harici analiz, AFA'da `validation_pos` değerinin çok düşük olmasının temel class-imbalance nedenini doğru teşhis ediyor; ancak mevcut repository kodu açısından çözümün stratified split veya `validation_pos >= 0` fallback olması uygun değil.
