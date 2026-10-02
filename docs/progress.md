@@ -84,6 +84,15 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Inner Tuning Teşhis Logu
+
+- AFA rerun'da veri hazırlama yine başarılı: 674 raw, 470 dataset rows.
+- `_score_representation` çağrı sözleşmesi düzeltildikten sonra selection aşamasında tüm representation adaylarının en az 2 valid inner fold şartını geçemediği tekrar görüldü.
+- Nested scriptte `select_best_candidate` kaynaklı `ValueError` daha önce sessizce `continue` edildiği için gerçek eleme nedeni görünmüyordu.
+- Teşhis amacıyla inner fold boyutları, train/validation positive rate ve yakalanan `ValueError` artık loglanıyor. Bu değişiklik metodolojiyi gevşetmiyor; yalnızca hangi inner tuning koşulunun adayları elediğini görünür kılıyor.
+- Commit: `f099e436deb90d46ffc0310acb2ee8ad205d44e8`.
+- Bu aşamada production representation `raw_all` olarak korunuyor; yeni gerçek AFA sonucu henüz alınmadı.
+
 ### Faz 5 Nested Representation Selection — İkinci Kod Hatası Düzeltmesi
 
 - AFA rerun sonrası `TypeError: _score_representation() got an unexpected keyword argument 'columns'` görüldü.
