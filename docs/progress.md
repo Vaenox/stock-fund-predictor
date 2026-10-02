@@ -492,6 +492,15 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: 08b41f8c6fc5ed6baf727404eb289e4bef414d5d.
 - Full suite bu düzeltmeden sonra henüz Codespace'te tekrar çalıştırılmadı; Phase 5 kapanışından önce yeniden çalıştırılmalıdır.
 
+### Faz 5 Kapanış Öncesi — TEFAS fonKod Alias Regression Fix
+
+- Önceki TEFAS compatibility düzeltmesinden sonra targeted provider testinde AttributeError kalktı ancak fake payload mapping testi 0 kayıt döndürdü.
+- Kök neden doğrulandı: test/API payload row'unda fund code alanı fonKod iken _fetch_range() ve _to_symbol() yalnızca fonKodu okuyordu. Satır bu nedenle erken filtreleniyordu.
+- Provider artık fon code çözümlemesinde fonKodu veya fonKod alanlarından ilk dolu değeri kullanıyor.
+- Mevcut fake-response mapping testi bu davranışı doğrudan kapsıyor; production retry ve transport-error retry mantığı değiştirilmedi.
+- Düzeltme commit: 2c7fa6f333374f41da7a93014eb585129889736c.
+- Codespace targeted/full test rerun bu düzeltmeden sonra henüz yapılmadı; önce targeted provider + retry testleri, ardından full suite çalıştırılmalı.
+
 ## Sıradaki İş
 
 1. Faz 5 kapanış/acceptance değerlendirmesini tamamla; 7-symbol / 840-OOS signal-chain coverage'ını final kanıt olarak kaydet.
