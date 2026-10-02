@@ -84,6 +84,15 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Sparse AFA Fold Tasarımı Düzeltmesi
+
+- Son AFA çıktısı kök nedeni kesinleştirdi: 470 dataset satırında h5/+3% target yalnızca yaklaşık 36–37 pozitif event içeriyor ve son kronolojik validation pencerelerinde 40/60/80 gözlem içinde yalnızca 0–1 pozitif event bulunuyor.
+- Önceki düzeltme representation ve tuning validationlarının her ikisinde de her fold için minimum 2 pozitif + 2 negatif şartı koyduğu için, mevcut AFA zaman serisinde geçerli nested fold üretmeyi imkânsız hale getirdi.
+- Bu şart gereğinden katıydı. Representation selection validation'ında en az iki sınıflı fold şartı korunurken sparse-event inner hyperparameter tuning tarafında olay yeterliliği `validation >= 1 positive, >= 2 negative` olarak ayrıştırıldı. Amaç sahte denge üretmek değil, +3% event'in mevcut tarihsel yoğunluğunda modeli tune edebilmek.
+- Ancak daha önemlisi, representation-level fold oluşturma artık yapay biçimde 80/100'e kadar pencere arayıp tüm deneyin başlamasını engellemiyor; standart chronological 2-fold / 40 observation selection düzeni korunuyor ve geçersiz foldlar ayrıca raporlanıyor.
+- Production target, outer test fold, gap ve representation seti değiştirilmedi. Production representation yine `raw_all`.
+- Düzeltme commit: `781df1a21aabe127c6ffeacf67735b7f6a18d030`.
+
 ### Faz 5 Nested Representation Selection — Adaptive Event-Stable Fold Düzeltmesi
 
 - Önceki 20 -> 40 düzeltmesine rağmen AFA'da hata devam etti; son çıktı, 40'lık representation foldunun içinde hyperparameter tuning için gereken iki kronolojik validation foldunun da stabil olmadığına işaret etti.
