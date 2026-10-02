@@ -108,6 +108,31 @@ Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic �
 
 **Karar:** Target threshold'un direction ve class balance üzerinde güçlü etkisi doğrulandı; ancak iki sembolde ortak production target seçimi için yeterli leakage-safe evidence yok. Mevcut production contract **horizon=5, threshold=+3%** olarak korunuyor.
 
+### Faz 5 Nested Target-Contract Selection — İlk Gerçek Çalıştırma
+
+İlk nested smoke AFA ve THYAO üzerinde çalıştırıldı. Candidate selection inner tuned validation ile yapıldı; seçilen candidate yalnızca ilgili outer foldda değerlendirildi.
+
+**AFA**
+- Outer 1: h=10, threshold=2%; inner PR 1.0000, ROC 1.0000, ancak yalnızca 1 valid inner fold.
+- Outer 2: h=10, threshold=1%; inner PR 0.9648, ROC 0.4737, 1 valid inner fold.
+- Outer 3: h=10, threshold=3%; inner PR 0.9037, ROC 0.7679, 2 valid inner fold.
+- Outer results: fold 1 ROC 0.4734 / PR 0.7607; fold 2 ROC 0.5000 / PR 0.5074; fold 3 ROC 0.3354 / PR 0.2513.
+- Bu ilk koşu production target seçimi için kabul edilmedi. Özellikle 1 valid inner fold üzerinden PR 1.0000 gibi skorların candidate seçimine girebilmesi selection stability açısından yetersiz bulundu.
+
+**THYAO**
+- Outer 1: h=10, threshold=1%; inner PR 0.7033, ROC 0.4825, 2 valid fold.
+- Outer 2: h=5, threshold=1%; inner PR 0.7282, ROC 0.6836, 2 valid fold.
+- Outer 3: h=10, threshold=1%; inner PR 0.5567, ROC 0.3737, 2 valid fold.
+- Outer results: fold 1 ROC 0.5556 / PR 0.4393; fold 2 ROC 0.4036 / PR 0.3459; fold 3 ROC 0.9737 / PR 0.7500.
+- THYAO'da threshold +1% üç outer selection'ın tamamında görüldü; horizon 5/10 arasında değişti. Ancak outer fold sonuçları heterojen olduğundan production contract değiştirilmedi.
+
+**Selection metodolojisi düzeltmesi**
+- Candidate selection artık en az 2 valid inner fold gerektiriyor.
+- 1 valid fold üzerinden gelen adaylar selection'dan çıkarılıyor.
+- Class balance raporlanıyor fakat keyfi bir target rate'a (ör. %20) doğru optimize edilmiyor.
+- PR-AUC primary objective; ROC-AUC ve fold PR standard deviation secondary criteria.
+- Bu düzeltmeden sonra AFA ve THYAO nested smoke yeniden çalıştırılmalıdır.
+
 ### Faz 5 Taskları
 
 - [x] Tuning dataset / inner-validation foundation oluştur.
