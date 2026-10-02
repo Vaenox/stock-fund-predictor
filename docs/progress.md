@@ -378,6 +378,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - **Signal-chain smoke:** AFA, AFT ve THYAO için `REAL SIGNAL CHAIN SMOKE TEST PASSED`.
 
 
+### Faz 5 Signal Chain — AFS Sparse Inner Validation Düzeltmesi
+
+- AFS signal-chain çalıştırması TEFAS fallback sonrasında veri alma aşamasını geçti ancak outer fold tuning sırasında `inner validation has no two-class fold` hatasında durdu.
+- Kök neden yine sparse +3% event yapısı: mevcut global `app.ml.tuning.select_best_candidate()` validation foldlarının hiçbirini kullanılabilir bulmadığında tüm adayları exception ile reddediyor.
+- Global tuning helper değiştirilmedi. Signal-chain smoke scriptine, daha önce gerçek feature-ablation deneyinde kabul edilen sparse-event davranışını aynalayan local `_select_best_candidate_sparse()` helper eklendi.
+- Bu helper chronological inner split ve `gap=5` kurallarını koruyor; tek-sınıflı validation foldlarını atlıyor ve en az bir iki-sınıflı validation fold bulunursa adayın ortalama PR-AUC'sini kullanıyor. Hiç geçerli fold yoksa yine açıkça inconclusive/failure veriyor.
+- Train tarafının tek-sınıflı olması hâlâ hata; validation gevşetme, random/stratified split veya outer-test kullanımı yapılmadı.
+- Production model/tuning helper, target contract ve signal weights değiştirilmedi.
+- Düzeltme commit: `8da5e76c117c62acc3460ebcb51d4481bcd058f4`.
+
 ### Faz 5 Signal Chain — AFS Veri Kaynağı Düzeltmesi
 
 - AFS signal-chain smoke ilk çalıştırmada `ValueError: no DB fund history found for AFS` ile durdu.
