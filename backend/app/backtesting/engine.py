@@ -109,6 +109,13 @@ def run_long_only_backtest(
         equity_at_signal = cash + shares * signal_close
         desired_position_value = equity_at_signal * target_weight
         desired_shares = desired_position_value / execution_open
+
+        if desired_shares > shares:
+            buy_price = execution_open * (1.0 + slippage_rate)
+            available_cash = max(cash, 0.0)
+            max_affordable_shares = available_cash / (buy_price * (1.0 + fee_rate))
+            desired_shares = min(desired_shares, shares + max_affordable_shares)
+
         share_delta = desired_shares - shares
 
         if share_delta > 0:
