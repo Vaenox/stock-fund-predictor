@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 from datetime import date, timedelta
 
 import numpy as np
@@ -13,6 +14,7 @@ from app.analysis.indicators import calculate_fund_indicators, calculate_stock_i
 from app.analysis.scoring import calculate_fund_technical_score, calculate_stock_technical_score
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
+from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.splitting import build_walk_forward_splits
@@ -84,7 +86,49 @@ def _load_stock_frame(
     )
 
 
-def _load_fund_frame(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
+def _load_fund_frame_provider(
+    symbol: str,
+    days: int,
+    chunk_delay: float,
+) -> pd.DataFrame:
+    provider = TefasProvider()
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+    records: list = []
+    chunks = tuple(
+        provider._chunks(
+            start_date,
+            end_date,
+            provider._settings.max_days_per_request,
+        )
+    )
+    for index, (chunk_start, chunk_end) in enumerate(chunks):
+        records.extend(provider.get_fund_history(symbol, chunk_start, chunk_end))
+        if index < len(chunks) - 1 and chunk_delay > 0:
+            time.sleep(chunk_delay)
+
+    frame = (
+        pd.DataFrame(
+            {
+                "pricing_date": [record.pricing_date for record in records],
+                "unit_price": [float(record.unit_price) for record in records],
+            }
+        )
+        .drop_duplicates(subset=["pricing_date"])
+        .sort_values("pricing_date")
+        .reset_index(drop=True)
+    )
+    if frame.empty:
+        raise ValueError(f"no TEFAS history found for {symbol}")
+    return frame
+
+
+def _load_fund_frame(
+    symbol: str,
+    days: int,
+    min_db_rows: int,
+    chunk_delay: float,
+) -> tuple[pd.DataFrame, str]:
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
     engine = create_engine(get_settings().database_url, future=True)
@@ -110,10 +154,13 @@ def _load_fund_frame(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
             },
         ).mappings().all()
 
-    if not rows:
-        raise ValueError(f"no DB fund history found for {symbol}")
+    if rows and len(rows) >= min_db_rows:
+        return pd.DataFrame(rows), "PostgreSQL canonical history"
 
-    return pd.DataFrame(rows), "PostgreSQL canonical history"
+    return (
+        _load_fund_frame_provider(symbol, days, chunk_delay),
+        "TEFAS provider (DB history insufficient)",
+    )
 
 
 def _describe(series: pd.Series) -> str:
@@ -157,6 +204,7 @@ def _run(
     gap: int,
     min_db_rows: int,
     threshold: float,
+    chunk_delay: float,
 ) -> None:
     if asset_type == "stock":
         raw, source = _load_stock_frame(symbol, days, min_db_rows)
@@ -165,7 +213,12 @@ def _run(
         date_column = "trading_date"
         risk_fn = calculate_stock_risk_adjustment
     else:
-        raw, source = _load_fund_frame(symbol, days)
+        raw, source = _load_fund_frame(
+            symbol,
+            days,
+            min_db_rows,
+            chunk_delay,
+        )
         indicators = calculate_fund_indicators(raw)
         scored = calculate_fund_technical_score(indicators)
         date_column = "pricing_date"
@@ -351,6 +404,7 @@ def main() -> None:
     parser.add_argument("--gap", type=int, default=5)
     parser.add_argument("--min-db-rows", type=int, default=365)
     parser.add_argument("--threshold", type=float, default=0.03)
+    parser.add_argument("--chunk-delay", type=float, default=3.0)
     args = parser.parse_args()
 
     if args.days < 260:
@@ -361,6 +415,8 @@ def main() -> None:
         raise SystemExit("min-db-rows must be positive")
     if args.threshold <= -1.0:
         raise SystemExit("threshold must be greater than -1")
+    if args.chunk_delay < 0:
+        raise SystemExit("chunk-delay cannot be negative")
 
     _run(
         args.asset_type,
@@ -369,6 +425,7 @@ def main() -> None:
         args.gap,
         args.min_db_rows,
         args.threshold,
+        args.chunk_delay,
     )
 
 
