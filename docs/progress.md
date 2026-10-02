@@ -84,6 +84,16 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — AFA'da Tek Sınıflı Validation Fold Teşhisi ve Stabilizasyon
+
+- Üçüncü AFA rerun'da veri hazırlama yine aynı: 674 raw rows, 470 dataset rows; failure yine `_select_representation` seviyesinde oluştu.
+- Kod incelemesinde `_score_representation()` içinde representation seçim validation'larının 20 gözlem olduğu görüldü. AFA'nın mevcut +3% target'ı seyrek olduğundan 20 gözlemli validation fold tek sınıf kalabiliyor. Kod bu foldları `continue` ile atladığı için `valid_folds` 2'ye ulaşmadan tüm representation skorları `None` olabiliyor; aynı hata mesajı bu durumu gizliyordu.
+- Bu davranış representation/model problemi değil, nested representation selection'ın validation penceresinin seyrek pozitif target için fazla küçük olabilmesidir. Production outer test folduna dokunulmadı.
+- Stabilizasyon: representation selection içindeki iki validation foldunun `test_size` değeri 20 -> 40 yapıldı. Hyperparameter tuning'in kendi validation boyutu ise 20 olarak korundu. Candidate tuning ayrıca en az iki valid inner fold üreten adaylar arasından seçiliyor; tek/eksik fold skoru selection'a sokulmuyor.
+- Böylece representation selection daha yeterli event örneği içeren validation penceresi kullanıyor; outer leakage protokolü, gap=5 ve production target h5/+3% değişmedi.
+- Düzeltme commit: `0b645f23b92dd706241f65ad14e40a2e719323ad`.
+- Yeni AFA gerçek sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
+
 ### Faz 5 Nested Representation Selection — Representation-Specific Tuning Düzeltmesi
 
 - AFA rerun'da diagnostic log beklenmesine rağmen `_select_representation` aşamasında yine tüm adayların valid fold şartını geçemediği için exception detayları görünmedi.
