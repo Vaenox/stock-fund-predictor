@@ -4,9 +4,10 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 ## Güncel Durum
 
-- Aktif faz: **Faz 5 — Model Tuning / Feature Importance / Signal-Risk Foundation**
-- Son tamamlanan faz: **Faz 4 — ML Baseline / XGBoost**
-- Faz 5'te tuning, feature representation, direction, threshold ve signal-risk validation deneyleri sürüyor.
+- Aktif faz: **Faz 6 — Backtest / Prediction Evaluation Foundation**
+- Son tamamlanan faz: **Faz 5 — Model Tuning / Feature Importance / Signal-Risk Foundation**
+- Faz 5 tamamlandı: tuning, feature representation, calibration, direction/threshold diagnostics, risk adjustment, signal foundation ve gerçek signal-chain OOS coverage doğrulandı. Production contractlar değiştirilmedi.
+- Faz 5 kapanış testi: **140 passed, 6.43s**. Targeted TEFAS provider/retry testleri: **7 passed, 1.09s**.
 
 ## Faz 2 — Data Infrastructure — TAMAMLANDI
 
@@ -34,6 +35,8 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 ### Güncel Bulgular
 
 - Inner walk-forward tuning, feature importance, calibration, risk adjustment ve signal foundation tamamlandı.
+- Faz 5 gerçek signal-chain coverage 7 sembol / 840 OOS gözlemine ulaştı.
+- Faz 5 kapanış testleri Codespace'te 140/140 backend test ile doğrulandı.
 - Feature representation ablation altı sembolde tamamlandı; raw_all / normalized_all / stationary_core candidate olarak korunuyor, production contract sessizce değiştirilmedi.
 - 6-symbol direction diagnostic tamamlandı. ML probability için 3 direct / 3 inverse; Technical Score için ROC yönünde 4 inverse / 2 direct görüldü. Global production inversion seçilmedi.
 - 6-symbol threshold smoke coverage tamamlandı. Global BUY/HOLD/SELL threshold winner seçilmedi; raw signal ölçeği semboller arasında belirgin biçimde değişiyor.
@@ -501,11 +504,20 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: 2c7fa6f333374f41da7a93014eb585129889736c.
 - Codespace targeted/full test rerun bu düzeltmeden sonra henüz yapılmadı; önce targeted provider + retry testleri, ardından full suite çalıştırılmalı.
 
+
+### Faz 5 Kapanışı
+
+- Codespace targeted provider/retry suite: 7 passed in 1.09s.
+- Codespace full backend test suite: 140 passed in 6.43s.
+- Gerçek signal-chain coverage: 7 sembol / 840 OOS gözlem.
+- Faz 5 production contractları korunuyor: raw_all, horizon=5, target threshold=+3%, mevcut signal weights, bounded risk penalty, global direction inversion yok, BUY/HOLD/SELL threshold winner yok.
+- Faz 6 başlangıç konusu: leakage-safe backtest ve prediction evaluation foundation.
+
 ## Sıradaki İş
 
-1. Faz 5 kapanış/acceptance değerlendirmesini tamamla; 7-symbol / 840-OOS signal-chain coverage'ını final kanıt olarak kaydet.
-2. Mevcut production contractları koruyarak Faz 6 kontrollü deney backlog'unu tanımla: veri kapsamı, signal calibration/threshold araştırması, risk sensitivity ve backtest/paper-trading altyapısı.
-3. Global BUY/HOLD/SELL threshold veya signal direction/weights/risk penalty seçme; historical freshness davranışını gerçek zamanlı production ölçümü olmadan performans kanıtı olarak yorumlama.
+1. Faz 6 backtest foundation'ını oluştur: historical signal/prediction kayıtları, transaction cost/slippage sözleşmeleri, chronological walk-forward portfolio simulation ve temel risk metrikleri.
+2. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
+3. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
