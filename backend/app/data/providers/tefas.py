@@ -96,6 +96,11 @@ class TefasProvider(MarketDataProvider):
                 response.raise_for_status()
                 data = response.json()
                 break
+            except httpx.TransportError as exc:
+                if attempt < self._settings.rate_limit_retries:
+                    sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                    continue
+                raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
             except (httpx.HTTPError, ValueError) as exc:
                 if response is not None and response.status_code == 429 and attempt < self._settings.rate_limit_retries:
                     continue
