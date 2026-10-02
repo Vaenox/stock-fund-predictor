@@ -84,6 +84,16 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Representation-Specific Tuning Düzeltmesi
+
+- AFA rerun'da diagnostic log beklenmesine rağmen `_select_representation` aşamasında yine tüm adayların valid fold şartını geçemediği için exception detayları görünmedi.
+- Kod incelemesiyle asıl metodolojik hata doğrulandı: nested representation scripti `app.ml.tuning.select_best_candidate()` çağırıyordu; bu ortak tuning helper'ı her zaman production `feature_columns(asset_type)` setini doğrulayıp kullanıyor. Bu nedenle `normalized_all` ve özellikle `stationary_core` representation seçimi gerçekten kendi feature seti üzerinden tuning yapmıyordu.
+- Düzeltme: nested script içine representation-specific candidate tuning helper eklendi. Candidate grid aynı tutuldu; inner walk-forward PR-AUC hesaplaması artık doğrudan ilgili representation'ın `columns` seti ile yapılıyor.
+- Outer evaluation da aynı representation-specific tuning helper'ına taşındı; böylece seçilen representation'ın hyperparameter seçimi ve final outer fit aynı feature representation üzerinde gerçekleşiyor.
+- Selection threshold/gap/class-balance kuralları gevşetilmedi.
+- Düzeltme commit: `f2633ab57d6b3b7b62e77a29128bb2813898e242`.
+- Yeni AFA gerçek nested sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
+
 ### Faz 5 Nested Representation Selection — Inner Tuning Teşhis Logu
 
 - AFA rerun'da veri hazırlama yine başarılı: 674 raw, 470 dataset rows.
