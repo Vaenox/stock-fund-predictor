@@ -114,13 +114,13 @@ def _safe_auc(metric: str, y: np.ndarray, probability: np.ndarray) -> float | No
 
 
 def _score_representation(
-    frame: pd.DataFrame,
+    prepared: pd.DataFrame,
     *,
     asset_type: str,
     representation: str,
+    columns: tuple[str, ...],
     gap: int,
 ) -> RepresentationScore | None:
-    columns = tuple(columns)
     folds = build_walk_forward_splits(
         len(prepared),
         n_splits=2,
@@ -186,7 +186,6 @@ def _score_representation(
         ),
         valid_folds=len(pr_scores),
     )
-
 
 def _select_representation(
     scores: list[RepresentationScore],
