@@ -25,8 +25,10 @@ from smoke_test_feature_ablation_real import (
 
 
 REPRESENTATIONS = ("raw_all", "normalized_all", "stationary_core")
-REPRESENTATION_INNER_TEST_SIZE = 40
-REPRESENTATION_TUNING_TEST_SIZE = 40
+REPRESENTATION_TEST_SIZE_CANDIDATES = (40, 60, 80)
+REPRESENTATION_TUNING_TEST_SIZE_CANDIDATES = (40, 60, 80, 100)
+REPRESENTATION_MIN_VALIDATION_POSITIVES = 2
+REPRESENTATION_MIN_VALIDATION_NEGATIVES = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,36 +117,74 @@ def _safe_auc(metric: str, y: np.ndarray, probability: np.ndarray) -> float | No
     return float(roc_auc_score(y, probability))
 
 
+def _find_stable_inner_splits(
+    frame: pd.DataFrame,
+    *,
+    n_splits: int,
+    gap: int,
+    test_sizes: tuple[int, ...],
+):
+    """Select the smallest chronological window with enough positive/negative events."""
+    diagnostics: list[str] = []
+
+    for test_size in test_sizes:
+        try:
+            folds = build_walk_forward_splits(
+                len(frame),
+                n_splits=n_splits,
+                test_size=test_size,
+                gap=gap,
+            )
+        except ValueError as exc:
+            diagnostics.append(f"test_size={test_size}: {exc}")
+            continue
+
+        invalid: list[str] = []
+        for fold_number, fold in enumerate(folds, start=1):
+            train = frame.iloc[fold.train_start : fold.train_end]
+            validation = frame.iloc[fold.test_start : fold.test_end]
+
+            train_pos = int(train["target"].sum())
+            train_neg = int(len(train) - train_pos)
+            validation_pos = int(validation["target"].sum())
+            validation_neg = int(len(validation) - validation_pos)
+
+            if (
+                train_pos < 2
+                or train_neg < 2
+                or validation_pos < REPRESENTATION_MIN_VALIDATION_POSITIVES
+                or validation_neg < REPRESENTATION_MIN_VALIDATION_NEGATIVES
+            ):
+                invalid.append(
+                    f"fold={fold_number} "
+                    f"train_pos={train_pos} train_neg={train_neg} "
+                    f"validation_pos={validation_pos} validation_neg={validation_neg}"
+                )
+
+        if not invalid:
+            return folds, test_size
+
+        diagnostics.append(
+            f"test_size={test_size}: " + " | ".join(invalid)
+        )
+
+    raise ValueError(
+        "no stable inner split found; " + " ; ".join(diagnostics)
+    )
+
+
 def _select_best_candidate_for_representation(
     frame: pd.DataFrame,
     *,
     columns: tuple[str, ...],
     tuning_config: TuningConfig,
 ):
-    from app.ml.tuning import TuningCandidate, default_candidate_grid
-
-    folds = build_walk_forward_splits(
-        len(frame),
+    folds, selected_test_size = _find_stable_inner_splits(
+        frame,
         n_splits=tuning_config.n_inner_splits,
-        test_size=tuning_config.inner_test_size,
         gap=tuning_config.gap,
+        test_sizes=REPRESENTATION_TUNING_TEST_SIZE_CANDIDATES,
     )
-
-    invalid_folds = []
-    for fold_number, inner_fold in enumerate(folds, start=1):
-        train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
-        validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
-        if train["target"].nunique() < 2 or validation["target"].nunique() < 2:
-            invalid_folds.append(
-                "fold="
-                f"{fold_number} "
-                f"train={len(train)} train_pos={train['target'].mean():.3f} "
-                f"validation={len(validation)} validation_pos={validation['target'].mean():.3f}"
-            )
-    if invalid_folds:
-        raise ValueError(
-            "representation tuning requires two-class folds: " + "; ".join(invalid_folds)
-        )
 
     scored = []
     for candidate in default_candidate_grid():
@@ -152,22 +192,31 @@ def _select_best_candidate_for_representation(
         for inner_fold in folds:
             train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
             validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
+
             model = build_model(candidate)
             model.fit(train[list(columns)], train["target"].astype(int))
             probability = model.predict_proba(validation[list(columns)])[:, 1]
-            score = _safe_auc("pr", validation["target"].astype(int).to_numpy(), probability)
+
+            score = _safe_auc(
+                "pr",
+                validation["target"].astype(int).to_numpy(),
+                probability,
+            )
             if score is not None:
                 fold_scores.append(score)
-        if len(fold_scores) < tuning_config.n_inner_splits:
-            continue
-        scored.append(TuningCandidate(config=candidate, score=float(np.mean(fold_scores))))
+
+        if len(fold_scores) == len(folds):
+            scored.append(
+                TuningCandidate(
+                    config=candidate,
+                    score=float(np.mean(fold_scores)),
+                )
+            )
 
     if not scored:
-        raise ValueError(
-            "representation tuning has no candidate with two valid inner folds"
-        )
+        raise ValueError("representation tuning produced no valid candidate")
 
-    return max(
+    best = max(
         scored,
         key=lambda item: (
             item.score,
@@ -176,6 +225,7 @@ def _select_best_candidate_for_representation(
             -item.config.min_child_weight,
         ),
     )
+    return best, selected_test_size
 
 
 def _score_representation(
@@ -186,15 +236,15 @@ def _score_representation(
     columns: tuple[str, ...],
     gap: int,
 ) -> RepresentationScore | None:
-    folds = build_walk_forward_splits(
-        len(prepared),
+    folds, selection_test_size = _find_stable_inner_splits(
+        prepared,
         n_splits=2,
-        test_size=REPRESENTATION_INNER_TEST_SIZE,
         gap=gap,
+        test_sizes=REPRESENTATION_TEST_SIZE_CANDIDATES,
     )
     tuning_config = TuningConfig(
         n_inner_splits=2,
-        inner_test_size=REPRESENTATION_TUNING_TEST_SIZE,
+        inner_test_size=40,
         gap=gap,
     )
 
@@ -214,7 +264,7 @@ def _score_representation(
             continue
 
         try:
-            tuning = _select_best_candidate_for_representation(
+            tuning, tuning_test_size = _select_best_candidate_for_representation(
                 train,
                 columns=columns,
                 tuning_config=tuning_config,
@@ -222,12 +272,18 @@ def _score_representation(
         except ValueError as exc:
             print(
                 f"[representation={representation}] "
-                f"representation-fold train={len(train)} validation={len(validation)} "
+                f"selection test fold train={len(train)} validation={len(validation)} "
                 f"train_pos={train['target'].mean():.3f} "
                 f"validation_pos={validation['target'].mean():.3f} "
                 f"skipped: {exc}"
             )
             continue
+
+        print(
+            f"[representation={representation}] "
+            f"selection_test_size={selection_test_size} "
+            f"tuning_test_size={tuning_test_size}"
+        )
 
         model = build_model(tuning.config)
         model.fit(train[list(columns)], train["target"].astype(int))
@@ -316,12 +372,12 @@ def _evaluate_outer(
             f"{representation} fold {outer_fold_number} outer training target contains one class"
         )
 
-    tuning = _select_best_candidate_for_representation(
+    tuning, _ = _select_best_candidate_for_representation(
         train,
         columns=tuple(columns),
         tuning_config=TuningConfig(
             n_inner_splits=2,
-            inner_test_size=REPRESENTATION_TUNING_TEST_SIZE,
+            inner_test_size=40,
             gap=gap,
         ),
     )
