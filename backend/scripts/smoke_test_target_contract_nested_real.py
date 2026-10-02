@@ -123,9 +123,9 @@ def _candidate_score(
     asset_type: str,
     outer_gap: int,
 ) -> CandidateScore | None:
-    # The target dataset was built from the full indicator frame, but the
-    # split gap is at least the target horizon. Therefore no training label
-    # can use observations from its validation/test side.
+    # Target selection is itself nested: each target candidate gets its own
+    # inner hyperparameter tuning, and only that candidate's tuned model is
+    # scored on the inner validation folds.
     split_gap = max(outer_gap, candidate.horizon)
     folds = build_walk_forward_splits(
         len(outer_train),
@@ -134,7 +134,11 @@ def _candidate_score(
         gap=split_gap,
     )
     columns = list(feature_columns(asset_type))
-    baseline_config = XGBoostBaselineConfig()
+    tuning_config = TuningConfig(
+        n_inner_splits=2,
+        inner_test_size=20,
+        gap=split_gap,
+    )
     pr_scores: list[float] = []
     roc_scores: list[float] = []
     direct_directions: list[float] = []
@@ -146,7 +150,16 @@ def _candidate_score(
         if train["target"].nunique() < 2 or validation["target"].nunique() < 2:
             continue
 
-        model = build_model(baseline_config)
+        try:
+            tuning = select_best_candidate(
+                train,
+                asset_type=asset_type,
+                tuning_config=tuning_config,
+            )
+        except ValueError:
+            continue
+
+        model = build_model(tuning.config)
         model.fit(train[columns], train["target"].astype(int))
         probability = model.predict_proba(validation[columns])[:, 1]
         y = validation["target"].to_numpy(dtype=int)
@@ -177,7 +190,6 @@ def _candidate_score(
         ),
         valid_folds=len(pr_scores),
     )
-
 
 def _select_candidate(
     candidates: list[CandidateScore],
