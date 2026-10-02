@@ -31,7 +31,7 @@ def test_target_is_executed_at_next_open_not_same_day_close() -> None:
 
 
 def test_transaction_cost_reduces_equity() -> None:
-    frame = _frame([1.0, 1.0, 1.0, 0.0])
+    frame = _frame([1.0, 1.0, 0.0, 0.0])
 
     no_cost = run_long_only_backtest(
         frame,
