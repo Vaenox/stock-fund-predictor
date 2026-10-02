@@ -19,15 +19,15 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 
 - Stock/fund indicator engine, Technical Score Engine ve ML feature dataset builder tamamlandı.
 - Warm-up, look-ahead ve leakage kontrolleri tamamlandı.
-- Analysis test suite: `18 passed`.
+- Analysis test suite: 18 passed.
 
 ## Faz 4 — ML Baseline / XGBoost — TAMAMLANDI
 
-- Leakage-aware expanding walk-forward splitter, `gap >= 5`, XGBoost baseline wrapper ve metrikler tamamlandı.
+- Leakage-aware expanding walk-forward splitter, gap >= 5, XGBoost baseline wrapper ve metrikler tamamlandı.
 - Gerçek BIST smoke coverage: THYAO, ASELS, TUPRS, BIMAS.
 - Gerçek TEFAS smoke coverage: AFA, AFT, AFS.
 - AAL one-class training problemi doğrulandı; validation gevşetilmedi.
-- Faz 4 acceptance: `3 passed`.
+- Faz 4 acceptance: 3 passed.
 
 ## Faz 5 — Model Tuning / Feature Importance / Signal-Risk Foundation — AKTİF
 
@@ -38,14 +38,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - 6-symbol direction diagnostic tamamlandı. ML probability için 3 direct / 3 inverse; Technical Score için ROC yönünde 4 inverse / 2 direct görüldü. Global production inversion seçilmedi.
 - 6-symbol threshold smoke coverage tamamlandı. Global BUY/HOLD/SELL threshold winner seçilmedi; raw signal ölçeği semboller arasında belirgin biçimde değişiyor.
 - Meta-aggregation outer OOS deneysel olarak değerlendirildi; fold instability nedeniyle production default seçilmedi.
-- Phase 5 acceptance: `3 passed`; tüm ML test suite: `75 passed in 6.15s`.
-
-### Faz 5 THYAO Outer Comparison
-
-- Fold 1: baseline ROC `0.2157`, PR `0.1246`; tuned ROC `0.2549`, PR `0.1310`.
-- Fold 2: test fold tek sınıflı; ROC/PR iki model için de `None`.
-- Fold 3: baseline ROC `0.8947`, PR `0.3333`; tuned ROC `0.9474`, PR `0.5000`.
-- Bu tek sembol sonucunda tuning iki ölçülebilir outer fold'da ROC-AUC ve PR-AUC'yi yükseltti; genellenebilirlik sonucu çıkarılmadı.
+- Phase 5 acceptance: 3 passed; tüm ML test suite: 75 passed in 6.15s.
 
 ### Faz 5 Baseline vs Tuned Direction — AFA
 
@@ -53,53 +46,67 @@ Canonical PostgreSQL history ile gerçek 3-fold / 120 OOS baseline-vs-tuned dire
 
 **AFA — 674 raw rows, 470 training rows, 120 OOS rows, target rate 0.208**
 
-- Fold 1: baseline direct ROC `0.4323`, PR `0.3539`; inverse ROC `0.5677`, PR `0.4227`. Tuned direct ROC `0.4479`, PR `0.3848`; inverse ROC `0.5521`, PR `0.4768`.
-- Fold 2: baseline direct ROC `0.6319`, PR `0.4759`; inverse ROC `0.3681`, PR `0.1091`. Tuned direct ROC `0.7083`, PR `0.5720`; inverse ROC `0.2917`, PR `0.0889`.
-- Fold 3: baseline direct ROC `0.3714`, PR `0.1130`; inverse ROC `0.6286`, PR `0.1845`. Tuned direct ROC `0.4914`, PR `0.1428`; inverse ROC `0.5086`, PR `0.2103`.
+- Fold 1: baseline direct ROC 0.4323, PR 0.3539; inverse ROC 0.5677, PR 0.4227. Tuned direct ROC 0.4479, PR 0.3848; inverse ROC 0.5521, PR 0.4768.
+- Fold 2: baseline direct ROC 0.6319, PR 0.4759; inverse ROC 0.3681, PR 0.1091. Tuned direct ROC 0.7083, PR 0.5720; inverse ROC 0.2917, PR 0.0889.
+- Fold 3: baseline direct ROC 0.3714, PR 0.1130; inverse ROC 0.6286, PR 0.1845. Tuned direct ROC 0.4914, PR 0.1428; inverse ROC 0.5086, PR 0.2103.
 
 **AFA Aggregate OOS**
-- Baseline: direct ROC `0.3398`, PR `0.2137`; inverse ROC `0.6602`, PR `0.2959`.
-- Tuned: direct ROC `0.3587`, PR `0.2324`; inverse ROC `0.6413`, PR `0.3402`.
 
-**Karar:** Tuning AFA'da bazı performans metriklerini iyileştirdi ancak direction davranışını çözmedi. Aggregate direct ROC `0.3587` < inverse `0.6413`; foldlar da heterojen.
+- Baseline: direct ROC 0.3398, PR 0.2137; inverse ROC 0.6602, PR 0.2959.
+- Tuned: direct ROC 0.3587, PR 0.2324; inverse ROC 0.6413, PR 0.3402.
+
+**Karar:** Tuning AFA'da bazı performans metriklerini iyileştirdi ancak direction davranışını çözmedi. Aggregate direct ROC 0.3587 < inverse 0.6413; foldlar heterojen.
 
 ### Faz 5 Baseline vs Tuned Direction — THYAO
 
-Canonical stock history yetersiz olduğu için bu koşuda scriptin mevcut fallback davranışıyla **Borsapy provider** kullanıldı. Gerçek 3-fold / 120 OOS comparison tamamlandı.
+Canonical stock history yetersiz olduğu için Borsapy provider fallback kullanıldı. Gerçek 3-fold / 120 OOS comparison tamamlandı.
 
 **THYAO — 685 raw rows, 481 training rows, 120 OOS rows, target rate 0.158**
 
-- **Fold 1:** baseline direct ROC `0.4502`, PR `0.3554`, Spearman `-0.0655`; inverse ROC `0.5498`, PR `0.2654`. Tuned direct ROC `0.5108`, PR `0.3712`, Spearman `0.0142`; inverse ROC `0.4892`, PR `0.2216`.
-- **Fold 2:** baseline direct ROC `0.4695`, PR `0.2431`; inverse ROC `0.5305`, PR `0.3308`. Tuned direct ROC `0.3763`, PR `0.1929`; inverse ROC `0.6237`, PR `0.3060`.
-- **Fold 3:** baseline direct ROC `0.9189`, PR `0.4250`; inverse ROC `0.0811`, PR `0.0543`. Tuned direct ROC `0.9189`, PR `0.6000`; inverse ROC `0.0811`, PR `0.0538`.
+- Fold 1: baseline direct ROC 0.4502, PR 0.3554; inverse ROC 0.5498, PR 0.2654. Tuned direct ROC 0.5108, PR 0.3712; inverse ROC 0.4892, PR 0.2216.
+- Fold 2: baseline direct ROC 0.4695, PR 0.2431; inverse ROC 0.5305, PR 0.3308. Tuned direct ROC 0.3763, PR 0.1929; inverse ROC 0.6237, PR 0.3060.
+- Fold 3: baseline direct ROC 0.9189, PR 0.4250; inverse ROC 0.0811, PR 0.0543. Tuned direct ROC 0.9189, PR 0.6000; inverse ROC 0.0811, PR 0.0538.
 
 **THYAO Aggregate OOS**
-- Baseline: direct ROC `0.5597`, PR `0.2883`, Spearman `0.0755`; inverse ROC `0.4403`, PR `0.1894`.
-- Tuned: direct ROC `0.5638`, PR `0.2731`, Spearman `0.0807`; inverse ROC `0.4362`, PR `0.1500`.
 
-**Karar:** Tuning THYAO'da aggregate ROC-AUC'yi çok sınırlı artırdı; PR-AUC ise `0.2883 -> 0.2731` düştü. Aggregate direction hem baseline hem tuned modelde direct tarafta kaldı. Foldlar arasında yön değişimi görülse de tuning global direction'ı tersine çevirmedi. Bu nedenle AFA + THYAO kanıtı, direction davranışının tuning seçiminden kaynaklandığını desteklemiyor. Production direction değiştirilmedi.
+- Baseline: direct ROC 0.5597, PR 0.2883, Spearman 0.0755; inverse ROC 0.4403, PR 0.1894.
+- Tuned: direct ROC 0.5638, PR 0.2731, Spearman 0.0807; inverse ROC 0.4362, PR 0.1500.
 
-### Faz 5 Direction Sonucu
+**Karar:** Tuning THYAO'da aggregate ROC-AUC'yi çok sınırlı artırdı; PR-AUC 0.2883 -> 0.2731 düştü. Aggregate direction direct kaldı. Production direction değiştirilmedi.
 
-AFA ve THYAO baseline-vs-tuned comparison birlikte tamamlandı. Bu iki sembolde tuning'in direction probleminin kök nedeni olduğuna dair kanıt yok.
+### Faz 5 Target Threshold Direction — AFA
 
-- AFA: baseline inverse ROC `0.6602` → tuned inverse ROC `0.6413`; direct ROC `0.3398` → `0.3587`.
-- THYAO: baseline direct ROC `0.5597` → tuned direct ROC `0.5638`; inverse ROC `0.4403` → `0.4362`.
-- AFA'da tuning bazı PR metriklerini iyileştirirken inverse yön baskınlığı sürdü.
-- THYAO'da tuned model ROC'u sınırlı iyileştirdi fakat aggregate PR geriledi ve direct yön korundu.
+Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic çalıştırıldı. Bu çalışma **descriptive diagnostic** olarak değerlendirildi; production target seçimi yapılmadı.
 
-**Karar:** Global direct/inverse inversion production'a alınmayacak. Tuning direction probleminden ayrıştırıldı. Bir sonraki araştırma target definition ve/veya feature representation/model contract üzerinde leakage-safe deneyler olmalıdır; outer OOS sonuçlarına bakarak production contract değiştirilmemelidir.
+**AFA — PostgreSQL canonical history, 674 raw rows, 470 feature rows**
 
-### Faz 5 Threshold Validation — 6 Symbol Aggregate Observation
+| Target | Positive rate | Baseline ROC | Baseline PR | Tuned ROC | Tuned PR | Baseline direct Spearman |
+|---|---:|---:|---:|---:|---:|---:|
+| >1% | 42.6% | 0.5172 | 0.5291 | 0.5159 | 0.5061 | +0.0298 |
+| >2% | 22.3% | 0.4660 | 0.2992 | 0.4109 | 0.2630 | -0.0544 |
+| >3% | 13.4% | 0.3398 | 0.2137 | 0.3587 | 0.2324 | -0.2254 |
+| >5% | 5.7% | 0.5446 | 0.1603 | 0.7319 | 0.1139 | +0.0446 |
 
-- THYAO: p25 11.625, median 16.478, p75 21.171, min 2.580, max 33.904.
-- AFA: p25 28.904, median 30.997, p75 33.449, min 11.744, max 48.242.
-- AFT: p25 22.545, median 27.375, p75 32.020, min 12.056, max 54.051.
-- ASELS: p25 26.041, median 36.524, p75 49.179, min 7.881, max 72.313.
-- TUPRS: p25 24.539, median 28.651, p75 33.231, min 11.633, max 65.288.
-- BIMAS: p25 28.267, median 33.693, p75 47.759, min 17.006, max 71.204.
+- AFA'da threshold değişimi direction davranışını belirgin biçimde değiştiriyor: baseline direct Spearman +0.0298 -> -0.0544 -> -0.2254 -> +0.0446.
+- >3% mevcut contract'ta aggregate inverse ROC 0.6602; >5% tuned direct ROC 0.7319 olsa da PR 0.1139 ve positive rate yalnızca 5.7%.
+- Bu sonuçlar outer OOS candidate selection için kullanılmamalıdır; yalnızca target definition'ın model davranışını ciddi biçimde etkilediğini gösteren diagnostic kanıttır.
 
-**Karar:** Klasik global 30/70, 35/65, 40/60, 45/55 eşikleri ortak ve dengeli BUY/HOLD/SELL coverage üretmiyor. Descriptive sonuçlara dayanarak percentile/rank production default seçilmiyor; gerekirse inner walk-forward içinde leakage-safe representation selection yapılmalı.
+### Faz 5 Target Threshold Direction — THYAO
+
+**THYAO — Borsapy provider fallback, 685 raw rows, 481 feature rows**
+
+| Target | Positive rate | Baseline ROC | Baseline PR | Tuned ROC | Tuned PR | Baseline direct Spearman |
+|---|---:|---:|---:|---:|---:|---:|
+| >1% | 39.7% | 0.5169 | 0.3722 | 0.4793 | 0.3602 | +0.0275 |
+| >2% | 28.9% | 0.5977 | 0.3568 | 0.5612 | 0.3288 | +0.1353 |
+| >3% | 22.0% | 0.5597 | 0.2883 | 0.5638 | 0.2731 | +0.0755 |
+| >5% | 13.3% | 0.5665 | 0.3463 | 0.5133 | 0.2637 | +0.0716 |
+
+- THYAO'da baseline direct direction dört threshold'un tamamında pozitif Spearman tarafında kaldı.
+- >2% baseline ROC 0.5977 ile >3% baseline ROC 0.5597'nin üzerinde olsa da bu outer OOS candidate selection için kullanılmadı.
+- AFA ile THYAO birlikte değerlendirildiğinde ortak bir threshold/direction sonucu çıkmıyor.
+
+**Karar:** Target threshold'un direction ve class balance üzerinde güçlü etkisi doğrulandı; ancak iki sembolde ortak production target seçimi için yeterli leakage-safe evidence yok. Mevcut production contract **horizon=5, threshold=+3%** olarak korunuyor.
 
 ### Faz 5 Taskları
 
@@ -115,18 +122,21 @@ AFA ve THYAO baseline-vs-tuned comparison birlikte tamamlandı. Bu iki sembolde 
 - [x] AFA baseline vs tuned direction OOS karşılaştırması tamamlandı.
 - [x] THYAO baseline vs tuned direction OOS karşılaştırması tamamlandı.
 - [x] Tuning'in direction davranışına etkisi AFA + THYAO üzerinde ayrıştırıldı; global direction değişikliği yapılmadı.
-- [ ] Target/model contract revizyonunu yalnızca leakage-safe validation evidence ile deneysel değerlendir.
+- [x] Target threshold direction diagnostic AFA + THYAO tamamlandı.
+- [ ] Target/model contract revizyonunu yalnızca leakage-safe inner validation evidence ile deneysel değerlendir.
 - [ ] Düzeltilmiş normalized feature/model audit'ini ilgili coverage üzerinde çalıştır.
-- [x] Faz 5 acceptance testleri: `3 passed`.
-- [x] Tüm ML test suite: `75 passed in 6.15s`.
+- [x] Faz 5 acceptance testleri: 3 passed.
+- [x] Tüm ML test suite: 75 passed in 6.15s.
 
 ## Sıradaki İş
 
-1. **Target/model contract'ını incele:** mevcut +3% / horizon 5 hedefinin direction diagnostics ile ilişkisini leakage-safe inner validation içinde test et; production targetı henüz değiştirme.
-2. **Representation selection'ı araştır:** raw_all / normalized_all / stationary_core seçeneklerini inner walk-forward candidate olarak değerlendir; outer test foldunu seçimde kullanma.
-3. Threshold ve gerçek signal-chain sonuçlarını ilgili Phase 5 raporuna kaydet; global BUY/HOLD/SELL winner seçme.
-4. Phase 5 gerçek signal-chain kapanışını doğrula.
-5. Phase 5 tamamlandıktan sonra Phase 6'ya geç.
+1. **Nested target-contract selection:** target candidate'larını inner walk-forward içinde seçebilecek deney altyapısı oluştur. Aday threshold'lar +1%, +2%, +3%, +5%; horizon adayları 3, 5, 10 gözlem. Outer test yalnızca seçilmiş contract'ın final değerlendirmesinde kullanılmalı.
+2. Selection objective olarak yalnızca ROC-AUC kullanılmamalı; PR-AUC, class balance ve fold stability birlikte raporlanmalı.
+3. Seçilen contract için outer OOS sonucu yalnızca final evaluation olarak raporlanmalı; candidate seçimi sırasında outer OOS görülmemeli.
+4. Representation selection'ı ayrıca raw_all / normalized_all / stationary_core seçenekleriyle inner walk-forward candidate olarak değerlendir; outer test foldunu seçimde kullanma.
+5. Threshold ve gerçek signal-chain sonuçlarını ilgili Phase 5 raporuna kaydet; global BUY/HOLD/SELL winner seçme.
+6. Phase 5 gerçek signal-chain kapanışını doğrula.
+7. Phase 5 tamamlandıktan sonra Phase 6'ya geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
