@@ -154,7 +154,14 @@ def _score_representation(
                 asset_type=asset_type,
                 tuning_config=tuning_config,
             )
-        except ValueError:
+        except ValueError as exc:
+            print(
+                f"[representation={representation}] "
+                f"inner fold train={len(train)} validation={len(validation)} "
+                f"train_pos={train['target'].mean():.3f} "
+                f"validation_pos={validation['target'].mean():.3f} "
+                f"skipped: {exc}"
+            )
             continue
 
         model = build_model(tuning.config)
