@@ -26,7 +26,7 @@ from smoke_test_feature_ablation_real import (
 
 REPRESENTATIONS = ("raw_all", "normalized_all", "stationary_core")
 REPRESENTATION_INNER_TEST_SIZE = 40
-REPRESENTATION_TUNING_TEST_SIZE = 20
+REPRESENTATION_TUNING_TEST_SIZE = 40
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,20 +123,35 @@ def _select_best_candidate_for_representation(
 ):
     from app.ml.tuning import TuningCandidate, default_candidate_grid
 
+    folds = build_walk_forward_splits(
+        len(frame),
+        n_splits=tuning_config.n_inner_splits,
+        test_size=tuning_config.inner_test_size,
+        gap=tuning_config.gap,
+    )
+
+    invalid_folds = []
+    for fold_number, inner_fold in enumerate(folds, start=1):
+        train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
+        validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
+        if train["target"].nunique() < 2 or validation["target"].nunique() < 2:
+            invalid_folds.append(
+                "fold="
+                f"{fold_number} "
+                f"train={len(train)} train_pos={train['target'].mean():.3f} "
+                f"validation={len(validation)} validation_pos={validation['target'].mean():.3f}"
+            )
+    if invalid_folds:
+        raise ValueError(
+            "representation tuning requires two-class folds: " + "; ".join(invalid_folds)
+        )
+
     scored = []
     for candidate in default_candidate_grid():
-        folds = build_walk_forward_splits(
-            len(frame),
-            n_splits=tuning_config.n_inner_splits,
-            test_size=tuning_config.inner_test_size,
-            gap=tuning_config.gap,
-        )
         fold_scores = []
         for inner_fold in folds:
             train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
             validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
-            if train["target"].nunique() < 2 or validation["target"].nunique() < 2:
-                continue
             model = build_model(candidate)
             model.fit(train[list(columns)], train["target"].astype(int))
             probability = model.predict_proba(validation[list(columns)])[:, 1]
