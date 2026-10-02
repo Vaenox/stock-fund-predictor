@@ -17,7 +17,7 @@ from app.data.providers.borsapy import BorsapyProvider
 from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
-from app.ml.splitting import build_walk_forward_splits
+from app.ml.splitting import TimeSeriesFold, build_walk_forward_splits
 from app.ml.tuning import TuningCandidate, TuningConfig, build_inner_splits, default_candidate_grid
 from app.ml.xgboost_baseline import build_model, fit_baseline_model
 
@@ -201,7 +201,7 @@ def _build_sparse_inner_splits(
     frame: pd.DataFrame,
     *,
     tuning_config: TuningConfig,
-) -> tuple[tuple[object, ...], int]:
+) -> tuple[tuple[TimeSeriesFold, ...], int]:
     """Find a leakage-safe chronological inner validation size for sparse events.
 
     The normal production inner window is kept first. For sparse-event real-data
