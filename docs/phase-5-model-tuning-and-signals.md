@@ -136,3 +136,44 @@ Historical OOS içinde geçmişe ait gerçek zamanlı freshness bilgisi güvenil
 Kod commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
 
 Gerçek AFA, AFT ve THYAO sonuçları bu altyapı eklendiği anda henüz değerlendirilmiş değildir.
+
+## Gerçek Signal-Chain OOS Sonuçları
+
+Production-compatible signal chain; h5/+3% target, mevcut raw_all representation ve 3-fold chronological outer OOS protokolü ile AFA, AFT ve THYAO üzerinde çalıştırıldı. Her dış foldda tuning yalnızca outer-training içinde yapıldı.
+
+### AFA
+
+- 674 raw / 470 dataset / 120 OOS.
+- Fold 1: inner PR 1.0000; pre-risk ROC/PR 0.3828/0.3406; final 0.4167/0.3584; final target Spearman -0.1415; forward-return Spearman +0.0081.
+- Fold 2: inner PR 0.4831; pre-risk 0.7153/0.3676; final 0.7014/0.2420; final target Spearman +0.2094; forward-return Spearman -0.1454.
+- Fold 3: inner PR 0.5694; pre-risk 0.1486/0.0872; final 0.1486/0.0872; final target Spearman -0.4027; forward-return Spearman -0.0728.
+- Aggregate: pre-risk ROC/PR 0.2863/0.1869; final 0.2931/0.1679. Risk adjustment ROC'u çok küçük artırsa da PR ve forward-return association iyileşmedi.
+
+### AFT
+
+- 677 raw / 473 dataset / 120 OOS.
+- Fold 1: inner PR 0.5020; pre-risk 0.5581/0.6166; final 0.4848/0.5706; target Spearman -0.0261; forward-return +0.0283.
+- Fold 2: inner PR 0.7000; pre-risk 0.8725/0.6817; final 0.9902/0.9583; target Spearman +0.6065; forward-return +0.2940.
+- Fold 3: inner PR 0.7114; pre-risk 0.1880/0.2216; final 0.0883/0.2067; target Spearman -0.6682; forward-return -0.6764.
+- Aggregate: pre-risk ROC/PR 0.4956/0.4300; final 0.4881/0.4636. Risk adjustment foldlar arasında farklı yönde etkiler üretiyor.
+
+### THYAO
+
+- 685 raw / 481 dataset / 120 OOS; PostgreSQL canonical history yetersiz olduğu için Borsapy fallback.
+- Fold 1: inner PR 0.6896; pre-risk 0.6667/0.3692; final 0.7013/0.3265; target Spearman +0.2650; forward-return +0.1032.
+- Fold 2: inner PR 0.5441; pre-risk 0.4086/0.1997; final 0.3297/0.1909; target Spearman -0.2464; forward-return -0.1298.
+- Fold 3: inner PR 0.2835; pre-risk 0.5586/0.1132; final 0.5225/0.0980; target Spearman +0.0206; forward-return -0.5315.
+- Aggregate: pre-risk ROC/PR 0.6170/0.2405; final 0.5581/0.1924. Final signal association da pre-risk seviyesine göre zayıfladı.
+
+### Signal-chain değerlendirmesi
+
+- Üç sembolde de 120 OOS observation boyunca signal score deterministik olarak üretildi ve 0–100 sınırları korundu.
+- Foldlar arası direction ve metric davranışı stabil değil; özellikle AFA ve AFT'te rejim/fold bağımlılığı belirgin.
+- Risk adjustment'ın etkisi evrensel bir performans iyileşmesi göstermiyor. Risk katmanı bu aşamada deterministic foundation olarak korunuyor; OOS sonucu kullanılarak weight/risk penalty optimize edilmiyor.
+- Final signal dağılımları semboller arasında belirgin biçimde farklı: AFA median 30.867, AFT 29.792, THYAO 14.227. Bu nedenle daha önce görülen global threshold ölçekleme problemi devam ediyor.
+- Historical OOS freshness bilgisi yeniden üretilemediğinden bu testte `quality_ok=True, stale_days=0` kullanıldı. Sonuçlar stale-data mekanizmasının historical performansını ölçmüyor.
+- **Karar:** signal direction, mevcut weights, risk penalty ve BUY/HOLD/SELL threshold değişmedi. Bu çalışma signal-chain'in teknik olarak çalıştığını ve leakage-aware OOS değerlendirmesinin üretilebildiğini gösterir; model/sinyal genellenebilirliği için yeterli universal evidence oluşturmaz.
+- Smoke sonucunun üçü de: `REAL SIGNAL CHAIN SMOKE TEST PASSED`.
+
+Kod: `backend/scripts/smoke_test_signal_chain_real.py`  
+Commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
