@@ -177,3 +177,17 @@ Production-compatible signal chain; h5/+3% target, mevcut raw_all representation
 
 Kod: `backend/scripts/smoke_test_signal_chain_real.py`  
 Commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
+
+
+### AFS Gerçek Signal-Chain OOS Sonucu
+
+AFS, TEFAS provider fallback ile 685 raw / 481 dataset / 120 OOS gözleminde h5/+3% production target ile çalıştırıldı.
+
+- Outer fold 1: sparse inner validation test_size=40; fold classes train/validation cardinality [(2,2),(1,2)]; inner PR 0.0385. Pre-risk ROC/PR 0.0263/0.0388; final ROC/PR 0.1711/0.0442; target Spearman -0.2484; forward-return Spearman -0.6674.
+- Outer fold 2: sparse inner validation test_size=60; fold classes [(2,2),(1,2)]; inner PR 0.0250. Pre-risk 0.3793/0.2373; final 0.3824/0.2380; target Spearman -0.1819; forward-return -0.2711.
+- Outer fold 3: normal inner validation test_size=20; fold classes [(2,2),(2,2)]; inner PR 0.7282. Pre-risk 0.2511/0.1297; final 0.2597/0.1321; target Spearman -0.3163; forward-return -0.2638.
+- Aggregate pre-risk ROC/PR 0.4675/0.1579; final ROC/PR 0.5040/0.1658. Final target Spearman +0.0052; forward-return Spearman -0.0706.
+- Risk impact mean adjustment -1.1472, mean absolute change 1.1472, max absolute change 4.6667; risk adjustment target Spearman +0.1669, forward-return -0.0400.
+- Final signal median 25.081, target rate 0.167.
+- Sonuç: smoke teknik olarak başarılı olsa da foldlar arasında inner score ve outer association belirgin oynak. Risk adjustment küçük aggregate ROC/PR değişimi sağlıyor ancak forward-return association iyileşmiyor. Production signal direction, weights, risk penalty ve BUY/HOLD/SELL threshold değiştirilmedi.
+- Historical freshness için quality_ok=True, stale_days=0 varsayımı korunmuştur.
