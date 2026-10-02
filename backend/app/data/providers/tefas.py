@@ -80,8 +80,11 @@ class TefasProvider(MarketDataProvider):
                     client = self._client or httpx.Client(timeout=self._settings.timeout)
                     response = client.post(url, json=payload, headers=headers)
 
-                if response.status_code == 429 and attempt < self._settings.rate_limit_retries:
-                    retry_after = response.headers.get("Retry-After")
+                status_code = getattr(response, "status_code", 200)
+                headers = getattr(response, "headers", {})
+
+                if status_code == 429 and attempt < self._settings.rate_limit_retries:
+                    retry_after = headers.get("Retry-After")
                     try:
                         delay = (
                             float(retry_after)
@@ -102,7 +105,11 @@ class TefasProvider(MarketDataProvider):
                     continue
                 raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
             except (httpx.HTTPError, ValueError) as exc:
-                if response is not None and response.status_code == 429 and attempt < self._settings.rate_limit_retries:
+                if (
+                    response is not None
+                    and getattr(response, "status_code", 200) == 429
+                    and attempt < self._settings.rate_limit_retries
+                ):
                     continue
                 raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
         else:
