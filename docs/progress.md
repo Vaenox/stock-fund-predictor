@@ -425,11 +425,69 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Karar: AFS teknik signal-chain smoke'u geçti ancak cross-fold heterojenliği ve düşük OOS association nedeniyle signal direction, weights, risk penalty veya BUY/HOLD/SELL threshold değiştirilmedi. Production contractlar (raw_all, h5/+3%, mevcut deterministic risk/signal foundation) korunuyor.
 - AFS sonucu REAL SIGNAL CHAIN SMOKE TEST PASSED ile tamamlandı.
 
+
+### Faz 5 Signal Chain — ASELS, TUPRS ve BIMAS Gerçek OOS Sonuçları
+
+Üç production stock smoke sembolü de aynı 3-fold chronological / 40-test / gap=5 signal-chain protokolünü teknik olarak geçti. Üçünde de inner validation 20 gözlem ve iki sınıflı foldlar yeterli oldu; bu nedenle AFS için eklenen sparse 40/60 fallback'i burada devreye girmedi.
+
+**ASELS — Borsapy provider fallback, 685 raw / 481 dataset / 120 OOS**
+
+- Fold 1: inner PR 0.5501; pre-risk ROC/PR 0.6752/0.4589; final 0.6781/0.4606; target Spearman +0.2890; forward-return +0.1722.
+- Fold 2: inner PR 0.5297; pre-risk 0.5000/0.3599; final 0.4753/0.3493; target Spearman -0.0409; forward-return -0.1560.
+- Fold 3: inner PR 0.6635; pre-risk 0.3393/0.2526; final 0.2351/0.2418; target Spearman -0.4206; forward-return -0.5332.
+- Aggregate: pre-risk ROC/PR 0.5356/0.3627; final ROC/PR 0.5125/0.3546. Final target Spearman +0.0203; forward-return Spearman -0.0888.
+- Risk impact: mean adjustment -8.2967, max absolute change 13.8152; risk adjustment target Spearman -0.2369, forward-return -0.2425.
+- Final signal median 32.770; target rate 0.325.
+
+**TUPRS — Borsapy provider fallback, 685 raw / 481 dataset / 120 OOS**
+
+- Fold 1: inner PR 0.6116; pre-risk ROC/PR 0.2814/0.1472; final 0.2511/0.1353; target Spearman -0.3277; forward-return -0.4889.
+- Fold 2: inner PR 0.3708; pre-risk 0.6200/0.6801; final 0.6500/0.7096; target Spearman +0.2599; forward-return +0.1749.
+- Fold 3: inner PR 0.6580; pre-risk 0.6591/0.6225; final 0.6162/0.6083; target Spearman +0.2003; forward-return +0.2156.
+- Aggregate: pre-risk ROC/PR 0.5241/0.4580; final ROC/PR 0.5375/0.4735. Final target Spearman +0.0629; forward-return Spearman -0.0112.
+- Risk impact: mean adjustment -6.6448, max absolute change 11.0043; risk adjustment target Spearman +0.0569, forward-return +0.0013.
+- Final signal median 24.549; target rate 0.375.
+
+**BIMAS — Borsapy provider fallback, 685 raw / 481 dataset / 120 OOS**
+
+- Fold 1: inner PR 0.6480; pre-risk ROC/PR 0.2530/0.2184; final 0.2530/0.2170; target Spearman -0.3923; forward-return -0.3790.
+- Fold 2: inner PR 0.8094; pre-risk ROC/PR 0.8203/0.6021; final 0.8164/0.5288; target Spearman +0.4386; forward-return +0.5407.
+- Fold 3: inner PR 0.5615; pre-risk 0.5413/0.4791; final 0.5556/0.4240; target Spearman +0.0902; forward-return -0.0767.
+- Aggregate: pre-risk ROC/PR 0.4479/0.3379; final ROC/PR 0.4486/0.3196. Final target Spearman -0.0795; forward-return Spearman -0.1140.
+- Risk impact: mean adjustment -4.3475, max absolute change 9.0170; risk adjustment target Spearman +0.0504, forward-return -0.1000.
+- Final signal median 28.665; target rate 0.275.
+
+**Yedi sembollük toplam signal-chain coverage özeti**
+
+| Symbol | Asset | Data source | Final ROC | Final PR | Final Spearman(target) | Final Spearman(fwd) | Median signal |
+|---|---|---|---:|---:|---:|---:|---:|
+| AFA | Fund | PostgreSQL | 0.2931 | 0.1679 | -0.2911 | -0.0728 | 30.867 |
+| AFT | Fund | PostgreSQL | 0.4881 | 0.4636 | +0.6065 | +0.2940 | 29.792 |
+| THYAO | Stock | Borsapy | 0.5581 | 0.1924 | +0.0735 | -0.0624 | 14.227 |
+| AFS | Fund | TEFAS | 0.5040 | 0.1658 | +0.0052 | -0.0706 | 25.081 |
+| ASELS | Stock | Borsapy | 0.5125 | 0.3546 | +0.0203 | -0.0888 | 32.770 |
+| TUPRS | Stock | Borsapy | 0.5375 | 0.4735 | +0.0629 | -0.0112 | 24.549 |
+| BIMAS | Stock | Borsapy | 0.4486 | 0.3196 | -0.0795 | -0.1140 | 28.665 |
+
+- Her sembol 120 OOS gözleminde teknik smoke testini geçti; toplam signal-chain coverage 840 OOS gözleme ulaştı.
+- Sembol bazında final ROC-AUC 0.2931–0.5581, final PR-AUC 0.1658–0.4735 ve median signal 14.227–32.770 aralığında değişti. Bu ölçek heterojenliği global BUY/HOLD/SELL threshold seçimini desteklemiyor.
+- Risk adjustment etkisi semboller arasında karışık: AFA'da ROC hafif yükselip PR düştü; AFT'te ROC düşüp PR yükseldi; THYAO ve ASELS'te hem ROC hem PR düştü; AFS'te ikisi de hafif yükseldi; TUPRS'ta ikisi de yükseldi; BIMAS'ta ROC çok küçük yükselirken PR düştü.
+- Yedi sembolün sembol-bazlı metriklerinin basit aritmetik ortalaması descriptive olarak pre-risk ROC 0.4820 -> final 0.4774 ve pre-risk PR 0.3106 -> final 0.3053 gösteriyor. Bu pooled OOS metriği değildir; yalnızca sembol seviyesindeki sonuçların eşit ağırlıklı özetidir.
+- Aggregate Spearman yönü universal değil: semboller arasında hem pozitif hem negatif değerler bulunuyor. Bu nedenle global signal direction inversion seçilmiyor.
+- Historical freshness tüm sembollerde quality_ok=True, stale_days=0 varsayımı ile ölçüldü; bu coverage gerçek zamanlı stale-data performansını doğrulamıyor.
+
+**Faz 5 Signal-chain kararı**
+
+- Signal-chain 7 sembolde teknik olarak tamamlandı ve deterministic 0–100 bounds korunuyor.
+- Ancak OOS performansı ve direction davranışı sembol/fold bazında heterojen. Risk adjustment evrensel bir performans artışı sağlamıyor ve signal scale semboller arasında kayıyor.
+- Production kararı: raw_all, h5/+3% target, mevcut ML/Technical ağırlıkları, bounded risk penalty ve signal direction korunuyor. BUY/HOLD/SELL threshold seçilmiyor.
+- Signal-chain smoke coverage tamamlandı; bundan sonraki çalışmalar Faz 6 altında kontrollü deneyler olarak ele alınmalıdır.
+
 ## Sıradaki İş
 
-1. Signal-chain OOS coverage'ını son üç production stock smoke sembolüyle tamamla: ASELS, TUPRS, BIMAS.
-2. Cross-symbol AFA, AFT, THYAO, AFS, ASELS, TUPRS, BIMAS sonuçlarını birlikte değerlendir; fold instability, risk adjustment etkisi ve signal scale davranışını raporla.
-3. Global BUY/HOLD/SELL threshold, signal direction, weights veya risk penalty seçme; mevcut production contractları koru. Ardından Faz 5 acceptance/kapanış değerlendirmesini yap ve sonraki kontrollü deneyleri Faz 6 altında planla.
+1. Faz 5 kapanış/acceptance değerlendirmesini tamamla; 7-symbol / 840-OOS signal-chain coverage'ını final kanıt olarak kaydet.
+2. Mevcut production contractları koruyarak Faz 6 kontrollü deney backlog'unu tanımla: veri kapsamı, signal calibration/threshold araştırması, risk sensitivity ve backtest/paper-trading altyapısı.
+3. Global BUY/HOLD/SELL threshold veya signal direction/weights/risk penalty seçme; historical freshness davranışını gerçek zamanlı production ölçümü olmadan performans kanıtı olarak yorumlama.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
