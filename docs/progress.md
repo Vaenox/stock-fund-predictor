@@ -410,6 +410,21 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Test commit: `77a687ef853e70ab772b0408cdc7e01615c3f3bd`.
 - Codespace'te test suite henüz çalıştırılmadı; AFS signal-chain yeniden denenmeli.
 
+
+### Faz 5 Signal Chain — AFS Gerçek OOS Sonucu
+
+- AFS smoke TEFAS provider fallback ile başarıyla tamamlandı: 685 raw rows, 481 dataset rows, 120 OOS rows; production target h=5 / +3%.
+- Sparse inner validation fallback yalnızca gerektiğinde devreye girdi: outer fold 1'de 40 gözlem, fold 2'de 60 gözlem kullanıldı; fold 3 normal 20 gözlemli validation ile iki sınıflı kaldı. Bu seçimler outer-training dönemi içinde ve chronological walk-forward olarak yapıldı; gap=5 korundu.
+- Fold 1: inner PR-AUC 0.0385; pre-risk ROC/PR 0.0263/0.0388; final 0.1711/0.0442; final Spearman(target) -0.2484; forward-return -0.6674.
+- Fold 2: inner PR-AUC 0.0250; pre-risk 0.3793/0.2373; final 0.3824/0.2380; final Spearman(target) -0.1819; forward-return -0.2711.
+- Fold 3: inner PR-AUC 0.7282; pre-risk 0.2511/0.1297; final 0.2597/0.1321; final Spearman(target) -0.3163; forward-return -0.2638.
+- Aggregate: pre-risk ROC/PR 0.4675/0.1579; final ROC/PR 0.5040/0.1658; final Spearman(target) +0.0052; forward-return -0.0706.
+- Risk impact: mean adjustment -1.1472, mean absolute change 1.1472, max absolute change 4.6667; risk adjustment Spearman(target) +0.1669, forward-return -0.0400.
+- Final signal median 25.081; overall target rate 0.167. Final signal direction/association güçlü ve stabil bir ilişki göstermedi.
+- Historical OOS freshness yeniden kurulamadığı için quality_ok=True, stale_days=0 varsayımı korundu; bu sonuç freshness performansı hakkında iddia üretmez.
+- Karar: AFS teknik signal-chain smoke'u geçti ancak cross-fold heterojenliği ve düşük OOS association nedeniyle signal direction, weights, risk penalty veya BUY/HOLD/SELL threshold değiştirilmedi. Production contractlar (raw_all, h5/+3%, mevcut deterministic risk/signal foundation) korunuyor.
+- AFS sonucu REAL SIGNAL CHAIN SMOKE TEST PASSED ile tamamlandı.
+
 ## Sıradaki İş
 
 1. Signal-chain OOS sonuçlarını geniş sembol coverage ile tamamla; AFS için TEFAS fallback ile smoke testini yeniden çalıştır ve fold instability ile risk adjustment etkisini izle.
