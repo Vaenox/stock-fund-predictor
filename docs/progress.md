@@ -513,11 +513,30 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Faz 5 production contractları korunuyor: raw_all, horizon=5, target threshold=+3%, mevcut signal weights, bounded risk penalty, global direction inversion yok, BUY/HOLD/SELL threshold winner yok.
 - Faz 6 başlangıç konusu: leakage-safe backtest ve prediction evaluation foundation.
 
+### Faz 6 Başlangıcı — Backtest Foundation
+
+- Faz 5 kapandı: 140 backend test geçti ve 7-symbol / 840-OOS signal-chain coverage tamamlandı.
+- Faz 6 için ilk backtest foundation eklendi:
+  - backend/app/backtesting/engine.py
+  - backend/app/backtesting/metrics.py
+  - backend/app/backtesting/__init__.py
+- Engine long-only target-weight modelidir; target_weight 0.0–1.0 aralığındadır.
+- Signal date t üzerindeki target ağırlık yalnızca t+1 open'da uygulanır. Bu nedenle aynı gün close veya t+1 close bilgi olarak execution kararına kullanılmaz.
+- Transaction cost trade notional üzerinden bps olarak, slippage ise execution price üzerinde ayrı bps etkisi olarak uygulanır.
+- Equity curve net transaction cost ve slippage sonrası tutulur.
+- İlk metrikler: total return, annualized return/volatility, Sharpe, maximum drawdown, win rate, profit factor, total transaction cost, total slippage cost, total turnover.
+- Backtest engine threshold seçmez; Phase 5'te production BUY/HOLD/SELL threshold seçilmediği için dışarıdan target_weight serisi alır. Bu ayrım korunmaktadır.
+- Unit testleri eklendi: backend/tests/backtesting/test_engine.py ve backend/tests/backtesting/test_metrics.py.
+- Faz 6 sözleşmesi docs/phase-6-backtesting.md içinde kayıtlıdır.
+- Henüz Codespace test sonucu alınmadı. İlk doğrulama Phase 6 targeted tests, ardından full backend suite olmalıdır.
+
 ## Sıradaki İş
 
-1. Faz 6 backtest foundation'ını oluştur: historical signal/prediction kayıtları, transaction cost/slippage sözleşmeleri, chronological walk-forward portfolio simulation ve temel risk metrikleri.
-2. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
-3. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
+1. Codespace'te Phase 6 backtesting tests'lerini çalıştır; ardından full backend suite ile regression kontrolü yap.
+2. Backtest engine'i gerçek Phase 5 OOS signal/prediction çıktısına bağlayan strategy orchestration katmanını oluştur; target_weight üretimini threshold seçiminden ayrı tut.
+3. Transaction cost/slippage varsayımlarını asset/piyasa bazında konfigüre edilebilir hale getir; ardından gerçek historical backtest ve benchmark/portfolio risk metriklerine geç.
+4. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
+5. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
