@@ -399,6 +399,17 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production model/target/signal contract değiştirilmedi.
 - Düzeltme commit: `917193d6bd6bfb61112c7efebef90061435a93ad`.
 
+### Faz 5 Signal Chain — TEFAS Transport Retry Düzeltmesi
+
+- AFS signal-chain ikinci çalıştırmasında TEFAS fallback'e ulaşıldı ancak `fonGnlBlgSiraliGetir` isteği `httpx.RemoteProtocolError: Server disconnected without sending a response` ile kesildi.
+- Mevcut `TefasProvider._post()` yalnızca HTTP 429 durumunda retry yapıyor; transient `httpx.TransportError` için ilk hatada doğrudan `TefasProviderError` yükseltiyordu.
+- Provider'a yalnızca `httpx.TransportError` için mevcut retry sayısını kullanan exponential backoff eklendi. 429 davranışı ve diğer HTTP/validation hataları değiştirilmedi.
+- `backend/tests/data/test_tefas_rate_limit.py` içine RemoteProtocolError sonrası retry ve başarı davranışını doğrulayan test eklendi.
+- Production ML/signal contract değiştirilmedi; değişiklik yalnızca veri sağlayıcı resiliency katmanındadır.
+- Provider commit: `eb2c449c0b074b9100e4c3450ebf6b9dc9c0d5fb`.
+- Test commit: `77a687ef853e70ab772b0408cdc7e01615c3f3bd`.
+- Codespace'te test suite henüz çalıştırılmadı; AFS signal-chain yeniden denenmeli.
+
 ## Sıradaki İş
 
 1. Signal-chain OOS sonuçlarını geniş sembol coverage ile tamamla; AFS için TEFAS fallback ile smoke testini yeniden çalıştır ve fold instability ile risk adjustment etkisini izle.
