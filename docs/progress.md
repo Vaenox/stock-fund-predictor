@@ -534,6 +534,15 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Backtest buy sizing transaction costs/slippage dahil edilerek nakdin negatife düşmesini önleyecek şekilde düzeltildi; target weight maliyet sonrası küçük sapma gösterebilir.
 - Bu davranış için backtest engine unit testi eklendi.
 
+### Faz 6 Backtest — Transaction Cost Test Correction
+
+- Phase 6 backtesting targeted suite ilk çalıştırmada 10 passed, 1 failed; full backend suite 150 passed, 1 failed verdi.
+- Tek failure engine hesabından değil, testteki sabit 200.0 transaction-cost beklentisinden kaynaklandı. Pozisyon ilk execution sonrasında değer kazandığı için kapanış trade notional'ı ilk alış notional'ından daha büyüktür; dolayısıyla bps komisyon toplamı sabit 200.0 değildir.
+- Test artık transaction cost'u trade logundaki toplam trade notional × configured fee rate üzerinden doğruluyor ve maliyetin equity'yi düşürdüğünü ayrıca koruyor.
+- Engine davranışı değiştirilmedi.
+- Test düzeltme commit: e1793186f247ef0f1f5d75712346b49c847615c1.
+- Codespace'te targeted/full suite bu düzeltmeden sonra henüz tekrar çalıştırılmadı.
+
 ## Sıradaki İş
 
 1. Codespace'te Phase 6 backtesting tests'lerini çalıştır; ardından full backend suite ile regression kontrolü yap.
