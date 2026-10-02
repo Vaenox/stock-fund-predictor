@@ -93,6 +93,31 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 
 ### Faz 5 Nested Representation Selection — AFA Gerçek Sonucu ve Yorum
 
+### Faz 5 Nested Representation Selection — AFT ve THYAO Gerçek Sonuçları
+
+**AFT — PostgreSQL canonical history, 677 raw / 473 dataset rows, h5/+3%**
+
+- Outer 1: `normalized_all` seçildi. Inner PR 0.3770, ROC 0.6149, PR std 0.2073, direction 50%, valid folds 2. Outer ROC 0.4646, PR 0.4913, Spearman -0.0609.
+- Outer 2: `raw_all` seçildi. Inner PR 0.4698, ROC 0.6434, PR std 0.0998, direction 100%, valid folds 2. Outer ROC 0.6127, PR 0.3366, Spearman +0.1395.
+- Outer 3: `raw_all` seçildi. Inner PR 0.4334, ROC 0.5293, PR std 0.1362, direction 50%, valid folds 2. Outer ROC 0.5755, PR 0.3616, Spearman +0.1225.
+- Representation selection foldlar arasında sabit kalmadı; `normalized_all` yalnızca ilk fold'da, `raw_all` sonraki iki fold'da seçildi. Production representation değişikliği için bu tek-sembol kanıt yeterli görülmedi.
+
+**THYAO — Borsapy provider fallback, 685 raw / 481 dataset rows, h5/+3%**
+
+- Outer 1/2/3'ün tamamında `raw_all` seçildi.
+- Inner PR: 0.4733, 0.3581, 0.2719; inner ROC: 0.5475, 0.4401, 0.4152; valid folds 2.
+- Outer sonuçlar: fold 1 ROC 0.5108 / PR 0.3712 / Spearman +0.0142; fold 2 ROC 0.3763 / PR 0.1929 / Spearman -0.1789; fold 3 ROC 0.9189 / PR 0.6000 / Spearman +0.3823.
+- THYAO'da representation seçimi stabil biçimde `raw_all` tarafında kaldı. Bununla birlikte outer foldlar ve direction heterojenliği nedeniyle bu tek sembol sonucu genel production representation değişikliği için tek başına yeterli değildir.
+
+**AFA + AFT + THYAO birlikte**
+
+- AFA'da geçerli iki outer foldun ikisinde `stationary_core` seçildi; bir outer fold sparse +3% target nedeniyle inconclusive kaldı.
+- AFT'de `normalized_all` 1/3, `raw_all` 2/3 outer foldda seçildi.
+- THYAO'da `raw_all` 3/3 outer foldda seçildi.
+- Üç sembol birlikte tek bir universal representation davranışı göstermiyor. Özellikle AFA'daki `stationary_core` seçimi AFT/THYAO'da tekrar edilmedi.
+- Mevcut production representation **`raw_all` olarak korunuyor**. `normalized_all` ve `stationary_core` deneysel adaylar olarak tutuluyor.
+
+
 - AFA, PostgreSQL canonical history ile 674 raw / 470 dataset satırında h5/+3% target ile nested representation smoke çalıştırıldı.
 - Outer fold 1 representation selection yapılamadı: üç representation da `inner validation has no two-class fold` nedeniyle atlandı. Bu fold sonucu INCONCLUSIVE kabul ediliyor; crash artık beklenmiyor.
 - Outer fold 2 `stationary_core` seçildi: inner PR-AUC 0.7375, ROC-AUC 0.8203, PR std 0.2625, direction 100%, valid folds 2. Aynı representation'ın outer OOS sonucu ROC 0.6389, PR 0.3532, Spearman +0.1444.
