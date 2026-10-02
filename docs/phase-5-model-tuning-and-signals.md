@@ -111,3 +111,28 @@ Bu nedenle signal foundation, ML ve technical ağırlıklarını kendi toplamlar
 - Feature importance stock/fund için ayrı üretilebilmelidir.
 - Signal-risk birleşimi deterministik unit testlerle doğrulanmalıdır.
 - Risk adjustment stock/fund ayrımını korumalı ve ML probability'yi değiştirmemelidir.
+
+
+## Gerçek Signal-Chain OOS Doğrulama Altyapısı
+
+Representation deneyleri sonrasında production default olarak korunan `raw_all` representation ve h5/+3% target contract ile gerçek signal-chain değerlendirmesi için ayrı smoke scripti eklendi: `backend/scripts/smoke_test_signal_chain_real.py`.
+
+Protokol:
+
+- 3 outer chronological expanding walk-forward fold.
+- Outer test size: 40 gözlem; leakage gap: 5.
+- Her outer foldun training döneminde 2-fold inner chronological XGBoost tuning.
+- Tuning objective: mevcut production sözleşmesindeki inner PR-AUC.
+- Seçilen config yalnızca ilgili outer test foldunda final model olarak fit edilir.
+- Her OOS gözleminde ML probability ve Technical Score birleştirilir; Risk Adjustment bounded negatif penalty olarak bir kez uygulanır.
+- Risk etkisini ayrıştırmak için aynı gözlemde risk öncesi signal score da hesaplanır.
+- Final raporda ROC-AUC, PR-AUC, target/forward-return Spearman, signal/risk dağılımları ve risk etkisi raporlanır.
+- BUY/HOLD/SELL threshold veya signal scaling winner'ı bu smoke testinde seçilmez.
+
+Veri kaynağı tarafında stock için PostgreSQL canonical history yeterliyse kullanılır, değilse mevcut doğrulanmış Borsapy fallback'i kullanılır; fund için PostgreSQL canonical history kullanılır.
+
+Historical OOS içinde geçmişe ait gerçek zamanlı freshness bilgisi güvenilir biçimde yeniden kurulamayacağı için risk fonksiyonuna `quality_ok=True, stale_days=0` verilir. Bu tercih deterministic risk composition'ın OOS davranışını ölçer; historical data freshness hakkında ek iddia üretmez.
+
+Kod commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
+
+Gerçek AFA, AFT ve THYAO sonuçları bu altyapı eklendiği anda henüz değerlendirilmiş değildir.
