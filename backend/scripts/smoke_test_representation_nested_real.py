@@ -14,7 +14,7 @@ from app.analysis.indicators import calculate_fund_indicators, calculate_stock_i
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
 from app.ml.splitting import build_walk_forward_splits
-from app.ml.tuning import TuningConfig, select_best_candidate
+from app.ml.tuning import TuningCandidate, TuningConfig, default_candidate_grid
 from app.ml.xgboost_baseline import build_model
 from smoke_test_feature_ablation_real import (
     FUND_FEATURE_COLUMNS,
@@ -113,6 +113,49 @@ def _safe_auc(metric: str, y: np.ndarray, probability: np.ndarray) -> float | No
     return float(roc_auc_score(y, probability))
 
 
+def _select_best_candidate_for_representation(
+    frame: pd.DataFrame,
+    *,
+    columns: tuple[str, ...],
+    tuning_config: TuningConfig,
+):
+    from app.ml.tuning import TuningCandidate, default_candidate_grid
+
+    scored = []
+    for candidate in default_candidate_grid():
+        folds = build_walk_forward_splits(
+            len(frame),
+            n_splits=tuning_config.n_inner_splits,
+            test_size=tuning_config.inner_test_size,
+            gap=tuning_config.gap,
+        )
+        fold_scores = []
+        for inner_fold in folds:
+            train = frame.iloc[inner_fold.train_start : inner_fold.train_end]
+            validation = frame.iloc[inner_fold.test_start : inner_fold.test_end]
+            if train["target"].nunique() < 2 or validation["target"].nunique() < 2:
+                continue
+            model = build_model(candidate)
+            model.fit(train[list(columns)], train["target"].astype(int))
+            probability = model.predict_proba(validation[list(columns)])[:, 1]
+            score = _safe_auc("pr", validation["target"].astype(int).to_numpy(), probability)
+            if score is not None:
+                fold_scores.append(score)
+        if not fold_scores:
+            raise ValueError("inner validation has no two-class fold")
+        scored.append(TuningCandidate(config=candidate, score=float(np.mean(fold_scores))))
+
+    return max(
+        scored,
+        key=lambda item: (
+            item.score,
+            -item.config.max_depth,
+            -item.config.learning_rate,
+            -item.config.min_child_weight,
+        ),
+    )
+
+
 def _score_representation(
     prepared: pd.DataFrame,
     *,
@@ -149,9 +192,9 @@ def _score_representation(
             continue
 
         try:
-            tuning = select_best_candidate(
+            tuning = _select_best_candidate_for_representation(
                 train,
-                asset_type=asset_type,
+                columns=columns,
                 tuning_config=tuning_config,
             )
         except ValueError as exc:
@@ -251,9 +294,9 @@ def _evaluate_outer(
             f"{representation} fold {outer_fold_number} outer training target contains one class"
         )
 
-    tuning = select_best_candidate(
+    tuning = _select_best_candidate_for_representation(
         train,
-        asset_type=asset_type,
+        columns=tuple(columns),
         tuning_config=TuningConfig(
             n_inner_splits=2,
             inner_test_size=20,
