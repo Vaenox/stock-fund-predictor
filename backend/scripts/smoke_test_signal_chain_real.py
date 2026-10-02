@@ -197,25 +197,93 @@ def _association(
     )
 
 
+def _build_sparse_inner_splits(
+    frame: pd.DataFrame,
+    *,
+    tuning_config: TuningConfig,
+) -> tuple[tuple[object, ...], int]:
+    """Find a leakage-safe chronological inner validation size for sparse events.
+
+    The normal production inner window is kept first. For sparse-event real-data
+    smoke only, if all 20-observation validation folds are single-class, retry
+    with larger chronological windows. No random or stratified splitting is used.
+    """
+    base_size = tuning_config.inner_test_size
+    fallback_sizes = tuple(dict.fromkeys((base_size, 40, 60)))
+
+    for test_size in fallback_sizes:
+        if len(frame) <= tuning_config.n_inner_splits * test_size + tuning_config.gap:
+            continue
+
+        config = TuningConfig(
+            n_inner_splits=tuning_config.n_inner_splits,
+            inner_test_size=test_size,
+            gap=tuning_config.gap,
+        )
+        folds = build_inner_splits(len(frame), config=config)
+        class_pairs = [
+            (
+                int(frame.iloc[fold.test_start : fold.test_end]["target"].nunique()),
+                int(frame.iloc[fold.train_start : fold.train_end]["target"].nunique()),
+            )
+            for fold in folds
+        ]
+        if any(validation_classes >= 2 for validation_classes, _ in class_pairs):
+            print(
+                "  sparse inner validation: "
+                f"test_size={test_size}, "
+                f"fold_classes={class_pairs}"
+            )
+            return folds, test_size
+
+    fold_diagnostics: list[tuple[int, int]] = []
+    config = TuningConfig(
+        n_inner_splits=tuning_config.n_inner_splits,
+        inner_test_size=base_size,
+        gap=tuning_config.gap,
+    )
+    for fold in build_inner_splits(len(frame), config=config):
+        fold_diagnostics.append(
+            (
+                int(
+                    frame.iloc[fold.train_start : fold.train_end]["target"].nunique()
+                ),
+                int(
+                    frame.iloc[fold.test_start : fold.test_end]["target"].nunique()
+                ),
+            )
+        )
+    raise ValueError(
+        "inner validation has no two-class fold; "
+        f"train/validation class counts={fold_diagnostics}"
+    )
+
+
 def _select_best_candidate_sparse(
     frame: pd.DataFrame,
     *,
     asset_type: str,
     tuning_config: TuningConfig,
 ) -> TuningCandidate:
-    """Select using the established sparse-event inner tuning behavior.
+    """Select using sparse-event behavior without changing production tuning.
 
     Chronological inner folds are preserved. Validation folds with a single
     target class are skipped; at least one two-class validation fold must remain.
-    This mirrors the previously accepted real-data feature-ablation tuning
-    contract rather than changing the production tuning helper globally.
+    The normal 20-observation inner window is used first. If sparse events make
+    every 20-observation validation fold single-class, this smoke-only helper
+    retries with 40 and then 60 observations. This fallback does not change the
+    global production tuning helper or its 20-observation contract.
     """
     columns = list(feature_columns(asset_type))
+    folds, _ = _build_sparse_inner_splits(
+        frame,
+        tuning_config=tuning_config,
+    )
     scored: list[TuningCandidate] = []
 
     for candidate in default_candidate_grid():
         fold_scores: list[float] = []
-        for fold in build_inner_splits(len(frame), config=tuning_config):
+        for fold in folds:
             train = frame.iloc[fold.train_start : fold.train_end]
             validation = frame.iloc[fold.test_start : fold.test_end]
 
