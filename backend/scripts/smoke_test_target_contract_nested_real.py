@@ -201,12 +201,13 @@ def _select_candidate(
     )
 
 
-def _evaluate_outer(
+def _evaluate_outer_fold(
     dataset: pd.DataFrame,
     *,
     candidate: TargetCandidate,
     asset_type: str,
     gap: int,
+    outer_fold_number: int,
 ) -> dict[str, float | int | str | None]:
     split_gap = max(gap, candidate.horizon)
     folds = build_walk_forward_splits(
@@ -215,56 +216,45 @@ def _evaluate_outer(
         test_size=40,
         gap=split_gap,
     )
+    fold = folds[outer_fold_number - 1]
     columns = list(feature_columns(asset_type))
     tuning_config = TuningConfig(
         n_inner_splits=2,
         inner_test_size=20,
         gap=split_gap,
     )
-    baseline_config = XGBoostBaselineConfig()
-    oos_y: list[int] = []
-    oos_p: list[float] = []
-    selected_configs: list[str] = []
 
-    for fold in folds:
-        train = dataset.iloc[fold.train_start : fold.train_end].copy()
-        test = dataset.iloc[fold.test_start : fold.test_end].copy()
-        if train["target"].nunique() < 2:
-            continue
-
-        tuning = select_best_candidate(
-            train,
-            asset_type=asset_type,
-            tuning_config=tuning_config,
-        )
-        model = build_model(tuning.config)
-        model.fit(train[columns], train["target"].astype(int))
-        probability = model.predict_proba(test[columns])[:, 1]
-        oos_y.extend(test["target"].astype(int).tolist())
-        oos_p.extend(probability.astype(float).tolist())
-        selected_configs.append(
-            f"d={tuning.config.max_depth},lr={tuning.config.learning_rate:.2f},"
-            f"mcw={tuning.config.min_child_weight:.1f}"
+    train = dataset.iloc[fold.train_start : fold.train_end].copy()
+    test = dataset.iloc[fold.test_start : fold.test_end].copy()
+    if train["target"].nunique() < 2:
+        raise ValueError(
+            f"selected candidate has one-class outer training target in fold {outer_fold_number}"
         )
 
-    y = np.asarray(oos_y, dtype=int)
-    probability = np.asarray(oos_p, dtype=float)
-    roc = _safe_metric("roc", y, probability)
-    pr = _safe_metric("pr", y, probability)
+    tuning = select_best_candidate(
+        train,
+        asset_type=asset_type,
+        tuning_config=tuning_config,
+    )
+    model = build_model(tuning.config)
+    model.fit(train[columns], train["target"].astype(int))
+    probability = model.predict_proba(test[columns])[:, 1]
+    y = test["target"].astype(int).to_numpy()
+
     return {
         "candidate": f"h={candidate.horizon},t={candidate.threshold:.0%}",
         "outer_rows": int(len(y)),
-        "outer_positive_rate": float(y.mean()) if len(y) else float("nan"),
-        "outer_roc_auc": roc,
-        "outer_pr_auc": pr,
+        "outer_positive_rate": float(y.mean()),
+        "outer_roc_auc": _safe_metric("roc", y, probability),
+        "outer_pr_auc": _safe_metric("pr", y, probability),
         "outer_direct_spearman": float(
             pd.Series(probability).corr(pd.Series(y), method="spearman")
-        )
-        if len(y)
-        else float("nan"),
-        "selected_model_configs": " | ".join(selected_configs),
+        ),
+        "selected_model_config": (
+            f"d={tuning.config.max_depth},lr={tuning.config.learning_rate:.2f},"
+            f"mcw={tuning.config.min_child_weight:.1f}"
+        ),
     }
-
 
 def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) -> None:
     if asset_type == "stock":
@@ -336,11 +326,12 @@ def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) ->
         )
 
         final_dataset = candidate_results[winner.candidate]
-        outer_eval = _evaluate_outer(
+        outer_eval = _evaluate_outer_fold(
             final_dataset,
             candidate=winner.candidate,
             asset_type=asset_type,
             gap=gap,
+            outer_fold_number=outer_number,
         )
         outer_eval["selected_outer_fold"] = outer_number
         common_outer_results.append(outer_eval)
@@ -354,7 +345,8 @@ def _run(asset_type: str, symbol: str, days: int, gap: int, min_db_rows: int) ->
             f"positive={result['outer_positive_rate']:.3f}, "
             f"ROC={result['outer_roc_auc'] if result['outer_roc_auc'] is not None else float('nan'):.4f}, "
             f"PR={result['outer_pr_auc'] if result['outer_pr_auc'] is not None else float('nan'):.4f}, "
-            f"Spearman={result['outer_direct_spearman']:.4f}"
+            f"Spearman={result['outer_direct_spearman']:.4f}, "
+            f"model={result['selected_model_config']}"
         )
 
     print("\nProduction contract remains horizon=5, threshold=+3% until broader evidence is reviewed.")
