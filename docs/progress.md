@@ -340,15 +340,48 @@ Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic �
 - OOS raporu ROC-AUC, PR-AUC, target/forward-return Spearman, bileşen dağılımları ve risk etkisini içerir. BUY/HOLD/SELL threshold winner seçilmez.
 - Historical OOS içinde geçmişe ait gerçek-time freshness/stale_days yeniden kurulamayacağı için `quality_ok=True, stale_days=0` varsayımı açıkça raporlanır; bu smoke risk composition'ı doğrular, historical freshness davranışı hakkında iddia üretmez.
 - Kod commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
-- Gerçek AFA/AFT/THYAO sonuçları henüz çalıştırılmadı; production signal score hakkında henüz performans kararı verilmedi.
+
+
+## Faz 5 Signal Chain — Gerçek OOS Sonuçları
+
+Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT ve THYAO üzerinde çalıştırıldı. Bu çalışma teknik smoke başarıyla tamamlandı; ancak foldlar arası yön ve metrik oynaklığı nedeniyle production signal performansı için genel bir üstünlük kanıtı oluşmadı.
+
+**AFA — PostgreSQL canonical history, 674 raw / 470 dataset rows, h5/+3%**
+
+- Fold 1: inner PR 1.0000. Pre-risk ROC/PR 0.3828/0.3406; final 0.4167/0.3584. Final Spearman(target) -0.1415, Spearman(forward) +0.0081.
+- Fold 2: inner PR 0.4831. Pre-risk 0.7153/0.3676; final 0.7014/0.2420. Final Spearman(target) +0.2094, Spearman(forward) -0.1454.
+- Fold 3: inner PR 0.5694. Pre-risk 0.1486/0.0872; final 0.1486/0.0872. Final Spearman(target) -0.4027, Spearman(forward) -0.0728.
+- Aggregate descriptive result: pre-risk ROC/PR 0.2863/0.1869; final ROC/PR 0.2931/0.1679. Final signal direction hâlâ negatif Spearman(target) -0.2911.
+
+**AFT — PostgreSQL canonical history, 677 raw / 473 dataset rows, h5/+3%**
+
+- Fold 1: inner PR 0.5020. Pre-risk ROC/PR 0.5581/0.6166; final 0.4848/0.5706. Final Spearman(target) -0.0261, Spearman(forward) +0.0283.
+- Fold 2: inner PR 0.7000. Pre-risk 0.8725/0.6817; final 0.9902/0.9583. Final Spearman(target) +0.6065, Spearman(forward) +0.2940.
+- Fold 3: inner PR 0.7114. Pre-risk 0.1880/0.2216; final 0.0883/0.2067. Final Spearman(target) -0.6682, Spearman(forward) -0.6764.
+- Aggregate descriptive result: pre-risk ROC/PR 0.4956/0.4300; final ROC/PR 0.4881/0.4636. Risk adjustment bazı foldlarda performansı yükseltirken bazı foldlarda düşürüyor.
+
+**THYAO — Borsapy provider fallback, 685 raw / 481 dataset rows, h5/+3%**
+
+- Fold 1: inner PR 0.6896. Pre-risk ROC/PR 0.6667/0.3692; final 0.7013/0.3265. Final Spearman(target) +0.2650, Spearman(forward) +0.1032.
+- Fold 2: inner PR 0.5441. Pre-risk 0.4086/0.1997; final 0.3297/0.1909. Final Spearman(target) -0.2464, Spearman(forward) -0.1298.
+- Fold 3: inner PR 0.2835. Pre-risk 0.5586/0.1132; final 0.5225/0.0980. Final Spearman(target) +0.0206, Spearman(forward) -0.5315.
+- Aggregate descriptive result: pre-risk ROC/PR 0.6170/0.2405; final ROC/PR 0.5581/0.1924. Risk adjustment sonrası aggregate association zayıflıyor: target Spearman +0.1479 -> +0.0735; forward-return Spearman -0.0015 -> -0.0624.
+
+**Ortak gözlem ve karar**
+
+- Signal-chain üç sembolde de teknik olarak deterministik şekilde üretildi ve tüm 120 OOS gözleminde 0–100 sınırları korundu.
+- Fold yönleri ortak değil: AFA ve AFT'te güçlü fold-to-fold değişim, THYAO'da ise daha ılımlı ama yine heterojen davranış var.
+- Risk adjustment sabit yönde performans iyileştirmiyor. AFA'da aggregate ROC çok küçük artarken PR düşüyor; AFT'te PR küçük artarken ROC hafif düşüyor; THYAO'da hem ROC hem PR düşüyor.
+- Final signal dağılımları düşük ve sembole göre değişken: AFA median 30.867, AFT median 29.792, THYAO median 14.227. Bu nedenle daha önce gözlenen global threshold ölçekleme problemi devam ediyor; bu çalışma yeni bir BUY/HOLD/SELL threshold seçmiyor.
+- Risk katmanının historical OOS ölçümünde `quality_ok=True, stale_days=0` varsayımı kullanıldı. Dolayısıyla sonuçlar freshness/stale-data davranışını değerlendirmiyor.
+- **Production kararı:** signal direction, weight, risk penalty veya BUY/HOLD/SELL threshold değiştirilmedi. Mevcut production contractlar (raw_all, h5/+3%, mevcut deterministic weights/risk foundation) korunuyor.
+- **Signal-chain smoke:** AFA, AFT ve THYAO için `REAL SIGNAL CHAIN SMOKE TEST PASSED`.
 
 ## Sıradaki İş
 
-1. `smoke_test_signal_chain_real.py` ile AFA, AFT ve THYAO üzerinde gerçek 3-fold / 120 OOS signal-chain sonuçlarını çalıştır.
-2. Her sembolde pre-risk vs final signal ROC/PR/Spearman ve risk adjustment etkisini ayrı değerlendir; fold heterojenliğini kaydet.
-3. Sonuçları bu dosyaya ve `docs/phase-5-model-tuning-and-signals.md` raporuna işle; global BUY/HOLD/SELL winner veya yeni threshold seçme.
-4. Signal-chain evidence yeterli değilse mevcut production contract'ları koru; yeterli leakage-safe evidence oluşursa bir sonraki kontrollü deney için açıkça tanımla.
-5. Faz 5 gerçek signal-chain kapanışını doğrula; ardından Faz 6 planına geç.
+1. Signal-chain OOS sonuçlarını geniş sembol coverage ile tekrar doğrula; özellikle fold instability ve risk adjustment etkisini izlemeye devam et.
+2. Global BUY/HOLD/SELL threshold veya signal direction seçme; mevcut production contractları koru.
+3. Faz 5 acceptance/kapanış değerlendirmesini tamamla ve sonraki kontrollü deneyleri Faz 6 altında planla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
