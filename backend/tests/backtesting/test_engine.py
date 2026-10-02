@@ -95,3 +95,14 @@ def test_backtest_requires_positive_prices() -> None:
 
     with pytest.raises(ValueError, match="open and close must be positive"):
         run_long_only_backtest(frame)
+
+def test_buy_sizing_includes_execution_costs_without_negative_cash() -> None:
+    result = run_long_only_backtest(
+        _frame([1.0, 1.0, 1.0]),
+        config=BacktestConfig(
+            transaction_cost_bps=10.0,
+            slippage_bps=5.0,
+        ),
+    )
+
+    assert (result.equity_curve["cash"] >= 0.0).all()
