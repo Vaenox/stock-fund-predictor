@@ -123,14 +123,14 @@ Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic �
 - [x] THYAO baseline vs tuned direction OOS karşılaştırması tamamlandı.
 - [x] Tuning'in direction davranışına etkisi AFA + THYAO üzerinde ayrıştırıldı; global direction değişikliği yapılmadı.
 - [x] Target threshold direction diagnostic AFA + THYAO tamamlandı.
-- [ ] Target/model contract revizyonunu yalnızca leakage-safe inner validation evidence ile deneysel değerlendir.
+- [ ] Target/model contract revizyonunu yalnızca leakage-safe inner validation evidence ile deneysel değerlendir.\n- [x] Nested target-contract selection smoke altyapısı oluşturuldu; 12 candidate (horizon 3/5/10 × threshold 1/2/3/5%) inner tuned validation ile seçiliyor ve outer evaluation yalnızca seçilen candidate'ın ilgili foldunda yapılıyor.
 - [ ] Düzeltilmiş normalized feature/model audit'ini ilgili coverage üzerinde çalıştır.
 - [x] Faz 5 acceptance testleri: 3 passed.
 - [x] Tüm ML test suite: 75 passed in 6.15s.
 
 ## Sıradaki İş
 
-1. **Nested target-contract selection:** target candidate'larını inner walk-forward içinde seçebilecek deney altyapısı oluştur. Aday threshold'lar +1%, +2%, +3%, +5%; horizon adayları 3, 5, 10 gözlem. Outer test yalnızca seçilmiş contract'ın final değerlendirmesinde kullanılmalı.
+1. **Nested target-contract selection:** oluşturulan `backend/scripts/smoke_test_target_contract_nested_real.py` ile gerçek AFA/THYAO sonuçlarını çalıştır; candidate selection inner tuned validation'da, outer evaluation yalnızca seçilen fold/candidate üzerinde. Aday threshold'lar +1%, +2%, +3%, +5%; horizon adayları 3, 5, 10 gözlem. Outer test yalnızca seçilmiş contract'ın final değerlendirmesinde kullanılmalı.
 2. Selection objective olarak yalnızca ROC-AUC kullanılmamalı; PR-AUC, class balance ve fold stability birlikte raporlanmalı.
 3. Seçilen contract için outer OOS sonucu yalnızca final evaluation olarak raporlanmalı; candidate seçimi sırasında outer OOS görülmemeli.
 4. Representation selection'ı ayrıca raw_all / normalized_all / stationary_core seçenekleriyle inner walk-forward candidate olarak değerlendir; outer test foldunu seçimde kullanma.
