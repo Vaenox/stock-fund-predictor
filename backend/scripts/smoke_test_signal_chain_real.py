@@ -18,8 +18,8 @@ from app.data.providers.tefas import TefasProvider
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment, calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.splitting import build_walk_forward_splits
-from app.ml.tuning import TuningConfig, select_best_candidate
-from app.ml.xgboost_baseline import fit_baseline_model
+from app.ml.tuning import TuningCandidate, TuningConfig, build_inner_splits, default_candidate_grid
+from app.ml.xgboost_baseline import build_model, fit_baseline_model
 
 
 def _load_stock_frame_provider(symbol: str, days: int) -> pd.DataFrame:
@@ -197,6 +197,71 @@ def _association(
     )
 
 
+def _select_best_candidate_sparse(
+    frame: pd.DataFrame,
+    *,
+    asset_type: str,
+    tuning_config: TuningConfig,
+) -> TuningCandidate:
+    """Select using the established sparse-event inner tuning behavior.
+
+    Chronological inner folds are preserved. Validation folds with a single
+    target class are skipped; at least one two-class validation fold must remain.
+    This mirrors the previously accepted real-data feature-ablation tuning
+    contract rather than changing the production tuning helper globally.
+    """
+    columns = list(feature_columns(asset_type))
+    scored: list[TuningCandidate] = []
+
+    for candidate in default_candidate_grid():
+        fold_scores: list[float] = []
+        for fold in build_inner_splits(len(frame), config=tuning_config):
+            train = frame.iloc[fold.train_start : fold.train_end]
+            validation = frame.iloc[fold.test_start : fold.test_end]
+
+            if train["target"].nunique() < 2:
+                raise ValueError("inner training target contains only one class")
+
+            model = build_model(candidate)
+            model.fit(train[columns], train["target"].astype(int))
+            probability = model.predict_proba(validation[columns])[:, 1]
+
+            if validation["target"].nunique() < 2:
+                continue
+
+            from sklearn.metrics import average_precision_score
+
+            fold_scores.append(
+                float(
+                    average_precision_score(
+                        validation["target"].astype(int),
+                        probability,
+                    )
+                )
+            )
+
+        if fold_scores:
+            scored.append(
+                TuningCandidate(
+                    config=candidate,
+                    score=float(sum(fold_scores) / len(fold_scores)),
+                )
+            )
+
+    if not scored:
+        raise ValueError("inner validation has no two-class fold")
+
+    return max(
+        scored,
+        key=lambda item: (
+            item.score,
+            -item.config.max_depth,
+            -item.config.learning_rate,
+            -item.config.min_child_weight,
+        ),
+    )
+
+
 def _run(
     asset_type: str,
     symbol: str,
@@ -252,7 +317,7 @@ def _run(
         train = dataset.iloc[fold.train_start : fold.train_end].copy()
         test = dataset.iloc[fold.test_start : fold.test_end].copy()
 
-        tuning = select_best_candidate(
+        tuning = _select_best_candidate_sparse(
             train,
             asset_type=asset_type,
             tuning_config=tuning_config,
