@@ -16,7 +16,12 @@ from app.data.providers.borsapy import BorsapyProvider
 from app.ml.splitting import build_walk_forward_splits
 from app.ml.tuning import TuningConfig, select_best_candidate
 from app.ml.xgboost_baseline import build_model
-from smoke_test_feature_ablation_real import _prepare_variant
+from smoke_test_feature_ablation_real import (
+    FUND_FEATURE_COLUMNS,
+    STOCK_FEATURE_COLUMNS,
+    _prepare_variant,
+    _stationary_core_columns,
+)
 
 
 REPRESENTATIONS = ("raw_all", "normalized_all", "stationary_core")
@@ -115,11 +120,7 @@ def _score_representation(
     representation: str,
     gap: int,
 ) -> RepresentationScore | None:
-    prepared, columns = _prepare_variant(
-        frame,
-        asset_type=asset_type,
-        variant=representation,
-    )
+    columns = tuple(columns)
     folds = build_walk_forward_splits(
         len(prepared),
         n_splits=2,
@@ -327,10 +328,20 @@ def _run(
             outer_fold = outer_folds[outer_number - 1]
             outer_train = prepared.iloc[: outer_fold.train_end].copy()
 
+            if representation in ("raw_all", "normalized_all"):
+                columns = (
+                    STOCK_FEATURE_COLUMNS
+                    if asset_type == "stock"
+                    else FUND_FEATURE_COLUMNS
+                )
+            else:
+                columns = _stationary_core_columns(asset_type)
+
             score = _score_representation(
                 outer_train,
                 asset_type=asset_type,
                 representation=representation,
+                columns=tuple(columns),
                 gap=gap,
             )
             if score is not None:
