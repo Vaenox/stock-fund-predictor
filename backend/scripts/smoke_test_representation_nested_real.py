@@ -410,7 +410,10 @@ def _run(
         )
         raise SystemExit(2)
 
-    print("\nNESTED REPRESENTATION SELECTION RESULTS")
+    print(
+        f"\nNESTED REPRESENTATION SELECTION RESULTS "
+        f"(target threshold +{threshold:.1%})"
+    )
     for result in outer_results:
         print(
             f"fold={result['fold']} representation={result['representation']}: "
