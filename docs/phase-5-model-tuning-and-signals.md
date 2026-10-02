@@ -191,3 +191,77 @@ AFS, TEFAS provider fallback ile 685 raw / 481 dataset / 120 OOS gözleminde h5/
 - Final signal median 25.081, target rate 0.167.
 - Sonuç: smoke teknik olarak başarılı olsa da foldlar arasında inner score ve outer association belirgin oynak. Risk adjustment küçük aggregate ROC/PR değişimi sağlıyor ancak forward-return association iyileşmiyor. Production signal direction, weights, risk penalty ve BUY/HOLD/SELL threshold değiştirilmedi.
 - Historical freshness için quality_ok=True, stale_days=0 varsayımı korunmuştur.
+
+
+### ASELS, TUPRS ve BIMAS Gerçek Signal-Chain OOS Sonuçları
+
+Üç production stock smoke sembolü de aynı 3-fold chronological / 40-test / gap=5 signal-chain protokolünü teknik olarak geçti. Üçünde de normal 20-observation inner validation iki sınıflı foldlar üretti.
+
+#### ASELS
+
+- 685 raw / 481 dataset / 120 OOS; Borsapy provider fallback.
+- Fold 1: inner PR 0.5501; pre-risk ROC/PR 0.6752/0.4589; final 0.6781/0.4606; target Spearman +0.2890; forward-return +0.1722.
+- Fold 2: inner PR 0.5297; pre-risk 0.5000/0.3599; final 0.4753/0.3493; target Spearman -0.0409; forward-return -0.1560.
+- Fold 3: inner PR 0.6635; pre-risk 0.3393/0.2526; final 0.2351/0.2418; target Spearman -0.4206; forward-return -0.5332.
+- Aggregate: pre-risk ROC/PR 0.5356/0.3627; final ROC/PR 0.5125/0.3546; target Spearman +0.0203; forward-return -0.0888.
+- Risk impact: mean adjustment -8.2967; max absolute change 13.8152; risk adjustment target Spearman -0.2369; forward-return -0.2425.
+- Final signal median 32.770.
+- Risk adjustment sonrası aggregate ROC/PR düştü; foldlar arası yön değişken.
+
+#### TUPRS
+
+- 685 raw / 481 dataset / 120 OOS; Borsapy provider fallback.
+- Fold 1: inner PR 0.6116; pre-risk ROC/PR 0.2814/0.1472; final 0.2511/0.1353; target Spearman -0.3277; forward-return -0.4889.
+- Fold 2: inner PR 0.3708; pre-risk 0.6200/0.6801; final 0.6500/0.7096; target Spearman +0.2599; forward-return +0.1749.
+- Fold 3: inner PR 0.6580; pre-risk 0.6591/0.6225; final 0.6162/0.6083; target Spearman +0.2003; forward-return +0.2156.
+- Aggregate: pre-risk ROC/PR 0.5241/0.4580; final ROC/PR 0.5375/0.4735; target Spearman +0.0629; forward-return -0.0112.
+- Risk impact: mean adjustment -6.6448; max absolute change 11.0043; risk adjustment target Spearman +0.0569; forward-return +0.0013.
+- Final signal median 24.549.
+- Aggregate ROC/PR küçük ölçekte yükseldi, fakat foldlar arasında direction davranışı hâlâ heterojen.
+
+#### BIMAS
+
+- 685 raw / 481 dataset / 120 OOS; Borsapy provider fallback.
+- Fold 1: inner PR 0.6480; pre-risk ROC/PR 0.2530/0.2184; final 0.2530/0.2170; target Spearman -0.3923; forward-return -0.3790.
+- Fold 2: inner PR 0.8094; pre-risk 0.8203/0.6021; final 0.8164/0.5288; target Spearman +0.4386; forward-return +0.5407.
+- Fold 3: inner PR 0.5615; pre-risk 0.5413/0.4791; final 0.5556/0.4240; target Spearman +0.0902; forward-return -0.0767.
+- Aggregate: pre-risk ROC/PR 0.4479/0.3379; final ROC/PR 0.4486/0.3196; target Spearman -0.0795; forward-return -0.1140.
+- Risk impact: mean adjustment -4.3475; max absolute change 9.0170; risk adjustment target Spearman +0.0504; forward-return -0.1000.
+- Final signal median 28.665.
+- Risk adjustment aggregate ROC'u neredeyse değiştirmedi, PR-AUC'yi düşürdü.
+
+### Yedi Sembol / 840 OOS Signal-Chain Coverage
+
+| Symbol | Asset | Source | Final ROC | Final PR | Target Spearman | Forward-return Spearman | Median signal |
+|---|---|---|---:|---:|---:|---:|---:|
+| AFA | Fund | PostgreSQL | 0.2931 | 0.1679 | -0.2911 | -0.0728 | 30.867 |
+| AFT | Fund | PostgreSQL | 0.4881 | 0.4636 | +0.6065 | +0.2940 | 29.792 |
+| THYAO | Stock | Borsapy | 0.5581 | 0.1924 | +0.0735 | -0.0624 | 14.227 |
+| AFS | Fund | TEFAS | 0.5040 | 0.1658 | +0.0052 | -0.0706 | 25.081 |
+| ASELS | Stock | Borsapy | 0.5125 | 0.3546 | +0.0203 | -0.0888 | 32.770 |
+| TUPRS | Stock | Borsapy | 0.5375 | 0.4735 | +0.0629 | -0.0112 | 24.549 |
+| BIMAS | Stock | Borsapy | 0.4486 | 0.3196 | -0.0795 | -0.1140 | 28.665 |
+
+- Her sembolde 120 OOS gözlem olmak üzere toplam 840 OOS signal-chain gözlemi değerlendirildi.
+- Final ROC-AUC semboller arasında 0.2931–0.5581; final PR-AUC 0.1658–0.4735; median signal 14.227–32.770 aralığında kaldı.
+- Risk adjustment etkisi uniform değil: bazı sembollerde ROC/PR iyileşirken bazılarında düşüyor. Bu nedenle risk penalty OOS sonuçlarından yeniden optimize edilmedi.
+- Yedi sembolün sembol-bazlı metriklerinin eşit ağırlıklı descriptive ortalaması pre-risk ROC 0.4820 -> final 0.4774 ve pre-risk PR 0.3106 -> final 0.3053'tür. Bu pooled OOS metriği değildir.
+- Signal direction ve forward-return association işaretleri semboller arasında karışık olduğu için global direction inversion seçilmedi.
+- Signal score ölçeği sembol bazında belirgin biçimde değiştiği için global BUY/HOLD/SELL threshold winner seçilmedi.
+- Historical freshness geçmiş OOS için yeniden kurulamadığından tüm smoke sonuçlarında quality_ok=True, stale_days=0 kullanıldı; gerçek zamanlı stale-data performansı bu deneyle ölçülmedi.
+
+### Faz 5 Signal-Chain Kapanış Değerlendirmesi
+
+Signal-chain altyapısı; inner tuning, Technical Score, deterministic risk adjustment ve final signal composition ile birlikte 7 sembol / 840 OOS gözleminde teknik olarak doğrulandı. Buna rağmen OOS metrics ve direction davranışı fold/symbol rejimine duyarlı ve risk adjustment evrensel performans artışı sağlamıyor.
+
+Production contract şu aşamada değiştirilmedi:
+
+- raw_all representation
+- horizon=5
+- positive return threshold=+3%
+- mevcut ML/Technical signal weights
+- bounded risk adjustment penalty
+- global signal direction yok
+- BUY/HOLD/SELL threshold winner yok
+
+Bu aşamadan sonra yeni deneyler Faz 6 altında kontrollü olarak ele alınmalıdır.
