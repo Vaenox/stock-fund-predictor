@@ -53,3 +53,34 @@ def test_tefas_post_raises_after_exhausting_rate_limit_retries(monkeypatch):
         raise AssertionError("expected TefasProviderError")
 
     assert sleeps == [1.0, 2.0]
+
+
+def test_tefas_post_retries_transient_transport_error_then_succeeds(monkeypatch):
+    calls = []
+
+    def request(method, url, **kwargs):
+        calls.append(len(calls))
+        if len(calls) == 1:
+            raise httpx.RemoteProtocolError(
+                "Server disconnected without sending a response",
+                request=httpx.Request(method, url),
+            )
+        return httpx.Response(
+            200,
+            json={"resultList": []},
+            request=httpx.Request(method, url),
+        )
+
+    sleeps = []
+    monkeypatch.setattr("app.data.providers.tefas.sleep", sleeps.append)
+
+    provider = TefasProvider(
+        settings=TefasSettings(rate_limit_retries=2, rate_limit_backoff_seconds=2.0),
+        request=request,
+    )
+
+    result = provider._post("fonGnlBlgSiraliGetir", {})
+
+    assert result == {"resultList": []}
+    assert len(calls) == 2
+    assert sleeps == [2.0]
