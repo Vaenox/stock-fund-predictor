@@ -84,6 +84,14 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — İkinci Kod Hatası Düzeltmesi
+
+- AFA rerun sonrası `TypeError: _score_representation() got an unexpected keyword argument 'columns'` görüldü.
+- Kod incelemesinde önceki düzeltmenin çağrı tarafına `columns` eklediği ancak fonksiyon gövdesinin parametre imzasının eksik kaldığı ve ayrıca `prepared/frame` isimlerinin tutarsız olduğu doğrulandı.
+- Düzeltme: `_score_representation` artık `prepared` ve `columns: tuple[str, ...]` parametrelerini açıkça kabul ediyor; walk-forward ve dropna işlemleri bu hazırlanmış frame/column seti üzerinde yürütülüyor.
+- Düzeltme commit: `ef98ac8c020727d96e80c15effdf07000115ee25`.
+- AFA nested representation gerçek sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
+
 ### Faz 5 Nested Representation Selection — İlk AFA Çalıştırması ve Düzeltme
 
 - AFA nested representation smoke PostgreSQL canonical history ile veri hazırlama aşamasını geçti: 674 raw rows, 470 dataset rows.
