@@ -329,15 +329,26 @@ Aynı leakage-safe chronological outer protokolü ile mevcut target diagnostic �
 - [x] Faz 5 acceptance testleri: 3 passed.
 - [x] Tüm ML test suite: 75 passed in 6.15s.
 
+## Faz 5 Signal Chain — Gerçek OOS Doğrulama Altyapısı
+
+- Production signal chain için ayrı gerçek-veri smoke scripti eklendi: `backend/scripts/smoke_test_signal_chain_real.py`.
+- Protokol: expanding chronological walk-forward, 3 outer fold, 40 gözlem/fold, gap=5.
+- Production ML contract sabit: horizon=5, threshold=+3%; feature representation bu testte mevcut production default olan `raw_all`.
+- Her outer fold içinde yalnızca outer-train döneminde 2-fold inner walk-forward XGBoost tuning yapılır; seçilen model outer test üzerinde bir kez değerlendirilir.
+- Signal chain her OOS gözleminde sırayla ML probability + Technical Score + Risk Adjustment -> final 0–100 signal score üretir.
+- Risk etkisini ayrıştırmak için aynı gözlemde pre-risk signal score da raporlanır; böylece risk adjustment'ın skoru ne kadar değiştirdiği ayrıca ölçülür.
+- OOS raporu ROC-AUC, PR-AUC, target/forward-return Spearman, bileşen dağılımları ve risk etkisini içerir. BUY/HOLD/SELL threshold winner seçilmez.
+- Historical OOS içinde geçmişe ait gerçek-time freshness/stale_days yeniden kurulamayacağı için `quality_ok=True, stale_days=0` varsayımı açıkça raporlanır; bu smoke risk composition'ı doğrular, historical freshness davranışı hakkında iddia üretmez.
+- Kod commit: `22562255dd05b9044c2ce5e5f402f9d01284c0fd`.
+- Gerçek AFA/AFT/THYAO sonuçları henüz çalıştırılmadı; production signal score hakkında henüz performans kararı verilmedi.
+
 ## Sıradaki İş
 
-1. **Nested target-contract selection:** oluşturulan `backend/scripts/smoke_test_target_contract_nested_real.py` ile gerçek AFA/THYAO sonuçlarını çalıştır; candidate selection inner tuned validation'da, outer evaluation yalnızca seçilen fold/candidate üzerinde. Aday threshold'lar +1%, +2%, +3%, +5%; horizon adayları 3, 5, 10 gözlem. Outer test yalnızca seçilmiş contract'ın final değerlendirmesinde kullanılmalı.
-2. Selection objective olarak yalnızca ROC-AUC kullanılmamalı; PR-AUC, class balance ve fold stability birlikte raporlanmalı.
-3. Seçilen contract için outer OOS sonucu yalnızca final evaluation olarak raporlanmalı; candidate seçimi sırasında outer OOS görülmemeli.
-4. Representation selection'ı ayrıca raw_all / normalized_all / stationary_core seçenekleriyle inner walk-forward candidate olarak değerlendir; outer test foldunu seçimde kullanma.
-5. Threshold ve gerçek signal-chain sonuçlarını ilgili Phase 5 raporuna kaydet; global BUY/HOLD/SELL winner seçme.
-6. Phase 5 gerçek signal-chain kapanışını doğrula.
-7. Phase 5 tamamlandıktan sonra Phase 6'ya geç.
+1. `smoke_test_signal_chain_real.py` ile AFA, AFT ve THYAO üzerinde gerçek 3-fold / 120 OOS signal-chain sonuçlarını çalıştır.
+2. Her sembolde pre-risk vs final signal ROC/PR/Spearman ve risk adjustment etkisini ayrı değerlendir; fold heterojenliğini kaydet.
+3. Sonuçları bu dosyaya ve `docs/phase-5-model-tuning-and-signals.md` raporuna işle; global BUY/HOLD/SELL winner veya yeni threshold seçme.
+4. Signal-chain evidence yeterli değilse mevcut production contract'ları koru; yeterli leakage-safe evidence oluşursa bir sonraki kontrollü deney için açıkça tanımla.
+5. Faz 5 gerçek signal-chain kapanışını doğrula; ardından Faz 6 planına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
