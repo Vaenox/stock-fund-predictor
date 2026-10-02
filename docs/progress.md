@@ -91,6 +91,17 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Help metni yüzde işareti yerine `+1 percent` olacak şekilde düzeltildi. Threshold davranışı ve veri/model mantığı değiştirilmedi.
 - Düzeltme commit: `542fdc5ebc83c3ef864f848164e9ff0d0dfd5786`.
 
+### Faz 5 Nested Representation Selection — AFA Gerçek Sonucu ve Yorum
+
+- AFA, PostgreSQL canonical history ile 674 raw / 470 dataset satırında h5/+3% target ile nested representation smoke çalıştırıldı.
+- Outer fold 1 representation selection yapılamadı: üç representation da `inner validation has no two-class fold` nedeniyle atlandı. Bu fold sonucu INCONCLUSIVE kabul ediliyor; crash artık beklenmiyor.
+- Outer fold 2 `stationary_core` seçildi: inner PR-AUC 0.7375, ROC-AUC 0.8203, PR std 0.2625, direction 100%, valid folds 2. Aynı representation'ın outer OOS sonucu ROC 0.6389, PR 0.3532, Spearman +0.1444.
+- Outer fold 3 `stationary_core` seçildi: inner PR-AUC 0.5110, ROC-AUC 0.5877, PR std 0.0361, direction 100%, valid folds 2. Outer OOS ROC 0.2343, PR 0.0953, Spearman -0.3045.
+- Seçim iki outer foldda da `stationary_core` olsa da inner -> outer performans taşınması zayıf/heterojen: fold 3'te inner skorların altında belirgin OOS bozulma var. Bu nedenle yalnızca AFA'nın iki geçerli outer folduna dayanarak production representation değiştirilmiyor.
+- Toplam seçim coverage 2/3 outer fold; bu nedenle `NESTED REPRESENTATION SELECTION PASSED` çıktısı teknik smoke başarı olarak görülebilir, fakat representation seçimi için yeterli genelleme kanıtı olarak kabul edilmiyor.
+- Mevcut production representation `raw_all` korunuyor.
+- Kod commit: `5eddbfcfa4b984bb459b74d297af65479c1e9a3c`.
+
 ### Faz 5 Nested Representation Selection — Sparse Target için Inconclusive Handling ve Threshold Parametresi
 
 - AFA +3% nested representation çalışmasının temel sonucu veri/sınıf yoğunluğu nedeniyle representation selection'ın bazı outer foldlarda geçerli sonuç üretememesidir; bunu kod hatası gibi göstermek yerine açıkça `INCONCLUSIVE` olarak raporlamak üzere hata yönetimi eklendi.
