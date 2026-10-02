@@ -84,6 +84,13 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — argparse Help String Düzeltmesi
+
+- `--threshold` CLI parametresi eklendikten sonra `argparse` başlatılırken `ValueError: badly formed help string` oluştu.
+- Kök neden `help="... +1%"` içindeki `%` karakterinin argparse'ın printf-style help formatting mekanizması tarafından format işareti olarak yorumlanmasıdır.
+- Help metni yüzde işareti yerine `+1 percent` olacak şekilde düzeltildi. Threshold davranışı ve veri/model mantığı değiştirilmedi.
+- Düzeltme commit: `542fdc5ebc83c3ef864f848164e9ff0d0dfd5786`.
+
 ### Faz 5 Nested Representation Selection — Sparse Target için Inconclusive Handling ve Threshold Parametresi
 
 - AFA +3% nested representation çalışmasının temel sonucu veri/sınıf yoğunluğu nedeniyle representation selection'ın bazı outer foldlarda geçerli sonuç üretememesidir; bunu kod hatası gibi göstermek yerine açıkça `INCONCLUSIVE` olarak raporlamak üzere hata yönetimi eklendi.
