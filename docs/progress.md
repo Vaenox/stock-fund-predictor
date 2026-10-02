@@ -84,6 +84,15 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — İlk AFA Çalıştırması ve Düzeltme
+
+- AFA nested representation smoke PostgreSQL canonical history ile veri hazırlama aşamasını geçti: 674 raw rows, 470 dataset rows.
+- İlk çalıştırmada `_select_representation` tüm adaylarda `valid_folds < 2` gördü ve `no representation has the required number of valid inner folds` hatası verdi.
+- İnceleme sonucunda representation'ın outer-train için zaten hazırlanmış frame'inin `_score_representation` içinde ikinci kez `_prepare_variant` ile hazırlanması tespit edildi. Özellikle normalized/stationary varyantlarda bu, nested seçim frame'inin yanlışlıkla yeniden dönüştürülmesine neden olabiliyordu.
+- Düzeltme: `_score_representation` artık kendisine verilen hazırlanmış frame ve açık feature-column seti üzerinde çalışıyor; representation varyantı ikinci kez uygulanmıyor.
+- Düzeltme commit: `770f772d3cda1d20708e30a1716e7f1168fc631e`.
+- Production representation hâlâ `raw_all`; AFA gerçek nested sonuçları henüz değerlendirilmedi.
+
 ### Faz 5 Nested Target-Contract Selection — Düzeltilmiş Gerçek Çalıştırma
 
 Selection stability düzeltmesinden sonra AFA ve THYAO nested smoke tekrar çalıştırıldı. Candidate selection artık yalnızca en az 2 valid inner fold'a sahip adaylar arasından yapılıyor; PR-AUC primary objective, ROC-AUC ve fold PR std secondary criteria. Class balance raporlanıyor ancak keyfi bir hedef orana göre optimize edilmiyor.
