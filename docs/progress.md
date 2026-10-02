@@ -377,9 +377,21 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - **Production kararı:** signal direction, weight, risk penalty veya BUY/HOLD/SELL threshold değiştirilmedi. Mevcut production contractlar (raw_all, h5/+3%, mevcut deterministic weights/risk foundation) korunuyor.
 - **Signal-chain smoke:** AFA, AFT ve THYAO için `REAL SIGNAL CHAIN SMOKE TEST PASSED`.
 
+
+### Faz 5 Signal Chain — AFS Veri Kaynağı Düzeltmesi
+
+- AFS signal-chain smoke ilk çalıştırmada `ValueError: no DB fund history found for AFS` ile durdu.
+- Kök neden model/signal tarafı değil; PostgreSQL canonical history içinde AFS için hiç fund history bulunmamasıydı.
+- Mevcut diğer gerçek fund smoke testlerinde kullanılan TEFAS provider fallback'i signal-chain scriptine de eklendi.
+- Fund loader artık önce PostgreSQL canonical history'yi dener; kayıt sayısı `--min-db-rows` altında kalırsa TEFAS provider ile chunked history çeker.
+- TEFAS fallback için `--chunk-delay` CLI parametresi eklendi; varsayılan 3 saniyedir.
+- Kaynak çıktısı korunuyor: `PostgreSQL canonical history` veya `TEFAS provider (DB history insufficient)`.
+- Production model/target/signal contract değiştirilmedi.
+- Düzeltme commit: `917193d6bd6bfb61112c7efebef90061435a93ad`.
+
 ## Sıradaki İş
 
-1. Signal-chain OOS sonuçlarını geniş sembol coverage ile tekrar doğrula; özellikle fold instability ve risk adjustment etkisini izlemeye devam et.
+1. Signal-chain OOS sonuçlarını geniş sembol coverage ile tamamla; AFS için TEFAS fallback ile smoke testini yeniden çalıştır ve fold instability ile risk adjustment etkisini izle.
 2. Global BUY/HOLD/SELL threshold veya signal direction seçme; mevcut production contractları koru.
 3. Faz 5 acceptance/kapanış değerlendirmesini tamamla ve sonraki kontrollü deneyleri Faz 6 altında planla.
 
