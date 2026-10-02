@@ -42,9 +42,13 @@ def test_transaction_cost_reduces_equity() -> None:
         config=BacktestConfig(transaction_cost_bps=10.0, slippage_bps=0.0),
     )
 
-    assert with_cost.metrics.total_transaction_cost == pytest.approx(200.0)
+    assert with_cost.metrics.total_transaction_cost > 0.0
     assert with_cost.metrics.total_transaction_cost > no_cost.metrics.total_transaction_cost
     assert with_cost.metrics.total_return < no_cost.metrics.total_return
+
+    buy_and_sell_notional = with_cost.trade_log["trade_notional"].sum()
+    expected_cost = buy_and_sell_notional * 0.001
+    assert with_cost.metrics.total_transaction_cost == pytest.approx(expected_cost)
 
 
 def test_slippage_cost_reduces_buy_execution_value() -> None:
