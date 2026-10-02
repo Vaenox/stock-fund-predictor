@@ -29,6 +29,11 @@ Phase 5'te doğrulanan signal-chain'i historical portfolio simulation katmanına
 - Total slippage cost
 - Total turnover
 
+## Uygulama Notu
+
+- Buy işlemlerinde target exposure hesaplanırken transaction cost ve slippage nedeniyle cash negatife düşmez; mevcut nakit işlem maliyeti dahil affordability ile sınırlandırılır.
+- Bu ilk foundation fractional units kullanır; gerçek market lot/tax/commission rules sonraki aşamada ayrıca uygulanacaktır.
+
 ## Açık Konular
 
 - Position sizing / capital allocation policy
