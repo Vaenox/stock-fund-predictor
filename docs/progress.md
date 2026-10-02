@@ -84,6 +84,17 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
 - Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
 
+### Faz 5 Nested Representation Selection — Adaptive Event-Stable Fold Düzeltmesi
+
+- Önceki 20 -> 40 düzeltmesine rağmen AFA'da hata devam etti; son çıktı, 40'lık representation foldunun içinde hyperparameter tuning için gereken iki kronolojik validation foldunun da stabil olmadığına işaret etti.
+- Sabit validation boyutu kullanmak yerine nested representation tuning için yeni `_find_stable_inner_splits()` helper'ı eklendi.
+- Helper yalnızca outer-training döneminde çalışıyor ve kronolojik walk-forward splitlerden en küçük uygun pencereyi seçiyor: representation selection için 40/60/80; representation-specific hyperparameter tuning için 40/60/80/100.
+- Bir foldun geçerli sayılması için training tarafında en az 2 pozitif + 2 negatif, validation tarafında en az 2 pozitif + 2 negatif event gerekiyor. Böylece seyrek +3% target nedeniyle tek pozitifli veya tek-sınıflı validation pencereleri candidate selection'a sokulmuyor.
+- Representation score yine iki ayrı chronological validation foldu üzerinden hesaplanıyor; seçilen candidate yalnızca ilgili representation feature kolonlarıyla fit ediliyor. Outer test foldları selection dışında tutuluyor.
+- Bu yaklaşım production target'ı, outer test boyutunu veya leakage gap'ini gevşetmiyor; yalnızca sparse-event nested validation penceresini outer-training içinde daha yeterli hale getiriyor.
+- Düzeltme commit: `1efd56388f2ede16e9a1b5158972a84e0d417c4e`.
+- Yeni AFA gerçek sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
+
 ### Faz 5 Nested Representation Selection — Hyperparameter Inner Validation Penceresi Düzeltmesi
 
 - AFA gerçek çalıştırmasında yeni diagnostic log kök nedeni netleştirdi: representation-level validation 40 gözleme çıkarılmış olmasına rağmen, representation-specific hyperparameter tuning içinde validation boyutu hâlâ 20 idi.
