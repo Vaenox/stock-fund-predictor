@@ -483,6 +483,15 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production kararı: raw_all, h5/+3% target, mevcut ML/Technical ağırlıkları, bounded risk penalty ve signal direction korunuyor. BUY/HOLD/SELL threshold seçilmiyor.
 - Signal-chain smoke coverage tamamlandı; bundan sonraki çalışmalar Faz 6 altında kontrollü deneyler olarak ele alınmalıdır.
 
+### Faz 5 Kapanış Öncesi — TEFAS Response Compatibility Regression
+
+- Full backend test suite Codespace'te 139 passed, 1 failed verdi. Tek failure tests/data/test_free_providers.py::test_tefas_payload_mapping_with_fake_request.
+- Kök neden TEFAS _post() retry kontrolünün response nesnesinde doğrudan status_code beklemesiydi. Mevcut lightweight FakeResponse yalnızca raise_for_status() ve json() implement ediyor; bu test contract'ı provider'daki retry değişikliğinden sonra kırıldı.
+- Production davranışını değiştirmeden _post() artık status_code için default 200, headers için boş mapping kabul ediyor; gerçek httpx.Response davranışı ve 429/transport retry semantiği korunuyor.
+- Mevcut fake-response mapping testi bu geriye dönük uyumluluğu doğrudan kapsıyor; ayrıca yeni test dosyası gerekmiyor.
+- Düzeltme commit: 08b41f8c6fc5ed6baf727404eb289e4bef414d5d.
+- Full suite bu düzeltmeden sonra henüz Codespace'te tekrar çalıştırılmadı; Phase 5 kapanışından önce yeniden çalıştırılmalıdır.
+
 ## Sıradaki İş
 
 1. Faz 5 kapanış/acceptance değerlendirmesini tamamla; 7-symbol / 840-OOS signal-chain coverage'ını final kanıt olarak kaydet.
