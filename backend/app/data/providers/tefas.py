@@ -200,7 +200,9 @@ class TefasProvider(MarketDataProvider):
                     break
 
                 for row in page_rows:
-                    code = str(row.get("fonKodu", "")).strip().upper()
+                    code = str(
+                        row.get("fonKodu") or row.get("fonKod") or ""
+                    ).strip().upper()
                     row_date = str(row.get("tarih", row.get("date", ""))).strip()
                     key = (row_date, code)
                     if code and row_date and key not in seen_keys:
@@ -228,7 +230,9 @@ class TefasProvider(MarketDataProvider):
 
     @staticmethod
     def _to_symbol(row: dict[str, Any]) -> ProviderSymbol | None:
-        code = str(row.get("fonKodu", "")).strip().upper()
+        code = str(
+            row.get("fonKodu") or row.get("fonKod") or ""
+        ).strip().upper()
         if not code:
             return None
         return ProviderSymbol(
