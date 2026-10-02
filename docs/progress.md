@@ -74,6 +74,16 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 
 **Karar:** Tuning THYAO'da aggregate ROC-AUC'yi çok sınırlı artırdı; PR-AUC 0.2883 -> 0.2731 düştü. Aggregate direction direct kaldı. Production direction değiştirilmedi.
 
+### Faz 5 Nested Representation Selection — Altyapı
+
+- `backend/scripts/smoke_test_representation_nested_real.py` oluşturuldu.
+- Candidate representations: `raw_all`, `normalized_all`, `stationary_core`.
+- Production target contract sabit tutuluyor: horizon=5, threshold=+3%.
+- Her outer fold için representation yalnızca outer-train içindeki 2-fold inner walk-forward sonuçlarından seçiliyor; her representation kendi inner XGBoost tuning'inden geçiriliyor.
+- En az 2 valid inner fold kuralı korunuyor; PR-AUC primary, ROC-AUC ve fold PR std secondary criteria.
+- Seçilen representation yalnızca ilgili outer fold üzerinde OOS değerlendiriliyor.
+- Bu aşamada production representation değiştirilmedi; gerçek AFA/THYAO smoke sonuçları bekleniyor.
+
 ### Faz 5 Nested Target-Contract Selection — Düzeltilmiş Gerçek Çalıştırma
 
 Selection stability düzeltmesinden sonra AFA ve THYAO nested smoke tekrar çalıştırıldı. Candidate selection artık yalnızca en az 2 valid inner fold'a sahip adaylar arasından yapılıyor; PR-AUC primary objective, ROC-AUC ve fold PR std secondary criteria. Class balance raporlanıyor ancak keyfi bir hedef orana göre optimize edilmiyor.
