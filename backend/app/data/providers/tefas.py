@@ -80,8 +80,8 @@ class TefasProvider(MarketDataProvider):
                     client = self._client or httpx.Client(timeout=self._settings.timeout)
                     response = client.post(url, json=payload, headers=headers)
 
-                status_code = getattr(response, "status_code", 200)
-                headers = getattr(response, "headers", {})
+                status_code = getattr(response, "status_code", None)
+                headers = getattr(response, "headers", {}) or {}
 
                 if status_code == 429 and attempt < self._settings.rate_limit_retries:
                     retry_after = headers.get("Retry-After")
