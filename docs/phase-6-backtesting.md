@@ -33,6 +33,9 @@ Phase 5'te doğrulanan signal-chain'i historical portfolio simulation katmanına
 
 - Buy işlemlerinde target exposure hesaplanırken transaction cost ve slippage nedeniyle cash negatife düşmez; mevcut nakit işlem maliyeti dahil affordability ile sınırlandırılır.
 - Bu ilk foundation fractional units kullanır; gerçek market lot/tax/commission rules sonraki aşamada ayrıca uygulanacaktır.
+- Phase 5 OOS signal output'u için orchestration katmanı `SignalScoreWeightConfig` ile açık bir continuous score-to-weight mapping sağlar. Varsayılan olarak 0–100 signal score'u 0.0–1.0 target weight'e lineer map eder; bu, BUY/HOLD/SELL threshold seçimi değildir.
+- `run_signal_score_backtest()` yalnızca dated OOS signal, open ve close verisi alır. Target weight sinyal tarihinde hazırlanır ve engine tarafından en erken sonraki uygun open'da uygulanır.
+- `BacktestConfig.market_costs` ile BIST veya TEFAS gibi named market için `ExecutionCostConfig` override'ı tanımlanabilir. `market` verilmezse veya bilinmiyorsa varsayılan bps değerleri kullanılır; seçilen piyasa ve cost assumptions sonuçta audit için korunur.
 
 ## Açık Konular
 

@@ -543,13 +543,29 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Test düzeltme commit: e1793186f247ef0f1f5d75712346b49c847615c1.
 - Codespace'te targeted/full suite bu düzeltmeden sonra henüz tekrar çalıştırılmadı.
 
+### Faz 6 Backtest — Continuous Signal Strategy Orchestration
+
+- Phase 5 final signal output'unu backtest engine'e bağlayan `backend/app/backtesting/strategy.py` eklendi.
+- `SignalScoreWeightConfig` 0–100 continuous score'u varsayılan olarak 0.0–1.0 target weight'e lineer ve bounded biçimde map eder. `score_floor`, `score_ceiling` ve `maximum_weight` açık konfigürasyondur.
+- Bu mapping BUY/HOLD/SELL threshold seçimi veya Phase 5 production signal contractında değişiklik değildir; position sizing policy ayrı ve görünür tutulur.
+- `prepare_signal_score_backtest_frame()` OOS signal, open ve close alanlarını canonical backtest frame'e dönüştürür. `run_signal_score_backtest()` bu frame'i mevcut next-open engine'e verir; aynı gün close ile execution yoktur.
+- Sinyal skoru/price finite ve date uniqueness kontrolleri eklenmiştir. Target weight 0.0–1.0 sınırını korur.
+- Unit testleri score mapping, capped exposure, next-open execution, source-specific kolon mapping ve non-finite score rejection davranışını kapsar.
+- Local Python 3.14 doğrulaması: Phase 6 backtesting suite **16 passed, 1.49s**; full backend suite **156 passed, 13.77s**.
+
+### Faz 6 Backtest — Named Market Cost Assumptions
+
+- BacktestConfig'a `market_costs` eklendi. Her named market için transaction cost ve slippage bps değerleri `ExecutionCostConfig` ile ayrı tanımlanabilir.
+- `run_long_only_backtest(..., market="BIST")` ve `run_signal_score_backtest(..., market="BIST")` ilgili override'ı uygular; piyasa adı case-insensitive normalize edilir. Market yoksa/bilinmiyorsa mevcut default bps davranışı korunur.
+- Backtest sonucu seçilen normalized market ile kullanılan execution cost assumptions'ı açıkça taşır; historical sonuçların maliyet varsayımı audit edilebilir.
+- Bu yapı market-specific tax, lot-size ve gerçek commission modelini henüz temsil etmez; onlar ayrı controlled task'lardır.
+- Local Python 3.14 doğrulaması: Phase 6 backtesting suite **18 passed, 1.40s**; full backend suite **158 passed, 13.35s**.
+
 ## Sıradaki İş
 
-1. Codespace'te Phase 6 backtesting tests'lerini çalıştır; ardından full backend suite ile regression kontrolü yap.
-2. Backtest engine'i gerçek Phase 5 OOS signal/prediction çıktısına bağlayan strategy orchestration katmanını oluştur; target_weight üretimini threshold seçiminden ayrı tut.
-3. Transaction cost/slippage varsayımlarını asset/piyasa bazında konfigüre edilebilir hale getir; ardından gerçek historical backtest ve benchmark/portfolio risk metriklerine geç.
-4. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
-5. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
+1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
+2. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
+3. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 

@@ -3,7 +3,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from app.backtesting.engine import BacktestConfig, run_long_only_backtest
+from app.backtesting.engine import (
+    BacktestConfig,
+    ExecutionCostConfig,
+    run_long_only_backtest,
+)
 
 
 def _frame(targets: list[float]) -> pd.DataFrame:
@@ -110,3 +114,45 @@ def test_buy_sizing_includes_execution_costs_without_negative_cash() -> None:
     )
 
     assert (result.equity_curve["cash"] >= 0.0).all()
+
+
+def test_market_specific_costs_override_the_default_assumptions() -> None:
+    result = run_long_only_backtest(
+        _frame([1.0, 1.0, 1.0]),
+        config=BacktestConfig(
+            transaction_cost_bps=0.0,
+            slippage_bps=0.0,
+            market_costs={
+                "bist": ExecutionCostConfig(
+                    transaction_cost_bps=20.0,
+                    slippage_bps=10.0,
+                )
+            },
+        ),
+        market="BIST",
+    )
+
+    first_trade = result.trade_log.iloc[0]
+
+    assert result.market == "BIST"
+    assert result.execution_costs == ExecutionCostConfig(
+        transaction_cost_bps=20.0,
+        slippage_bps=10.0,
+    )
+    assert first_trade["execution_price"] == pytest.approx(100.1)
+    assert result.metrics.total_transaction_cost > 0.0
+
+
+def test_unknown_market_uses_default_cost_assumptions() -> None:
+    result = run_long_only_backtest(
+        _frame([1.0, 1.0, 1.0]),
+        config=BacktestConfig(
+            transaction_cost_bps=7.0,
+            slippage_bps=3.0,
+            market_costs={"BIST": ExecutionCostConfig(20.0, 10.0)},
+        ),
+        market="TEFAS",
+    )
+
+    assert result.market == "TEFAS"
+    assert result.execution_costs == ExecutionCostConfig(7.0, 3.0)

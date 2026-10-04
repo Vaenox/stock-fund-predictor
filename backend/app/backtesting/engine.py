@@ -1,11 +1,42 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Mapping
 
 import numpy as np
 import pandas as pd
 
 from .metrics import BacktestMetrics, calculate_backtest_metrics
+
+
+def _normalize_market(market: str) -> str:
+    if not isinstance(market, str):
+        raise ValueError("market must be a non-empty string")
+    normalized = market.strip().upper()
+    if not normalized:
+        raise ValueError("market must be a non-empty string")
+    return normalized
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionCostConfig:
+    """Transaction-cost and slippage assumptions for one execution market."""
+
+    transaction_cost_bps: float = 10.0
+    slippage_bps: float = 5.0
+
+    def __post_init__(self) -> None:
+        if not np.isfinite(self.transaction_cost_bps):
+            raise ValueError("transaction_cost_bps must be finite")
+        if not np.isfinite(self.slippage_bps):
+            raise ValueError("slippage_bps must be finite")
+        if self.transaction_cost_bps < 0:
+            raise ValueError("transaction_cost_bps cannot be negative")
+        if self.slippage_bps < 0:
+            raise ValueError("slippage_bps cannot be negative")
+        if self.slippage_bps >= 10_000:
+            raise ValueError("slippage_bps must be below 10000")
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,18 +45,35 @@ class BacktestConfig:
     transaction_cost_bps: float = 10.0
     slippage_bps: float = 5.0
     periods_per_year: int = 252
+    market_costs: Mapping[str, ExecutionCostConfig] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.initial_capital <= 0:
             raise ValueError("initial_capital must be positive")
-        if self.transaction_cost_bps < 0:
-            raise ValueError("transaction_cost_bps cannot be negative")
-        if self.slippage_bps < 0:
-            raise ValueError("slippage_bps cannot be negative")
-        if self.slippage_bps >= 10_000:
-            raise ValueError("slippage_bps must be below 10000")
         if self.periods_per_year <= 0:
             raise ValueError("periods_per_year must be positive")
+
+        ExecutionCostConfig(
+            transaction_cost_bps=self.transaction_cost_bps,
+            slippage_bps=self.slippage_bps,
+        )
+        normalized_costs: dict[str, ExecutionCostConfig] = {}
+        for market, costs in self.market_costs.items():
+            normalized_market = _normalize_market(market)
+            if not isinstance(costs, ExecutionCostConfig):
+                raise ValueError("market_costs values must be ExecutionCostConfig")
+            normalized_costs[normalized_market] = costs
+        object.__setattr__(self, "market_costs", MappingProxyType(normalized_costs))
+
+    def execution_costs_for(self, market: str | None = None) -> ExecutionCostConfig:
+        """Return a named market override or the default cost assumptions."""
+        default_costs = ExecutionCostConfig(
+            transaction_cost_bps=self.transaction_cost_bps,
+            slippage_bps=self.slippage_bps,
+        )
+        if market is None:
+            return default_costs
+        return self.market_costs.get(_normalize_market(market), default_costs)
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +81,8 @@ class BacktestResult:
     equity_curve: pd.DataFrame
     trade_log: pd.DataFrame
     metrics: BacktestMetrics
+    market: str | None
+    execution_costs: ExecutionCostConfig
 
 
 _REQUIRED_COLUMNS = {"open", "close", "target_weight"}
@@ -69,6 +119,7 @@ def run_long_only_backtest(
     frame: pd.DataFrame,
     *,
     config: BacktestConfig | None = None,
+    market: str | None = None,
     date_column: str = "date",
     target_column: str = "target_weight",
 ) -> BacktestResult:
@@ -76,17 +127,20 @@ def run_long_only_backtest(
 
     A target weight observed at date t is executed at date t+1 open.
     This prevents using the next day's close (or later information) to
-    execute a signal generated at t.
+    execute a signal generated at t. When provided, ``market`` selects a
+    named transaction-cost/slippage override from ``config.market_costs``.
     """
     config = config or BacktestConfig()
     data = _validate_input(frame, date_column, target_column)
+    normalized_market = _normalize_market(market) if market is not None else None
+    execution_costs = config.execution_costs_for(normalized_market)
 
     cash = config.initial_capital
     shares = 0.0
     previous_equity = config.initial_capital
 
-    fee_rate = config.transaction_cost_bps / 10_000.0
-    slippage_rate = config.slippage_bps / 10_000.0
+    fee_rate = execution_costs.transaction_cost_bps / 10_000.0
+    slippage_rate = execution_costs.slippage_bps / 10_000.0
 
     equity_rows: list[dict[str, object]] = []
     trade_rows: list[dict[str, object]] = []
@@ -206,4 +260,6 @@ def run_long_only_backtest(
         equity_curve=equity_curve,
         trade_log=trade_log,
         metrics=metrics,
+        market=normalized_market,
+        execution_costs=execution_costs,
     )
