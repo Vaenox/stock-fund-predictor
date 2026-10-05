@@ -573,6 +573,20 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - 2026-10-05 Codespace durumunda mevcut PostgreSQL container'ı `Exited` durumundan `docker start stock-fund-predictor-postgres` ile başarıyla `running` durumuna getirildi. Alembic migration komutu da bağlantı kurarak hata vermeden tamamlandı.
 
 
+
+### Faz 6 — Gerçek Backtest Smoke Runner Hazırlığı
+
+- `backend/scripts/smoke_test_backtest_real.py` Phase 5 signal-chain üretimini gerçek historical OHLCV ile Phase 6 backtest engine'ine bağlamak için hazırlandı.
+- Stock historical data önce PostgreSQL canonical history'den okunur; DB history `--min-db-rows` altında kalırsa mevcut signal-chain davranışıyla Borsapy fallback kullanılır.
+- ML feature setinde production contract olan `feature_columns("stock")` kullanılır; dataset'teki tüm kolonlar artık otomatik feature kabul edilmez.
+- `--max-weight` CLI parametresi gerçekten `SignalScoreWeightConfig.maximum_weight` olarak uygulanır.
+- Outer 3-fold / 40-test / gap=5 OOS sinyalleri birbirinden bağımsız backtest pencerelerinde çalıştırılır. Böylece foldlar arasındaki gap, yanlışlıkla next-open execution günü olarak kullanılmaz.
+- Her foldun son sinyalinin ilgili OOS penceresi içinde bir sonraki open gözlemi olmadığı için cross-fold execution yapılmaz; foldlar bağımsız raporlanır.
+- Production target contract sabit: horizon=5, positive threshold=+3%. Backtest continuous signal score -> target weight mapping kullanır; BUY/HOLD/SELL threshold seçimi yapmaz.
+- Kod düzeltme commitleri: `618a88d814575d73054ef9b3469f4e77701ad7ca` ve `e8bceb300245367e77d5cb71e04f1cdeae6e2b87`.
+- Codespace'te gerçek backtest smoke sonucu henüz alınmadı; PostgreSQL container'ı artık çalışır durumda olduğundan sıradaki doğrulama gerçek THYAO backtest çalıştırmasıdır.
+
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
