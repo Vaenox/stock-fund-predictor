@@ -69,6 +69,46 @@ def upgrade() -> None:
             ["assets.id"],
             ondelete="CASCADE",
         ),
+        sa.CheckConstraint(
+            "horizon_days > 0",
+            name="ck_prediction_history_horizon_positive",
+        ),
+        sa.CheckConstraint(
+            "target_return_threshold BETWEEN -1 AND 1",
+            name="ck_prediction_history_threshold_range",
+        ),
+        sa.CheckConstraint(
+            "ml_probability BETWEEN 0 AND 1",
+            name="ck_prediction_history_probability_range",
+        ),
+        sa.CheckConstraint(
+            "technical_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_technical_score_range",
+        ),
+        sa.CheckConstraint(
+            "risk_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_risk_score_range",
+        ),
+        sa.CheckConstraint(
+            "risk_adjustment BETWEEN -100 AND 0",
+            name="ck_prediction_history_risk_adjustment_range",
+        ),
+        sa.CheckConstraint(
+            "signal_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_signal_score_range",
+        ),
+        sa.CheckConstraint(
+            "target_weight BETWEEN 0 AND 1",
+            name="ck_prediction_history_target_weight_range",
+        ),
+        sa.CheckConstraint(
+            "stale_days >= 0",
+            name="ck_prediction_history_stale_days_nonnegative",
+        ),
+        sa.CheckConstraint(
+            "data_as_of <= prediction_date",
+            name="ck_prediction_history_data_as_of_not_future",
+        ),
     )
 
     op.create_index(
