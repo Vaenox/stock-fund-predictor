@@ -197,8 +197,7 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Outer evaluation da aynı representation-specific tuning helper'ına taşındı; böylece seçilen representation'ın hyperparameter seçimi ve final outer fit aynı feature representation üzerinde gerçekleşiyor.
 - Selection threshold/gap/class-balance kuralları gevşetilmedi.
 - Düzeltme commit: `f2633ab57d6b3b7b62e77a29128bb2813898e242`.
-- Yeni AFA gerçek nested sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
-### Faz 5 Nested Representation Selection — Inner Tuning Teşhis Logu
+- Yeni AFA gerçek nested sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.### Faz 5 Nested Representation Selection — Inner Tuning Teşhis Logu
 
 - AFA rerun'da veri hazırlama yine başarılı: 674 raw, 470 dataset rows.
 - `_score_representation` çağrı sözleşmesi düzeltildikten sonra selection aşamasında tüm representation adaylarının en az 2 valid inner fold şartını geçemediği tekrar görüldü.
@@ -397,8 +396,7 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Mevcut diğer gerçek fund smoke testlerinde kullanılan TEFAS provider fallback'i signal-chain scriptine de eklendi.
 - Fund loader artık önce PostgreSQL canonical history'yi dener; kayıt sayısı `--min-db-rows` altında kalırsa TEFAS provider ile chunked history çeker.
 - TEFAS fallback için `--chunk-delay` CLI parametresi eklendi; varsayılan 3 saniyedir.- Kaynak çıktısı korunuyor: `PostgreSQL canonical history` veya `TEFAS provider (DB history insufficient)`.
-- Production model/target/signal contract değiştirilmedi.
-- Düzeltme commit: `917193d6bd6bfb61112c7efebef90061435a93ad`.
+- Production model/target/signal contract değiştirilmedi.- Düzeltme commit: `917193d6bd6bfb61112c7efebef90061435a93ad`.
 
 ### Faz 5 Signal Chain — TEFAS Transport Retry Düzeltmesi
 
@@ -597,7 +595,6 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production target ve walk-forward contract değiştirilmedi.
 
 ### Faz 6 — Gerçek Backtest Smoke Pandas Kolon İndeksleme Düzeltmesi
-
 - THYAO gerçek backtest smoke: PostgreSQL bağlantısı ve veri/fold yeterliliği geçildi; **685 raw / 481 dataset** gözlem bulundu.
 - Ardından `KeyError` oluştu; kök neden `feature_columns("stock")` dönüşünün tuple olması ve pandas DataFrame kolon seçiminin `test[ml_columns]` şeklinde tuple ile yapılmasıydı.
 - `ml_columns` artık açıkça `list(feature_columns("stock"))` olarak oluşturuluyor.
@@ -798,7 +795,6 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Cost yükseldikçe nested selection daha düşük-turnover convex tarafına kayma eğilimi gösteriyor; fakat bu adaptasyon mean excess'u pozitife çevirmiyor.
 
 **Karar**
-
 - Execution-cost sensitivity, concave policy'nin önceki 8-hisse / 24-fold deneyindeki avantajını **maliyet varsayımları altında da koruduğunu** gösterdi.
 - Buna rağmen nested-selected sonuçların dört maliyet seviyesinde de negatif kalması nedeniyle linear production mapping'den concave'e geçiş yapılmıyor.
 - capped policy için ek fayda kanıtı oluşmadı; linear ile aynı sonuçları üretmeye devam etti.
@@ -807,11 +803,25 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production mapping kararı: **linear default korunuyor**.
 - Bir sonraki kontrollü aşama: strategy/prediction history'nin persistence katmanının değerlendirilmesi ve fonlar için stock next-open engine'inden ayrı **daily unit-price backtest execution contractı** tasarlanması.
 
+### Faz 6 — Prediction History Persistence Foundation
+
+- PostgreSQL üzerinde append-only prediction geçmişi için `prediction_history` modeli ve `0003_prediction_history` Alembic migrationı eklendi.
+- Kayıt contractı prediction tarihi, generation timestampı, `data_as_of`, horizon/target contractı, model family/version, feature representation, ML probability, Technical Score, risk score/adjustment, final signal score, continuous target weight, quality/stale bilgisi, provider ve açıklama nedenlerini taşır.
+- Aynı asset/date için overwrite yapan doğal unique constraint eklenmedi; yeniden üretilen prediction ayrı audit kaydı olarak saklanır.
+- Prediction history için BUY/HOLD/SELL action alanı özellikle eklenmedi; production threshold contractı hâlâ seçilmedi.
+- Service katmanı `backend/app/data/prediction_history.py` altında append-only `record_prediction`, batch `record_predictions`, tarih filtreli `list_predictions` ve `get_latest_prediction` operasyonlarını sağlıyor. Update/delete operasyonu yok.
+- Pydantic contractı skor/ağırlık sınırlarını, timezone-aware `generated_at` değerini ve `data_as_of <= prediction_date` kuralını doğruluyor.
+- PostgreSQL migrationı aynı core bounds ve temporal kuralı CHECK constraint olarak da uyguluyor; asset/date, prediction_date ve generated_at sorguları için indexler eklendi.
+- Alembic metadata kaydına yeni model bağlandı; model ve data package exportları güncellendi.
+- Unit/contract test dosyası: `backend/tests/test_prediction_history.py`.
+- Bu aşamadaki değişiklik model, target, representation, signal weighting veya sizing policy değiştirmiyor.
+- Codespace'te yeni migration ve prediction-history testlerinin gerçek çalıştırma sonucu henüz alınmadı; sonraki doğrulama migration + targeted test + full backend suite olmalıdır.
+
 ## Sıradaki İş
 
-1. Prediction history / strategy-level persistence altyapısını değerlendir ve backtest çıktılarının kalıcı/audit edilebilir saklanması için gerekli contractı netleştir.
-2. Fonlar için TEFAS günlük unit-price verisine uygun ayrı execution/backtest contractı tasarla; stock next-open engine'ini fonlara aynen uygulama.
-3. Exposure mapping tarafında production kararı değiştirme; yeni policy seçimleri yalnızca leakage-safe nested OOS kanıtı ile değerlendirilmelidir.
+1. Codespace'te `alembic upgrade head`, prediction-history targeted testleri ve full backend suite çalıştırarak yeni persistence migrationını doğrula.
+2. Mevcut gerçek prediction/signal üretim noktasına persistence entegrasyonu için ayrı service/orchestration contractını tasarla; historical OOS smoke çıktılarının yanlışlıkla live prediction olarak kaydedilmemesine dikkat et.
+3. Prediction persistence doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
