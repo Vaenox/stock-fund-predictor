@@ -814,6 +814,7 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - PostgreSQL migrationı aynı core bounds ve temporal kuralı CHECK constraint olarak da uyguluyor; asset/date, prediction_date ve generated_at sorguları için indexler eklendi.
 - Alembic metadata kaydına yeni model bağlandı; model ve data package exportları güncellendi.
 - Unit/contract test dosyası: `backend/tests/test_prediction_history.py`.
+- Prediction persistence service için fake-session testleri de eklendi; başarılı commit/refresh ve boş batch davranışı contract kapsamında korunuyor.
 - Bu aşamadaki değişiklik model, target, representation, signal weighting veya sizing policy değiştirmiyor.
 - Codespace'te yeni migration ve prediction-history testlerinin gerçek çalıştırma sonucu henüz alınmadı; sonraki doğrulama migration + targeted test + full backend suite olmalıdır.
 
