@@ -725,11 +725,26 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bu deney model, target, representation veya BUY/HOLD/SELL threshold seçmiyor. Amaç yalnızca position-sizing policy hassasiyetini ve güçlü trend dönemlerindeki exposure davranışını incelemek.
 - Yeni kod commitleri: `18a1bc79d6882848371fd7f0db71405560e9847c`, `538a6e499ce282654c305adaea1ce418e1ba28ab`, `c1aba36ac10bb7f406f569723403b16449c208b0`, `25d14d207a50c8e0fd045661526edb74808f7f68`.
 
+### Faz 6 — Nested Exposure Mapping Gerçek Sonucu
+
+- Codespace'te mapping sensitivity smoke testi başarıyla tamamlandı: **REAL NESTED MAPPING SENSITIVITY SMOKE TEST PASSED**. Backtesting testleri: **27 passed, 0.69s**.
+- Kapsam: THYAO, ASELS, TUPRS, BIMAS; 4 mapping policy (`linear`, `concave`, `convex`, `capped`) ve 12 outer OOS fold.
+- All-policy outer OOS ortalamalarında `concave` en iyi sonuç verdi: strategy **+3.1312%**, B&H **+5.7082%**, mean excess **-2.5769%**, median excess **-2.4548%**, positive excess fold rate **41.67%**, mean Sharpe **0.953**, mean MaxDD **-6.8030%**, turnover **2.3083**.
+- Production `linear` ile `capped` gözlemlenen OOS sonuçta tamamen aynı kaldı: mean excess **-4.0153%**, positive excess **41.67%**, mean Sharpe **0.940**, mean MaxDD **-4.0359%**, turnover **2.1201**. Bu veri aralığında signal score'ların capped limitini aşmadığı/etkilemediği görülüyor; dolayısıyla capped policy için ek fayda kanıtlanmadı.
+- `convex` en düşük mean excess verdi: **-5.2326%**; buna karşılık mean MaxDD daha sınırlı (**-1.6846%**) ve turnover daha düşük (**1.2667**). Bu, düşük exposure ile risk azaltılabildiğini ancak benchmarkı yakalamadığını gösteriyor.
+- Nested selection her outer fold için yalnızca inner OOS sonuçlarından policy seçti. Seçim frekansı: concave **7/12**, convex **5/12**, linear/capped **0/12**.
+- Nested-selected outer OOS: mean strategy return **+2.0430%**, mean B&H **+5.7082%**, mean excess **-3.6651%**, median excess **-3.3757%**, positive excess **41.67%**, mean Sharpe **1.175**, mean MaxDD **-4.7980%**, turnover **1.8199**.
+- Sembol bazında nested-selected mean excess: THYAO **+0.5325%**, ASELS **-2.1372%**, TUPRS **-9.8525%**, BIMAS **-3.2033%**. THYAO dışında üç sembolde ortalama excess negatif kaldı.
+- Özellikle TUPRS'ta concave exposure OOS getiriyi linear'a göre iyileştiriyor (Fold 2: **+13.2315%** vs +8.1626%; Fold 3: **+16.7957%** vs +8.7952%), fakat güçlü B&H trendini yine yakalayamıyor. Bu nedenle mapping tek başına temel eksikliği çözmedi.
+- Sonuç: concave belirgin bir sensitivity winner gibi görünse de **nested-selected policy ile robust cross-symbol alpha doğrulanmadı**. Positive excess fold rate değişmedi ve nested-selected mean excess hâlâ negatiftir.
+- Production kararı değişmedi: mevcut `linear` mapping korunuyor. Mapping policy'yi production'a taşımadan önce daha uzun tarih aralığı / daha fazla sembol ve execution-cost sensitivity ile ek doğrulama yapılması gerekiyor.
+- Kod/test/doc commitleri: `18a1bc79d6882848371fd7f0db71405560e9847c`, `538a6e499ce282654c305adaea1ce418e1ba28ab`, `c1aba36ac10bb7f406f569723403b16449c208b0`, `25d14d207a50c8e0fd045661526edb74808f7f68`, `aa49d3519a51312d6048e666558394ce2313c85e`, sonuç kaydı bu güncellemeyle tamamlandı.
+
 ## Sıradaki İş
 
-1. Codespace'te nested mapping sensitivity smoke testini çalıştır ve **inner-selected policy + outer OOS sonuçlarını** paylaş.
-2. Mapping sonuçlarını excess return, Sharpe, max drawdown, turnover ve cost sensitivity ile değerlendir; OOS'a bakıp policy'yi geriye dönük seçme.
-3. Sizing policy yeterli değilse policy selection'ı production'a taşımadan önce prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
+1. Mapping sensitivity sonucunu production'a almadan önce **daha uzun tarih aralığı ve daha geniş stock universe** ile nested doğrulamayı genişlet; aynı policy setini leakage-safe tut.
+2. Mapping sonuçlarını execution-cost sensitivity ile stres test et ve selected-policy stabilitesini ölç; post-hoc OOS winner seçme.
+3. Sizing policy için yeterli genelleme kanıtı oluşmazsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
