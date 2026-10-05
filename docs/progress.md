@@ -198,7 +198,6 @@ Canonical stock history yetersiz olduğu için Borsapy provider fallback kullan�
 - Selection threshold/gap/class-balance kuralları gevşetilmedi.
 - Düzeltme commit: `f2633ab57d6b3b7b62e77a29128bb2813898e242`.
 - Yeni AFA gerçek nested sonucu henüz alınmadı; production representation `raw_all` olarak korunuyor.
-
 ### Faz 5 Nested Representation Selection — Inner Tuning Teşhis Logu
 
 - AFA rerun'da veri hazırlama yine başarılı: 674 raw, 470 dataset rows.
@@ -397,8 +396,7 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Kök neden model/signal tarafı değil; PostgreSQL canonical history içinde AFS için hiç fund history bulunmamasıydı.
 - Mevcut diğer gerçek fund smoke testlerinde kullanılan TEFAS provider fallback'i signal-chain scriptine de eklendi.
 - Fund loader artık önce PostgreSQL canonical history'yi dener; kayıt sayısı `--min-db-rows` altında kalırsa TEFAS provider ile chunked history çeker.
-- TEFAS fallback için `--chunk-delay` CLI parametresi eklendi; varsayılan 3 saniyedir.
-- Kaynak çıktısı korunuyor: `PostgreSQL canonical history` veya `TEFAS provider (DB history insufficient)`.
+- TEFAS fallback için `--chunk-delay` CLI parametresi eklendi; varsayılan 3 saniyedir.- Kaynak çıktısı korunuyor: `PostgreSQL canonical history` veya `TEFAS provider (DB history insufficient)`.
 - Production model/target/signal contract değiştirilmedi.
 - Düzeltme commit: `917193d6bd6bfb61112c7efebef90061435a93ad`.
 
@@ -598,7 +596,6 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: `98a5d1846f666a54f92606dcb7e41e105e17618d`.
 - Production target ve walk-forward contract değiştirilmedi.
 
-
 ### Faz 6 — Gerçek Backtest Smoke Pandas Kolon İndeksleme Düzeltmesi
 
 - THYAO gerçek backtest smoke: PostgreSQL bağlantısı ve veri/fold yeterliliği geçildi; **685 raw / 481 dataset** gözlem bulundu.
@@ -768,11 +765,53 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production mapping, model, target ve representation bu deneyde değiştirilmedi.
 - Runner commit: `41a4d79806906cd305756c481370168b435856af`.
 
+### Faz 6 — Execution-Cost Sensitivity Gerçek Sonucu
+
+- Codespace'te backtesting testleri başarıyla tamamlandı: **27 passed, 0.72s**.
+- Gerçek execution-cost sensitivity smoke testi başarıyla tamamlandı: **REAL NESTED EXECUTION-COST SENSITIVITY SMOKE TEST PASSED**.
+- Kapsam: **8 hisse / 24 outer fold / 4 cost scenario / 4 exposure policy**; protocol aynı kaldı: outer 3 x 40, gap=5, inner 2 x 20, target h5/+3%.
+- Test edilen maliyet senaryoları: **0/0, 5/2.5, 10/5, 20/10 bps** (transaction/slippage).
+
+**All-policy outer OOS sonucu**
+
+- concave tüm dört maliyet seviyesinde en yüksek mean excess return'u korudu:
+  - 0/0: mean excess **-1.5708%**, median **+0.3859%**, positive excess **50.00%**, mean Sharpe **0.600**, mean MaxDD **-7.2673%**, turnover **2.1402**.
+  - 5/2.5: mean excess **-1.6556%**, median **+0.3125%**, positive excess **50.00%**, mean Sharpe **0.548**, mean MaxDD **-7.3119%**, turnover **2.1403**.
+  - 10/5: mean excess **-1.7403%**, median **+0.2374%**, positive excess **50.00%**, mean Sharpe **0.496**, mean MaxDD **-7.3565%**, turnover **2.1404**.
+  - 20/10: mean excess **-1.9093%**, median **+0.0597%**, positive excess **50.00%**, mean Sharpe **0.392**, mean MaxDD **-7.4458%**, turnover **2.1405**.
+- Production linear ile capped yine aynı OOS sonucu verdi. Mean excess sırasıyla **-2.4718%, -2.5419%, -2.6119%, -2.7516%** oldu (0/0 -> 5/2.5 -> 10/5 -> 20/10); positive excess oranı dört seviyede de **50.00%** kaldı.
+- convex en düşük mean excess'u korudu: **-3.2425%, -3.2503%, -3.2581%, -3.2739%**. Buna karşılık turnover yaklaşık **1.1375–1.1376** ile en düşük kaldı; yüksek maliyet altında Sharpe da belirgin biçimde zayıfladı.
+- Böylece concave'in linear üzerindeki mean-excess avantajı maliyet arttıkça daralsa da kaybolmadı: yaklaşık **+0.90 puan** (0/0), **+0.89 puan** (5/2.5), **+0.87 puan** (10/5), **+0.84 puan** (20/10).
+- Ancak dört maliyet seviyesinde de concave'in absolute mean excess'u negatif kaldı. Bu nedenle cost sensitivity, concave için robustness/sensitivity avantajını destekliyor; **production alpha kanıtı oluşturmuyor**.
+
+**Nested-selected cost sensitivity sonucu**
+
+- Nested-selected mean excess sırasıyla **-2.6307%, -2.6766%, -2.7732%, -2.9212%** (0/0 -> 5/2.5 -> 10/5 -> 20/10).
+- Positive excess fold rate tüm maliyet seviyelerinde **45.83% (11/24)** seviyesinde kaldı.
+- Mean Sharpe **0.796 -> 0.710 -> 0.571 -> 0.354** düşerek execution cost arttıkça risk-adjusted performansın zayıfladığını gösterdi.
+- Mean MaxDD yaklaşık **-4.5430% -> -4.5822% -> -4.4895% -> -4.4768%** aralığında kaldı; turnover **1.6411 -> 1.6412 -> 1.5913 -> 1.5617** ile maliyet arttıkça hafifçe azaldı.
+- Nested policy selection frequency:
+  - 0/0: concave **13/24**, convex **10/24**, linear **1/24**, capped **0/24**.
+  - 5/2.5: concave **13/24**, convex **10/24**, linear **1/24**, capped **0/24**.
+  - 10/5: concave **12/24**, convex **11/24**, linear **1/24**, capped **0/24**.
+  - 20/10: concave **12/24**, convex **12/24**, linear **0/24**, capped **0/24**.
+- Cost yükseldikçe nested selection daha düşük-turnover convex tarafına kayma eğilimi gösteriyor; fakat bu adaptasyon mean excess'u pozitife çevirmiyor.
+
+**Karar**
+
+- Execution-cost sensitivity, concave policy'nin önceki 8-hisse / 24-fold deneyindeki avantajını **maliyet varsayımları altında da koruduğunu** gösterdi.
+- Buna rağmen nested-selected sonuçların dört maliyet seviyesinde de negatif kalması nedeniyle linear production mapping'den concave'e geçiş yapılmıyor.
+- capped policy için ek fayda kanıtı oluşmadı; linear ile aynı sonuçları üretmeye devam etti.
+- Bu deneyde model, target, representation, signal weighting ve BUY/HOLD/SELL threshold contractları değiştirilmedi.
+- Mevcut production execution cost varsayımı **10/5 bps** olarak korunuyor; diğer seviyeler sensitivity referansıdır.
+- Production mapping kararı: **linear default korunuyor**.
+- Bir sonraki kontrollü aşama: strategy/prediction history'nin persistence katmanının değerlendirilmesi ve fonlar için stock next-open engine'inden ayrı **daily unit-price backtest execution contractı** tasarlanması.
+
 ## Sıradaki İş
 
-1. Codespace'te `smoke_test_backtest_cost_sensitivity_real.py` çalıştır ve 8 hisse / 4 cost scenario sonuçlarını paylaş.
-2. Cost seviyesine göre concave avantajı, nested-selected policy frequency, excess return, Sharpe, MaxDD ve turnover değişimini değerlendir; production mapping'i henüz değiştirme.
-3. Cost robustness zayıfsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
+1. Prediction history / strategy-level persistence altyapısını değerlendir ve backtest çıktılarının kalıcı/audit edilebilir saklanması için gerekli contractı netleştir.
+2. Fonlar için TEFAS günlük unit-price verisine uygun ayrı execution/backtest contractı tasarla; stock next-open engine'ini fonlara aynen uygulama.
+3. Exposure mapping tarafında production kararı değiştirme; yeni policy seçimleri yalnızca leakage-safe nested OOS kanıtı ile değerlendirilmelidir.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
