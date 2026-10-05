@@ -620,6 +620,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: `5039d907a2c9077713c951bedc91cb2b8985c11d`.
 - Codespace gerçek backtest sonucu henüz tamamlanmadı; aynı smoke komutu tekrar çalıştırılmalı.
 
+
+### Faz 6 — Gerçek Backtest Runner Son Veri Sözleşmesi Kontrolü
+
+- Real backtest runner son kontrolde model dataset'i ile execution market data ayrımı açık hale getirildi.
+- ML dataset yalnızca production feature kolonları/close/target taşırken, backtest `open` ve `close` değerlerini canonical raw OHLCV frame'den OOS `trading_date` üzerinden eşleştiriyor.
+- Raw ve technical indexlerde duplicate trading date kontrolü bulunuyor; tüm tarih karşılaştırmaları `Timestamp` tipine normalize ediliyor.
+- Outer fold sınırında engine'in doğal “last signal has no next-open” davranışı korunuyor. Bu smoke protokolünde 3 x 40 = 120 OOS signal row ve 3 x 39 = 117 in-fold executable period bekleniyor.
+- Bu yaklaşımın amacı foldlar arasındaki gap veya fold dışı fiyatları strateji getirisine yanlışlıkla dahil etmemektir.
+- Son düzeltme commit: `d97a99b141ad023c7c1ac3ef5db6cf0ad19b1489`.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
