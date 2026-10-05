@@ -816,12 +816,13 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Unit/contract test dosyası: `backend/tests/test_prediction_history.py`.
 - Prediction persistence service için fake-session testleri de eklendi; başarılı commit/refresh ve boş batch davranışı contract kapsamında korunuyor.
 - Bu aşamadaki değişiklik model, target, representation, signal weighting veya sizing policy değiştirmiyor.
-- Codespace'te yeni migration ve prediction-history testlerinin gerçek çalıştırma sonucu henüz alınmadı; sonraki doğrulama migration + targeted test + full backend suite olmalıdır.
+- Codespace doğrulaması tamamlandı: `alembic upgrade head` 0002 -> 0003 migrationını başarıyla uyguladı; prediction-history targeted testleri **15 passed in 1.04s**; full backend suite **182 passed in 7.30s**.
+
 
 ## Sıradaki İş
 
-1. Codespace'te `alembic upgrade head`, prediction-history targeted testleri ve full backend suite çalıştırarak yeni persistence migrationını doğrula.
-2. Mevcut gerçek prediction/signal üretim noktasına persistence entegrasyonu için ayrı service/orchestration contractını tasarla; historical OOS smoke çıktılarının yanlışlıkla live prediction olarak kaydedilmemesine dikkat et.
+1. Codespace'te yeni prediction service testlerini ve gerçek persistence smoke testini çalıştır; PostgreSQL read-back ile gerçekten kayıt oluştuğunu doğrula.
+2. Gerçek prediction üretim akışını API katmanına bağlamak için asset/prediction endpoint contractını tasarla; auth ve kullanıcı watchlist bağlamı ayrıca ele alınmalı.
 3. Prediction persistence doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
@@ -829,3 +830,8 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
 
 > Kural: Her faz tamamlandığında kısa özet, alınan teknik/ürün kararları, tamamlanan tasklar ve sıradaki faz/tasklar burada tutulur.
+- Production prediction orchestration için `backend/app/services/prediction.py` eklendi. Mevcut XGBoost tuning -> inference -> Technical Score -> Risk Adjustment -> final signal -> production linear score-to-weight akışı tek bir tekrar kullanılabilir service içinde toplandı.
+- Service veritabanına kendisi yazmaz; `PredictionGenerationResult.payload` validated `PredictionHistoryCreate` üretir. Böylece historical smoke scriptlerine otomatik DB yan etkisi eklenmedi.
+- `backend/scripts/smoke_test_prediction_persistence_real.py` eklendi. Script canonical universe'den asset'i bulur, gerçek Borsapy/TEFAS verisiyle güncel prediction üretir, `record_prediction()` ile append-only kaydeder ve `get_latest_prediction()` ile read-back doğrular.
+- Live/persistence smoke'unda `quality_ok=True, stale_days=0` açıkça servis çağrısına veriliyor; stale/freshness sinyali otomatik tahmin edilmiyor. Bu, mevcut signal contractını sessizce değiştirmemek için bilinçli olarak böyle bırakıldı.
+- Prediction service unit coverage eklendi: production target/representation/model family, bounded outputs ve timezone-aware generation timestampı doğrulanıyor.
