@@ -65,10 +65,7 @@ def _load_stock(symbol: str, days: int, min_db_rows: int) -> tuple[pd.DataFrame,
 
 
 def _select_candidate(frame: pd.DataFrame, asset_type: str) -> TuningCandidate:
-    columns = [
-        c for c in frame.columns
-        if c not in {"target", "forward_return_5d", "trading_date"}
-    ]
+    columns = list(feature_columns(asset_type))
     scores: list[TuningCandidate] = []
     config = TuningConfig(n_inner_splits=2, inner_test_size=20, gap=5)
     for candidate in default_candidate_grid():
@@ -202,37 +199,54 @@ def main() -> None:
             )
         },
     )
-    result = run_signal_score_backtest(
-        oos,
-        backtest_config=backtest_config,
-        market="BIST",
-        score_weight_config=SignalScoreWeightConfig(maximum_weight=args.max_weight),
-    )
+    fold_backtests = []
+    for fold_number, fold_frame in enumerate(rows, start=1):
+        # Keep each outer OOS window isolated so the gap between folds cannot
+        # be mistaken for an executable next-open observation.
+        fold_result = run_signal_score_backtest(
+            fold_frame,
+            backtest_config=backtest_config,
+            market="BIST",
+            score_weight_config=SignalScoreWeightConfig(
+                maximum_weight=args.max_weight
+            ),
+        )
+        fold_backtests.append(fold_result)
 
-    metrics = result.backtest.metrics
+        metrics = fold_result.backtest.metrics
+        print(f"Backtest Fold {fold_number}:")
+        print(f"  Signal rows: {len(fold_frame)}")
+        print(f"  Executed periods: {len(fold_result.backtest.equity_curve)}")
+        print(f"  Total return: {metrics.total_return:.6f}")
+        print(f"  Annualized return: {metrics.annualized_return:.6f}")
+        print(f"  Annualized volatility: {metrics.annualized_volatility:.6f}")
+        print(f"  Sharpe ratio: {metrics.sharpe_ratio:.6f}")
+        print(f"  Maximum drawdown: {metrics.maximum_drawdown:.6f}")
+        print(f"  Win rate: {metrics.win_rate:.6f}")
+        print(f"  Profit factor: {metrics.profit_factor}")
+        print(f"  Transaction cost: {metrics.total_transaction_cost:.6f}")
+        print(f"  Slippage cost: {metrics.total_slippage_cost:.6f}")
+        print(f"  Turnover: {metrics.total_turnover:.6f}")
+
     print(f"Symbol: {args.symbol.strip().upper()}")
     print(f"Data source: {source}")
     print(f"Raw rows: {len(raw)}")
     print(f"Dataset rows: {len(dataset)}")
     print(f"OOS rows: {len(oos)}")
     print("Backtest strategy: continuous signal score -> linear target weight")
-    print("Signal mapping: score 0..100 -> target weight 0..1")
-    print(f"Initial capital: {backtest_config.initial_capital:.2f}")
-    print(f"Total return: {metrics.total_return:.6f}")
-    print(f"Annualized return: {metrics.annualized_return:.6f}")
-    print(f"Annualized volatility: {metrics.annualized_volatility:.6f}")
-    print(f"Sharpe ratio: {metrics.sharpe_ratio:.6f}")
-    print(f"Maximum drawdown: {metrics.maximum_drawdown:.6f}")
-    print(f"Win rate: {metrics.win_rate:.6f}")
-    print(f"Profit factor: {metrics.profit_factor}")
-    print(f"Transaction cost: {metrics.total_transaction_cost:.6f}")
-    print(f"Slippage cost: {metrics.total_slippage_cost:.6f}")
-    print(f"Turnover: {metrics.total_turnover:.6f}")
+    print(
+        f"Signal mapping: score 0..100 -> target weight 0..{args.max_weight:.2f}"
+    )
+    print(f"Initial capital per fold: {backtest_config.initial_capital:.2f}")
+    print("Fold windows are evaluated independently; no cross-fold execution is used.")
 
     assert len(oos) == 120
-    assert metrics.total_transaction_cost >= 0.0
-    assert metrics.total_slippage_cost >= 0.0
-    assert (result.backtest.equity_curve["cash"] >= 0.0).all()
+    assert len(fold_backtests) == 3
+    for fold_result in fold_backtests:
+        metrics = fold_result.backtest.metrics
+        assert metrics.total_transaction_cost >= 0.0
+        assert metrics.total_slippage_cost >= 0.0
+        assert (fold_result.backtest.equity_curve["cash"] >= 0.0).all()
     print("REAL BACKTEST SMOKE TEST PASSED")
 
 
