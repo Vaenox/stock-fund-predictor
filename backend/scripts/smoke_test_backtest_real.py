@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from app.analysis.features import MLFeatureConfig, build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_stock_indicators
 from app.analysis.scoring import calculate_stock_technical_score
-from app.backtesting.engine import BacktestConfig, ExecutionCostConfig, run_long_only_backtest
+from app.backtesting.engine import BacktestConfig, ExecutionCostConfig
 from app.backtesting.strategy import SignalScoreWeightConfig, run_signal_score_backtest
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
