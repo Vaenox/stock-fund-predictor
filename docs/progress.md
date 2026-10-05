@@ -658,6 +658,17 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Kod commit: `b037e46f439323fa82b4c2123ff31dfb24415766`.
 - Bu yeni runner henüz Codespace'te çalıştırılmadı; sonraki doğrulama aynı THYAO komutunun tekrar çalıştırılmasıdır.
 
+
+### Faz 6 — THYAO Benchmark Assertion ve Buy-and-Hold Tanım Düzeltmesi
+
+- THYAO benchmark karşılaştırması teknik olarak strategy sonuçlarını üretti ancak smoke test sonunda `benchmark_result.equity_curve["cash"] >= 0` assertion'ında durdu.
+- İnceleme sonucunda iki konu ayrıştırıldı: küçük floating-point negatiflik için cash kontrollerinde `-1e-8` toleransı gerekli; daha önemlisi `target_weight=1.0` değerini her gün backtest engine'e vermek gerçek buy-and-hold değil, günlük %100 hedef ağırlığa yeniden dengeleme anlamına geliyor.
+- Benchmark runner yeniden tanımlandı: ilk in-fold executable next-open'da bir kez pozisyon açılır, hisseler son OOS close'a kadar değiştirilmeden tutulur ve ara rebalancing yapılmaz.
+- Maliyetli benchmark yalnızca ilk alış işlemindeki transaction cost ve slippage'ı içerir; zorunlu final liquidation varsayılmıyor. Costless benchmark aynı pozisyonun sıfır execution maliyetli referansıdır.
+- Strategy backtest engine'i değiştirilmedi; benchmark yalnızca karşılaştırma referansı olarak runner seviyesinde tutuldu.
+- Son temizlik commit: `20979f25590b8f149f9353959750b6418d570e27`.
+- Bu düzeltme henüz Codespace'te yeniden çalıştırılmadı; yeni benchmark çıktıları gerçek karşılaştırma olarak ilk kez bu rerun'da alınmalı.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
