@@ -148,7 +148,17 @@ def main() -> None:
     folds = build_walk_forward_splits(
         len(dataset), n_splits=3, test_size=40, gap=args.gap
     )
-    technical_lookup = technical.set_index("trading_date")
+    technical_lookup = technical.copy()
+    technical_lookup["trading_date"] = pd.to_datetime(
+        technical_lookup["trading_date"], errors="raise"
+    )
+    technical_lookup = technical_lookup.set_index("trading_date")
+
+    market_lookup = raw.copy()
+    market_lookup["trading_date"] = pd.to_datetime(
+        market_lookup["trading_date"], errors="raise"
+    )
+    market_lookup = market_lookup.set_index("trading_date").sort_index()
     rows: list[pd.DataFrame] = []
     ml_columns = list(feature_columns("stock"))
 
@@ -172,7 +182,18 @@ def main() -> None:
 
         fold_rows: list[dict[str, float | int | pd.Timestamp]] = []
         for idx, (_, test_row) in enumerate(test.iterrows()):
-            latest = technical_lookup.loc[test_row["trading_date"]]
+            signal_date = pd.Timestamp(test_row["trading_date"])
+            if signal_date not in technical_lookup.index:
+                raise ValueError(
+                    f"missing technical score for OOS date {signal_date.date()}"
+                )
+            if signal_date not in market_lookup.index:
+                raise ValueError(
+                    f"missing market OHLCV for OOS date {signal_date.date()}"
+                )
+
+            latest = technical_lookup.loc[signal_date]
+            market_row = market_lookup.loc[signal_date]
             risk = calculate_stock_risk_adjustment(latest)
             final_signal = calculate_signal_score(
                 float(probability[idx]),
@@ -182,9 +203,9 @@ def main() -> None:
             fold_rows.append(
                 {
                     "fold": fold_number,
-                    "date": pd.Timestamp(test_row["trading_date"]),
-                    "open": float(test_row["open"]),
-                    "close": float(test_row["close"]),
+                    "date": signal_date,
+                    "open": float(market_row["open"]),
+                    "close": float(market_row["close"]),
                     "signal_score": float(final_signal.signal_score),
                     "target": int(test_row["target"]),
                     "forward_return_5d": float(test_row["forward_return_5d"]),
@@ -227,7 +248,10 @@ def main() -> None:
         metrics = fold_result.backtest.metrics
         print(f"Backtest Fold {fold_number}:")
         print(f"  Signal rows: {len(fold_frame)}")
-        print(f"  Executed periods: {len(fold_result.backtest.equity_curve)}")
+        print(
+            f"  Executed periods: {len(fold_result.backtest.equity_curve)} "
+            "(last signal has no in-fold next-open execution)"
+        )
         print(f"  Total return: {metrics.total_return:.6f}")
         print(f"  Annualized return: {metrics.annualized_return:.6f}")
         print(f"  Annualized volatility: {metrics.annualized_volatility:.6f}")
@@ -253,6 +277,7 @@ def main() -> None:
 
     assert len(oos) == 120
     assert len(fold_backtests) == 3
+    assert sum(len(item.backtest.equity_curve) for item in fold_backtests) == 117
     for fold_result in fold_backtests:
         metrics = fold_result.backtest.metrics
         assert metrics.total_transaction_cost >= 0.0
