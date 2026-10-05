@@ -669,6 +669,21 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Son temizlik commit: `20979f25590b8f149f9353959750b6418d570e27`.
 - Bu düzeltme henüz Codespace'te yeniden çalıştırılmadı; yeni benchmark çıktıları gerçek karşılaştırma olarak ilk kez bu rerun'da alınmalı.
 
+
+### Faz 6 — THYAO Aligned Buy-and-Hold Benchmark Sonucu
+
+- Codespace gerçek backtest + aligned benchmark smoke testi başarıyla tamamlandı: `REAL BACKTEST SMOKE TEST PASSED`.
+- THYAO: 685 raw / 481 dataset / 120 OOS signal; veri kaynağı Borsapy provider fallback.
+- Fold 1 (2026-04-03 -> 2026-06-05): strategy **+2.3824%**, true buy-and-hold **-0.0657%**, excess **+2.4481 puan**; costless B&H +0.0842%.
+- Fold 2 (2026-06-08 -> 2026-08-03): strategy **+0.4097%**, true buy-and-hold **+6.0386%**, excess **-5.6289 puan**; costless B&H +6.1977%.
+- Fold 3 (2026-08-04 -> 2026-09-28): strategy **-2.2571%**, true buy-and-hold **-10.0251%**, excess **+7.7680 puan**; costless B&H -9.8901%.
+- Strategy fold getirilerinin basit ortalaması yaklaşık **+0.1783%**; true B&H için yaklaşık **-1.3507%**. Bu bağımsız foldlar nedeniyle pooled portfolio sonucu değildir.
+- Fold getirileri yalnızca descriptive olarak sıralı bileşiklendiğinde strategy yaklaşık **+0.4815%**, B&H yaklaşık **-4.6546%** verir; bu da gerçek tek-portföy backtest değildir, çünkü foldlar bağımsız başlatılıp pozisyon taşımadan resetlenmiştir.
+- Strategy turnover 1.2640–1.5394 aralığında; transaction cost ve slippage toplamı 3 fold üzerinde sırasıyla **420.844638** ve **210.422319**.
+- Yorum: Strategy iki foldun ikisinde B&H karşısında pozitif excess return üretirken Fold 2'de belirgin şekilde geride kalıyor. ML/signal ROC-AUC de foldlar arasında 0.4453–0.5931, PR-AUC 0.1062–0.3739 aralığında ve özellikle 3. fold signal PR düşüktür. Bu nedenle THYAO tek başına robust strategy kanıtı değildir.
+- Production kararı değişmedi: raw_all, h5/+3%, mevcut signal/risk contract ve continuous position-sizing mapping korunuyor. Bu backtest sonucu model veya threshold seçmek için kullanılmıyor.
+- Bir sonraki kontrollü çalışma: aynı pipeline'ı birden fazla stock/fund sembolünde çalıştırıp fold/asset bazında **strategy excess return, Sharpe, max drawdown, turnover ve benchmark farkı** dağılımını çıkarmak. Amaç genelleme kontrolüdür.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
