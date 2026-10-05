@@ -630,6 +630,21 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bu yaklaşımın amacı foldlar arasındaki gap veya fold dışı fiyatları strateji getirisine yanlışlıkla dahil etmemektir.
 - Son düzeltme commit: `d97a99b141ad023c7c1ac3ef5db6cf0ad19b1489`.
 
+
+### Faz 6 — THYAO Gerçek Historical Backtest İlk Sonuç
+
+- Codespace gerçek backtest smoke testi başarıyla tamamlandı: `REAL BACKTEST SMOKE TEST PASSED`.
+- Veri kaynağı: **Borsapy provider (DB history insufficient)**; 685 raw row -> 481 supervised dataset row; production target h=5 / +3%; outer 3 x 40 OOS = 120 signal observation.
+- Her outer fold bağımsız çalıştırıldı; her foldda 40 signal row ve 39 in-fold executable period var. Cross-fold execution kullanılmadı.
+- Fold 1 (2026-04-03 -> 2026-06-05): total return **+2.3824%**, annualized return 16.4318%, vol 7.2783%, Sharpe 2.1262, max drawdown -2.1925%, win rate 43.59%, profit factor 1.5454, turnover 1.5394.
+- Fold 2 (2026-06-08 -> 2026-08-03): total return **+0.4097%**, annualized return 2.6769%, vol 6.5203%, Sharpe 0.4370, max drawdown -2.4637%, win rate 48.72%, profit factor 1.0810, turnover 1.3913.
+- Fold 3 (2026-08-04 -> 2026-09-28): total return **-2.2571%**, annualized return -13.7149%, vol 3.7523%, Sharpe -3.9119, max drawdown -2.3916%, win rate 35.90%, profit factor 0.4774, turnover 1.2640.
+- Toplam execution maliyeti üç bağımsız fold için transaction cost **420.844638**, slippage cost **210.422319** olarak gerçekleşti.
+- Fold getirilerinin basit aritmetik ortalaması yaklaşık **+0.1783%**; fold getirilerini sıralı olarak bileşiklemek yaklaşık **+0.4815%** verir. Bu değerler tam pooled portfolio performansı değildir; bağımsız fold raporlarının descriptive özetidir ve fold sınırları arasında pozisyon taşınmamıştır.
+- Kritik yorum: backtest altyapısı ve OOS execution contract doğrulandı, ancak performans foldlar arasında stabil değil. Özellikle 3. foldun negatif getirisi, Sharpe'ı ve profit factor'ı stratejinin henüz genellenmiş/robust olduğunu göstermiyor.
+- Bu sonuç **production signal/weight/threshold değişikliği için kullanılmayacaktır**. Phase 5 production contractları (raw_all, h5/+3%, mevcut signal/risk weighting) korunuyor.
+- Bir sonraki kontrollü deney: aynı OOS tarih pencerelerinde **buy-and-hold benchmark + costsiz/costlu pasif referans + signal strategy** karşılaştırması. Amaç mutlak getiriden ziyade stratejinin basit piyasa referansına göre ek değer üretip üretmediğini görmek; model veya threshold seçimi yapmak değil.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
