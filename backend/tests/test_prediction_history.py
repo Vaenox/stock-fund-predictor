@@ -36,6 +36,55 @@ def valid_payload() -> PredictionHistoryCreate:
     )
 
 
+class FakeSession:
+    def __init__(self) -> None:
+        self.added = []
+        self.committed = False
+        self.refreshed = []
+        self.rolled_back = False
+
+    def add(self, record) -> None:
+        self.added.append(record)
+
+    def add_all(self, records) -> None:
+        self.added.extend(records)
+
+    def commit(self) -> None:
+        self.committed = True
+
+    def refresh(self, record) -> None:
+        self.refreshed.append(record)
+
+    def rollback(self) -> None:
+        self.rolled_back = True
+
+
+def test_record_prediction_commits_and_returns_entity() -> None:
+    from app.data.prediction_history import record_prediction
+
+    session = FakeSession()
+    payload = valid_payload()
+
+    record = record_prediction(session, payload)
+
+    assert len(session.added) == 1
+    assert record is session.added[0]
+    assert record.asset_id == ASSET_ID
+    assert record.signal_score == Decimal("61.7")
+    assert session.committed is True
+    assert session.refreshed == [record]
+
+
+def test_record_predictions_returns_empty_without_database_write() -> None:
+    from app.data.prediction_history import record_predictions
+
+    session = FakeSession()
+
+    assert record_predictions(session, []) == []
+    assert session.added == []
+    assert session.committed is False
+
+
 def test_prediction_history_accepts_production_compatible_payload() -> None:
     payload = valid_payload()
 
