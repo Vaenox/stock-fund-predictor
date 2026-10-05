@@ -30,7 +30,7 @@ Bu dosya, fazlarda alınan kararların, tamamlanan işlerin ve sıradaki tasklar
 - AAL one-class training problemi doğrulandı; validation gevşetilmedi.
 - Faz 4 acceptance: 3 passed.
 
-## Faz 5 — Model Tuning / Feature Importance / Signal-Risk Foundation — AKTİF
+## Faz 5 — Model Tuning / Feature Importance / Signal-Risk Foundation — TAMAMLANDI
 
 ### Güncel Bulgular
 
@@ -697,11 +697,26 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Kod commit: `e45268daf37500e05c90edf7a04883e32104778f`.
 - Codespace'te multi-stock runner henüz çalıştırılmadı; sonraki doğrulama 4 sembol / 12 fold gerçek backtest çalıştırmasıdır.
 
+### Faz 6 — Çoklu Hisse Gerçek Backtest Sonucu
+
+- Codespace gerçek multi-stock backtest smoke testi başarıyla tamamlandı: **REAL MULTI-STOCK BACKTEST SMOKE TEST PASSED**.
+- Kapsam: THYAO, ASELS, TUPRS, BIMAS; toplam **12 bağımsız OOS fold** (4 sembol x 3 fold), her sembolde 120 OOS signal row.
+- Production contract değişmedi: h=5 / +3%, outer 3 x 40, gap=5, continuous 0-100 signal -> 0-1 target weight mapping, BIST execution cost varsayımları ve true buy-and-hold benchmark.
+- Cross-symbol sonuç: mean strategy return per fold **+1.6929%**; mean B&H **+5.7082%**; mean strategy excess **-4.0153%**; median excess **-3.9245%**; positive excess fold rate **41.67% (5/12)**; mean Sharpe **+0.940**; mean max drawdown **-4.0359%**; mean turnover **2.1201**.
+- Sembol bazında üç foldun ortalama excess getirisi: **THYAO +1.5291%**, **ASELS -2.2918%**, **TUPRS -11.4314%**, **BIMAS -3.8671%**. Bu hesap bağımsız foldların basit aritmetik ortalamasıdır; pooled portfolio sonucu değildir.
+- THYAO'da strategy 2/3 foldda B&H'yi geçti; ASELS 1/3, TUPRS 1/3, BIMAS 1/3 foldda geçti. Pozitif excess fold oranı çoğunlukla negatif kaldığı için mevcut sizing policy robust alpha kanıtı sayılmıyor.
+- En belirgin gözlem: TUPRS'ın Fold 2 ve Fold 3'te güçlü buy-and-hold trendini yakalayamadığı görülüyor (excess **-14.2793%** ve **-24.1993%**). Continuous signal/weight mapping'in güçlü trending dönemlerde yeterince yüksek exposure tutmama ihtimali kontrollü olarak test edilecek.
+- ASELS Fold 2'de B&H karşısında pozitif excess (**+1.6778%**) olmasına rağmen strategy return **-7.2105%**, Sharpe **-2.017** ve MaxDD **-11.6833%** oldu. Benchmarkı geçmek tek başına yeterli risk kriteri değildir.
+- Signal kalite metrikleri sembol/fold bazında heterojen: ROC-AUC yaklaşık **0.2853–0.8828**, PR-AUC **0.1062–0.7162**. Bu sonuçlar backtest bağlamında diagnostiktir; model/threshold seçimi için tek başına kullanılmayacak.
+- Faz 6 genelleme sonucu: Phase 5 signal-chain ve historical next-open execution contractı gerçek çoklu hisse verisi üzerinde çalışıyor; ancak mevcut continuous sizing policy ile B&H'ye karşı **robust excess alpha doğrulanmadı**.
+- Production kararı değişmedi: raw_all, h5/+3%, mevcut signal/risk weighting ve continuous position-sizing mapping korunuyor.
+- Fonlar ayrı tutuluyor; TEFAS history'de gerçek open bulunmadığı için stock next-open engine'i fonlara aynen uygulanmayacak. Fonlar için ayrı daily unit-price execution contractı tasarlanacak.
+
 ## Sıradaki İş
 
-1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
-2. Backtest sonuçlarını model/threshold seçimiyle karıştırma; production Phase 5 contractlarını başlangıç referansı olarak koru ve yeni seçimleri ayrı, leakage-safe deneyler olarak raporla.
-3. Prediction history ve backtest engine tamamlandıktan sonra paper-trading için gereken veri sözleşmelerini tanımla.
+1. **Signal-score -> exposure mapping kontrollü deneyi:** mevcut lineer 0-100 -> 0-1 mapping'e karşı önceden tanımlı monoton alternatifleri (capped / concave / convex gibi) aynı 4 hisse ve aynı 12 OOS fold üzerinde karşılaştır.
+2. Mapping deneyini excess return, Sharpe, max drawdown, turnover ve execution-cost sensitivity ile değerlendir; post-hoc threshold veya sembol bazlı özel kural seçme.
+3. Sizing policy kilitlendikten sonra prediction history / strategy-level walk-forward persistence ve ardından fonlar için ayrı daily unit-price backtest contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
