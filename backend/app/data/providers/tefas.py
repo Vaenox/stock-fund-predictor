@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -99,6 +100,21 @@ class TefasProvider(MarketDataProvider):
                 response.raise_for_status()
                 data = response.json()
                 break
+            except json.JSONDecodeError as exc:
+                if attempt < self._settings.rate_limit_retries:
+                    sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                    continue
+                status = getattr(response, "status_code", "unknown")
+                content_type = (getattr(response, "headers", {}) or {}).get(
+                    "Content-Type", "unknown"
+                )
+                body = getattr(response, "text", "")
+                preview = " ".join(str(body).split())[:200]
+                raise TefasProviderError(
+                    "TEFAS returned a non-JSON response: "
+                    f"endpoint={endpoint}, status={status}, "
+                    f"content_type={content_type}, body={preview!r}"
+                ) from exc
             except httpx.TransportError as exc:
                 if attempt < self._settings.rate_limit_retries:
                     sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
