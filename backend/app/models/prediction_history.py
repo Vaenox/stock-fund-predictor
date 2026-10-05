@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -73,6 +73,43 @@ class PredictionHistory(UUIDPrimaryKeyMixin, Base):
     )
 
     __table_args__ = (
+        CheckConstraint("horizon_days > 0", name="ck_prediction_history_horizon_positive"),
+        CheckConstraint(
+            "target_return_threshold BETWEEN -1 AND 1",
+            name="ck_prediction_history_threshold_range",
+        ),
+        CheckConstraint(
+            "ml_probability BETWEEN 0 AND 1",
+            name="ck_prediction_history_probability_range",
+        ),
+        CheckConstraint(
+            "technical_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_technical_score_range",
+        ),
+        CheckConstraint(
+            "risk_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_risk_score_range",
+        ),
+        CheckConstraint(
+            "risk_adjustment BETWEEN -100 AND 0",
+            name="ck_prediction_history_risk_adjustment_range",
+        ),
+        CheckConstraint(
+            "signal_score BETWEEN 0 AND 100",
+            name="ck_prediction_history_signal_score_range",
+        ),
+        CheckConstraint(
+            "target_weight BETWEEN 0 AND 1",
+            name="ck_prediction_history_target_weight_range",
+        ),
+        CheckConstraint(
+            "stale_days >= 0",
+            name="ck_prediction_history_stale_days_nonnegative",
+        ),
+        CheckConstraint(
+            "data_as_of <= prediction_date",
+            name="ck_prediction_history_data_as_of_not_future",
+        ),
         Index(
             "ix_prediction_history_asset_prediction_date",
             "asset_id",
