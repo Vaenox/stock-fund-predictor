@@ -150,7 +150,7 @@ def main() -> None:
     )
     technical_lookup = technical.set_index("trading_date")
     rows: list[pd.DataFrame] = []
-    ml_columns = feature_columns("stock")
+    ml_columns = list(feature_columns("stock"))
 
     for fold_number, fold in enumerate(folds, start=1):
         train = dataset.iloc[fold.train_start : fold.train_end].copy()
