@@ -65,6 +65,22 @@ def test_prediction_history_rejects_out_of_range_values(field: str, value) -> No
         PredictionHistoryCreate(**values)
 
 
+def test_prediction_history_rejects_future_source_data() -> None:
+    values = valid_payload().model_dump()
+    values["data_as_of"] = date(2026, 10, 6)
+
+    with pytest.raises(ValueError, match="data_as_of"):
+        PredictionHistoryCreate(**values)
+
+
+def test_prediction_history_requires_timezone_aware_generated_at() -> None:
+    values = valid_payload().model_dump()
+    values["generated_at"] = datetime(2026, 10, 5, 12, 0)
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        PredictionHistoryCreate(**values)
+
+
 def test_prediction_history_model_is_append_only() -> None:
     columns = {column.name for column in PredictionHistory.__table__.columns}
 
@@ -72,6 +88,7 @@ def test_prediction_history_model_is_append_only() -> None:
     assert "updated_at" not in columns
     assert "signal_score" in columns
     assert "target_weight" in columns
+    assert "data_as_of" in columns
 
 
 def test_prediction_history_indexes_support_asset_and_time_queries() -> None:
@@ -80,3 +97,11 @@ def test_prediction_history_indexes_support_asset_and_time_queries() -> None:
     assert "ix_prediction_history_asset_prediction_date" in index_names
     assert "ix_prediction_history_prediction_date" in index_names
     assert "ix_prediction_history_generated_at" in index_names
+
+
+def test_prediction_history_database_checks_cover_core_bounds() -> None:
+    constraint_names = {constraint.name for constraint in PredictionHistory.__table__.constraints}
+    
+    assert "ck_prediction_history_probability_range" in constraint_names
+    assert "ck_prediction_history_target_weight_range" in constraint_names
+    assert "ck_prediction_history_data_as_of_not_future" in constraint_names
