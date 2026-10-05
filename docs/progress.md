@@ -645,6 +645,19 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bu sonuç **production signal/weight/threshold değişikliği için kullanılmayacaktır**. Phase 5 production contractları (raw_all, h5/+3%, mevcut signal/risk weighting) korunuyor.
 - Bir sonraki kontrollü deney: aynı OOS tarih pencerelerinde **buy-and-hold benchmark + costsiz/costlu pasif referans + signal strategy** karşılaştırması. Amaç mutlak getiriden ziyade stratejinin basit piyasa referansına göre ek değer üretip üretmediğini görmek; model veya threshold seçimi yapmak değil.
 
+
+### Faz 6 — THYAO Backtest Sonrası Aligned Benchmark Deneyi
+
+- Bir sonraki kontrollü karşılaştırma için `smoke_test_backtest_real.py` aynı OOS fold tarihleri içinde üç referansı yan yana çalıştıracak şekilde genişletildi:
+  - Phase 5 continuous signal strategy,
+  - aynı next-open/cost kurallarıyla buy-and-hold (%100 target weight),
+  - transaction cost ve slippage sıfır olan costless buy-and-hold.
+- Benchmarklar da her outer fold içinde bağımsız çalışır; cross-fold execution veya fold gap'inin benchmark getirisine dahil edilmesi yoktur.
+- Amaç model/threshold seçmek değil; strategy getirisi ile basit piyasa getirisi ve execution maliyet etkisini ayırmaktır.
+- Her fold için strategy minus buy-and-hold total return ayrıca yazdırılacaktır.
+- Kod commit: `b037e46f439323fa82b4c2123ff31dfb24415766`.
+- Bu yeni runner henüz Codespace'te çalıştırılmadı; sonraki doğrulama aynı THYAO komutunun tekrar çalıştırılmasıdır.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
