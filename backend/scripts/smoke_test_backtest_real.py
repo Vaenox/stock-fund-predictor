@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from app.analysis.features import MLFeatureConfig, build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_stock_indicators
 from app.analysis.scoring import calculate_stock_technical_score
-from app.backtesting.engine import BacktestConfig, ExecutionCostConfig
+from app.backtesting.engine import BacktestConfig, ExecutionCostConfig, run_long_only_backtest
 from app.backtesting.strategy import SignalScoreWeightConfig, run_signal_score_backtest
 from app.core.settings import get_settings
 from app.data.providers.borsapy import BorsapyProvider
@@ -254,7 +254,27 @@ def main() -> None:
         )
         fold_backtests.append(fold_result)
 
+        benchmark_frame = fold_frame[["date", "open", "close"]].copy()
+        benchmark_frame["target_weight"] = 1.0
+        benchmark_result = run_long_only_backtest(
+            benchmark_frame,
+            config=backtest_config,
+            market="BIST",
+        )
+        benchmark_no_cost_result = run_long_only_backtest(
+            benchmark_frame,
+            config=BacktestConfig(
+                initial_capital=backtest_config.initial_capital,
+                transaction_cost_bps=0.0,
+                slippage_bps=0.0,
+            ),
+            market="BIST",
+        )
+
         metrics = fold_result.backtest.metrics
+        benchmark_metrics = benchmark_result.metrics
+        benchmark_no_cost_metrics = benchmark_no_cost_result.metrics
+
         print(f"Backtest Fold {fold_number}:")
         print(
             f"  Window: {fold_frame['date'].min().date()} -> "
@@ -265,7 +285,16 @@ def main() -> None:
             f"  Executed periods: {len(fold_result.backtest.equity_curve)} "
             "(last signal has no in-fold next-open execution)"
         )
-        print(f"  Total return: {metrics.total_return:.6f}")
+        print(f"  Strategy total return: {metrics.total_return:.6f}")
+        print(f"  Buy-and-hold total return: {benchmark_metrics.total_return:.6f}")
+        print(
+            f"  Strategy minus buy-and-hold: "
+            f"{metrics.total_return - benchmark_metrics.total_return:.6f}"
+        )
+        print(
+            f"  Costless buy-and-hold total return: "
+            f"{benchmark_no_cost_metrics.total_return:.6f}"
+        )
         print(f"  Annualized return: {metrics.annualized_return:.6f}")
         print(f"  Annualized volatility: {metrics.annualized_volatility:.6f}")
         print(f"  Sharpe ratio: {metrics.sharpe_ratio:.6f}")
@@ -295,7 +324,12 @@ def main() -> None:
         metrics = fold_result.backtest.metrics
         assert metrics.total_transaction_cost >= 0.0
         assert metrics.total_slippage_cost >= 0.0
+        assert benchmark_metrics.total_transaction_cost >= 0.0
+        assert benchmark_metrics.total_slippage_cost >= 0.0
+        assert benchmark_no_cost_metrics.total_transaction_cost == 0.0
+        assert benchmark_no_cost_metrics.total_slippage_cost == 0.0
         assert (fold_result.backtest.equity_curve["cash"] >= 0.0).all()
+        assert (benchmark_result.equity_curve["cash"] >= 0.0).all()
     print("REAL BACKTEST SMOKE TEST PASSED")
 
 
