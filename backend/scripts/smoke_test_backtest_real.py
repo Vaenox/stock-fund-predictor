@@ -6,12 +6,13 @@ from datetime import date, timedelta
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-from app.analysis.features import MLFeatureConfig, build_ml_feature_dataset
+from app.analysis.features import MLFeatureConfig, build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_stock_indicators
 from app.analysis.scoring import calculate_stock_technical_score
 from app.backtesting.engine import BacktestConfig, ExecutionCostConfig
-from app.backtesting.strategy import run_signal_score_backtest
+from app.backtesting.strategy import SignalScoreWeightConfig, run_signal_score_backtest
 from app.core.settings import get_settings
+from app.data.providers.borsapy import BorsapyProvider
 from app.ml.risk_adjustment import calculate_stock_risk_adjustment
 from app.ml.signal import calculate_signal_score
 from app.ml.splitting import build_walk_forward_splits
@@ -20,7 +21,7 @@ from app.ml.xgboost_baseline import build_model, fit_baseline_model
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 
-def _load_stock(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
+def _load_stock(symbol: str, days: int, min_db_rows: int) -> tuple[pd.DataFrame, str]:
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
     engine = create_engine(get_settings().database_url, future=True)
@@ -39,9 +40,28 @@ def _load_stock(symbol: str, days: int) -> tuple[pd.DataFrame, str]:
             query,
             {"symbol": symbol, "start_date": start_date, "end_date": end_date},
         ).mappings().all()
-    if not rows:
-        raise ValueError(f"no DB history found for {symbol}")
-    return pd.DataFrame(rows), "PostgreSQL canonical history"
+    if rows and len(rows) >= min_db_rows:
+        return pd.DataFrame(rows), "PostgreSQL canonical history"
+
+    records = BorsapyProvider().get_daily_history(symbol, start_date, end_date)
+    if not records:
+        raise ValueError(f"no historical stock data found for {symbol}")
+    return (
+        pd.DataFrame(
+            {
+                "trading_date": [record.trading_date for record in records],
+                "open": [float(record.open) for record in records],
+                "high": [float(record.high) for record in records],
+                "low": [float(record.low) for record in records],
+                "close": [float(record.close) for record in records],
+                "volume": [
+                    float(record.volume) if record.volume is not None else float("nan")
+                    for record in records
+                ],
+            }
+        ),
+        "Borsapy provider (DB history insufficient)",
+    )
 
 
 def _select_candidate(frame: pd.DataFrame, asset_type: str) -> TuningCandidate:
@@ -109,9 +129,10 @@ def main() -> None:
     parser.add_argument("--transaction-cost-bps", type=float, default=10.0)
     parser.add_argument("--slippage-bps", type=float, default=5.0)
     parser.add_argument("--max-weight", type=float, default=1.0)
+    parser.add_argument("--min-db-rows", type=int, default=400)
     args = parser.parse_args()
 
-    raw, source = _load_stock(args.symbol.strip().upper(), args.days)
+    raw, source = _load_stock(args.symbol.strip().upper(), args.days, args.min_db_rows)
     indicators = calculate_stock_indicators(raw)
     technical = calculate_stock_technical_score(indicators)
     dataset = build_ml_feature_dataset(
@@ -127,10 +148,7 @@ def main() -> None:
     )
     technical_lookup = technical.set_index("trading_date")
     rows: list[pd.DataFrame] = []
-    feature_columns = [
-        c for c in dataset.columns
-        if c not in {"trading_date", "target", "forward_return_5d"}
-    ]
+    ml_columns = feature_columns("stock")
 
     for fold_number, fold in enumerate(folds, start=1):
         train = dataset.iloc[fold.train_start : fold.train_end].copy()
@@ -142,7 +160,7 @@ def main() -> None:
             asset_type="stock",
             config=candidate.config,
         )
-        probability = model.predict_proba(test[feature_columns])[:, 1]
+        probability = model.predict_proba(test[ml_columns])[:, 1]
 
         fold_rows: list[dict[str, float | int | pd.Timestamp]] = []
         for idx, (_, test_row) in enumerate(test.iterrows()):
@@ -188,7 +206,7 @@ def main() -> None:
         oos,
         backtest_config=backtest_config,
         market="BIST",
-        score_weight_config=None,
+        score_weight_config=SignalScoreWeightConfig(maximum_weight=args.max_weight),
     )
 
     metrics = result.backtest.metrics
