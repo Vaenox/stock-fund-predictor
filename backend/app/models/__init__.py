@@ -1,6 +1,7 @@
 from .base import Base
 from .live_market_data import StockLiveCandle, StockLiveTick
 from .market_data import Asset, AssetProviderMapping, AssetStatus, AssetType, FundDailyPrice, StockDailyBar
+from .prediction_history import PredictionHistory
 
 __all__ = [
     "Asset",
@@ -9,6 +10,7 @@ __all__ = [
     "AssetType",
     "Base",
     "FundDailyPrice",
+    "PredictionHistory",
     "StockDailyBar",
     "StockLiveCandle",
     "StockLiveTick",
