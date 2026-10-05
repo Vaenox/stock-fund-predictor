@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -10,15 +11,19 @@ from app.services.prediction import generate_latest_prediction
 
 
 def sample_stock_frame() -> pd.DataFrame:
-    dates = pd.date_range("2024-01-01", periods=260, freq="D")
-    base = pd.Series(range(100, 360), dtype=float)
+    dates = pd.date_range("2024-01-01", periods=320, freq="D")
+    block = np.tile(
+        np.array([0.008] * 15 + [-0.006] * 15, dtype=float),
+        11,
+    )[: len(dates)]
+    close = 100.0 * np.cumprod(1.0 + block)
     return pd.DataFrame(
         {
             "trading_date": dates,
-            "open": base,
-            "high": base + 2.0,
-            "low": base - 2.0,
-            "close": base + 1.0,
+            "open": close * 0.998,
+            "high": close * 1.010,
+            "low": close * 0.990,
+            "close": close,
             "volume": 1_000_000.0,
         }
     )
