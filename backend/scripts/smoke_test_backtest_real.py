@@ -157,6 +157,8 @@ def main() -> None:
         technical_lookup["trading_date"], errors="raise"
     )
     technical_lookup = technical_lookup.set_index("trading_date")
+    if technical_lookup.index.has_duplicates:
+        raise ValueError("technical score data contains duplicate trading dates")
 
     market_lookup = raw.copy()
     market_lookup["trading_date"] = pd.to_datetime(
@@ -220,9 +222,10 @@ def main() -> None:
         rows.append(pd.DataFrame(fold_rows))
 
         y = rows[-1]["target"]
+        auc = _safe_auc(y, rows[-1]["signal_score"])
         print(
             f"Fold {fold_number}: inner PR-AUC={candidate.score:.4f}, "
-            f"signal ROC={_safe_auc(y, rows[-1]['signal_score']) if _safe_auc(y, rows[-1]['signal_score']) is not None else float('nan'):.4f}, "
+            f"signal ROC={auc if auc is not None else float('nan'):.4f}, "
             f"signal PR={_safe_pr(y, rows[-1]['signal_score']):.4f}"
         )
 
