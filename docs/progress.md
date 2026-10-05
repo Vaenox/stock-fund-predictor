@@ -712,11 +712,24 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production kararı değişmedi: raw_all, h5/+3%, mevcut signal/risk weighting ve continuous position-sizing mapping korunuyor.
 - Fonlar ayrı tutuluyor; TEFAS history'de gerçek open bulunmadığı için stock next-open engine'i fonlara aynen uygulanmayacak. Fonlar için ayrı daily unit-price execution contractı tasarlanacak.
 
+### Faz 6 — Nested Signal-Score Exposure Mapping Deneyi Altyapısı
+
+- `backend/app/backtesting/strategy.py` içindeki mevcut linear score-to-weight mapping korunarak dört önceden tanımlı monoton sizing policy eklendi: `linear`, `concave`, `convex`, `capped`.
+- `concave`: normalize signal'ın karekökü; düşük/orta skorları lineer mapping'e göre daha yüksek exposure'a taşır. `convex`: normalize signal'ın karesi; yüksek skorları öne çıkarır. `capped`: linear shape'i koruyup maksimum exposure'ı varsayılan **0.75** ile sınırlar.
+- `run_signal_score_backtest()` ve frame hazırlama fonksiyonları `mapping_policy` ve `capped_weight` kabul edecek şekilde genişletildi. Default `linear`, yani mevcut production davranışı değişmedi.
+- `backend/tests/backtesting/test_strategy.py` mapping shape, bounded/monotonic behavior, custom cap ve invalid policy kontrolleriyle genişletildi. Codespace test sonucu henüz alınmadı.
+- `backend/scripts/smoke_test_backtest_mapping_real.py` eklendi. Amaç aynı 4 stock / outer 3 x 40 / gap=5 / h5+3% protokolünde mapping sensitivity ve nested mapping selection yapmaktır.
+- Mapping selection leak-aware nested tasarlandı: her outer fold için mapping policy yalnızca outer-training içindeki 2 inner fold üzerinden değerlendirilir; her inner fold'da model yalnızca o inner-training slice üzerinde fit edilir. Outer OOS policy sonuçları seçimden sonra ilk kez kullanılır.
+- Inner selection kriteri önceden tanımlı ve deterministik: mean excess return, median excess return, mean Sharpe, mean max drawdown, mean turnover ve sabit policy order tie-break. En az iki valid inner fold şartı korunur.
+- Runner tüm mapping policy'lerini outer OOS'ta ayrıca raporlar; ayrıca nested-selected policy'nin outer sonuçlarını ayrı özetler. Böylece seçilen policy ile aynı OOS'ta sonradan seçilmiş policy arasında ayrım korunur.
+- Bu deney model, target, representation veya BUY/HOLD/SELL threshold seçmiyor. Amaç yalnızca position-sizing policy hassasiyetini ve güçlü trend dönemlerindeki exposure davranışını incelemek.
+- Yeni kod commitleri: `18a1bc79d6882848371fd7f0db71405560e9847c`, `538a6e499ce282654c305adaea1ce418e1ba28ab`, `c1aba36ac10bb7f406f569723403b16449c208b0`, `25d14d207a50c8e0fd045661526edb74808f7f68`.
+
 ## Sıradaki İş
 
-1. **Signal-score -> exposure mapping kontrollü deneyi:** mevcut lineer 0-100 -> 0-1 mapping'e karşı önceden tanımlı monoton alternatifleri (capped / concave / convex gibi) aynı 4 hisse ve aynı 12 OOS fold üzerinde karşılaştır.
-2. Mapping deneyini excess return, Sharpe, max drawdown, turnover ve execution-cost sensitivity ile değerlendir; post-hoc threshold veya sembol bazlı özel kural seçme.
-3. Sizing policy kilitlendikten sonra prediction history / strategy-level walk-forward persistence ve ardından fonlar için ayrı daily unit-price backtest contractına geç.
+1. Codespace'te nested mapping sensitivity smoke testini çalıştır ve **inner-selected policy + outer OOS sonuçlarını** paylaş.
+2. Mapping sonuçlarını excess return, Sharpe, max drawdown, turnover ve cost sensitivity ile değerlendir; OOS'a bakıp policy'yi geriye dönük seçme.
+3. Sizing policy yeterli değilse policy selection'ı production'a taşımadan önce prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
