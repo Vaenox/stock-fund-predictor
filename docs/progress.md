@@ -598,6 +598,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: `98a5d1846f666a54f92606dcb7e41e105e17618d`.
 - Production target ve walk-forward contract değiştirilmedi.
 
+
+### Faz 6 — Gerçek Backtest Smoke Pandas Kolon İndeksleme Düzeltmesi
+
+- THYAO gerçek backtest smoke: PostgreSQL bağlantısı ve veri/fold yeterliliği geçildi; **685 raw / 481 dataset** gözlem bulundu.
+- Ardından `KeyError` oluştu; kök neden `feature_columns("stock")` dönüşünün tuple olması ve pandas DataFrame kolon seçiminin `test[ml_columns]` şeklinde tuple ile yapılmasıydı.
+- `ml_columns` artık açıkça `list(feature_columns("stock"))` olarak oluşturuluyor.
+- Production feature contract, target, walk-forward/gap ve backtest stratejisi değiştirilmedi.
+- Düzeltme commit: `ee9ef83e902654a61480b35fc1ee4018201662de`.
+- Codespace gerçek backtest sonucu henüz tamamlanmadı; aynı smoke komutu yeniden çalıştırılmalı.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
