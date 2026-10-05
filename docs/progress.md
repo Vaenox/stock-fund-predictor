@@ -740,11 +740,28 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production kararı değişmedi: mevcut `linear` mapping korunuyor. Mapping policy'yi production'a taşımadan önce daha uzun tarih aralığı / daha fazla sembol ve execution-cost sensitivity ile ek doğrulama yapılması gerekiyor.
 - Kod/test/doc commitleri: `18a1bc79d6882848371fd7f0db71405560e9847c`, `538a6e499ce282654c305adaea1ce418e1ba28ab`, `c1aba36ac10bb7f406f569723403b16449c208b0`, `25d14d207a50c8e0fd045661526edb74808f7f68`, `aa49d3519a51312d6048e666558394ce2313c85e`, sonuç kaydı bu güncellemeyle tamamlandı.
 
+### Faz 6 — Genişletilmiş Nested Exposure Mapping Sonucu (8 Hisse / 24 Fold)
+
+- Codespace'te aynı nested mapping sensitivity deneyinin 2000 günlük istek ve 8 sembolle genişletilmiş çalışması başarıyla tamamlandı: **REAL NESTED MAPPING SENSITIVITY SMOKE TEST PASSED**.
+- Provider tarafında istenen 2000 takvim günü karşılığında mevcut Borsapy history **1367 raw / 1163 dataset** satırı sağladı; tüm 8 sembolde aynı coverage görüldü.
+- Kapsam: THYAO, ASELS, TUPRS, BIMAS, KCHOL, SAHOL, SISE, EREGL; toplam **24 outer OOS fold** ve her fold için 4 mapping policy.
+- All-policy outer OOS: `concave` mean strategy **+1.6609%**, mean B&H **+3.4012%**, mean excess **-1.7403%**, median excess **+0.2374%**, positive excess fold rate **50.00%**, mean Sharpe **0.496**, mean MaxDD **-7.3565%**, turnover **2.1404**.
+- `linear` ve `capped` aynı outer OOS sonuçları verdi: mean excess **-2.6119%**, median **-0.0553%**, positive excess **50.00%**, mean Sharpe **0.418**, mean MaxDD **-4.3188%**, turnover **1.9574**. Capped policy için bu veri setinde gözlenen ek bir fayda oluşmadı.
+- `convex` mean excess **-3.2581%** ile en zayıf policy oldu; buna rağmen mean MaxDD **-1.6705%** ve turnover **1.1376** ile en düşük risk/exposure yaklaşımını temsil etti. Bu policy benchmarka yaklaşmadı.
+- Nested-selected OOS sonucu: mean strategy return **+0.6280%**, mean B&H **+3.4012%**, mean excess **-2.7732%**, median excess **-0.6533%**, positive excess fold rate **45.83%**, mean Sharpe **0.571**, mean MaxDD **-4.4895%**, turnover **1.5913**.
+- Nested selection frekansı: **concave 12/24 (%50)**, **convex 11/24 (%45.83)**, **linear 1/24 (%4.17)**, `capped` 0/24. Policy seçiminde concave lider olsa da foldlar arasında ciddi değişkenlik devam ediyor.
+- Sembol bazında nested-selected mean excess: THYAO **+0.2706%**, SAHOL **+1.1803%**, SISE **+4.0961%** pozitif; ASELS **-1.5063%**, BIMAS **-3.8459%**, KCHOL **-1.8163%**, TUPRS **-10.2270%**, EREGL **-10.3371%** negatif.
+- TUPRS ve EREGL, güçlü B&H dönemlerinde stratejinin ciddi biçimde geride kaldığı iki belirgin örnek olarak kaldı. Concave bu açığı azaltabiliyor ancak ortadan kaldırmıyor.
+- Genişletilmiş deney sonucu: 8 sembol / 24 fold ile concave'in sensitivity avantajı önceki 4-symbol deneyine göre daha genellenebilir görünüyor; ancak **nested-selected mean excess hâlâ -2.7732%** olduğu için production sizing policy değişikliği için yeterli kanıt yok.
+- Production kararı yine değişmedi: `linear` mapping production default olarak korunuyor.
+- Bir sonraki kontrollü adım: aynı 8 sembol / 24 fold nested policy değerlendirmesini **execution-cost sensitivity** (maliyetsizden yüksek maliyet varsayımlarına) karşılaştırmak ve concave avantajının turnover/maliyet etkisine ne kadar duyarlı olduğunu ölçmek. Bu da production seçimi değil, policy robustness deneyi olarak tutulacak.
+- Gerçek çalıştırma kaynağı: kullanıcı Codespace çıktısı; test komutunda aynı 8 sembol ve `--days 2000` kullanıldı.
+
 ## Sıradaki İş
 
-1. Mapping sensitivity sonucunu production'a almadan önce **daha uzun tarih aralığı ve daha geniş stock universe** ile nested doğrulamayı genişlet; aynı policy setini leakage-safe tut.
-2. Mapping sonuçlarını execution-cost sensitivity ile stres test et ve selected-policy stabilitesini ölç; post-hoc OOS winner seçme.
-3. Sizing policy için yeterli genelleme kanıtı oluşmazsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
+1. **Execution-cost sensitivity:** 8 sembol / 24 fold üzerinde aynı mapping policy'lerini farklı transaction-cost + slippage varsayımları altında karşılaştır ve concave avantajının maliyet karşısındaki dayanıklılığını ölç.
+2. Nested-selected policy stabilitesini ve excess-return değişimini maliyet seviyesi bazında raporla; post-hoc OOS winner seçme ve production mapping'i henüz değiştirme.
+3. Sizing policy robustness yeterli kanıt vermiyorsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
