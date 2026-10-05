@@ -819,11 +819,31 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Codespace doğrulaması tamamlandı: `alembic upgrade head` 0002 -> 0003 migrationını başarıyla uyguladı; prediction-history targeted testleri **15 passed in 1.04s**; full backend suite **182 passed in 7.30s**.
 
 
+### Faz 6 — Prediction Persistence Gerçek Smoke Doğrulaması
+
+- Codespace'te kullanıcı tarafından doğrulanan targeted prediction testleri: **17 passed in 4.52s**.
+- Codespace'te kullanıcı tarafından doğrulanan full backend suite: **184 passed in 9.81s**.
+- Gerçek stock persistence smoke testi THYAO için başarıyla tamamlandı:
+  - 685 raw rows, 481 training rows.
+  - Prediction date / data as of: **2026-10-05**.
+  - Inner PR-AUC: **0.866667**.
+  - ML probability **0.0688624**, Technical Score **49.8042**, Risk Score **57.8111**, Risk Adjustment **-11.5622**.
+  - Final Signal Score **11.4182**, target weight **0.114182**.
+  - Prediction kaydı PostgreSQL'e yazıldı ve read-back ile doğrulandı: **REAL PREDICTION PERSISTENCE SMOKE TEST PASSED**.
+  - Persisted prediction ID: 7f8c9d63-1502-46f5-abe9-8d7bbacff06b.
+- Fund AFA persistence smoke'u gerçek TEFAS çağrısında fonGnlBlgSiraliGetir endpointinden JSON parse edilemeyen yanıt nedeniyle durdu. Traceback httpx.Response.json() içinde JSONDecodeError ile başlayıp TefasProviderError olarak sonlandı. Bu nedenle AFA için henüz prediction DB write/read-back başarı kanıtı yok.
+- psql binary'si Codespace PATH'inde kurulu değil (psql: command not found). PostgreSQL erişimi yine container içindeki psql ile yapılabilir; host'a ayrı PostgreSQL client kurmak bu aşamada gerekli değil.
+- TEFAS resiliency düzeltmesi yapıldı: TefasProvider._post() artık transient non-JSON 200/HTML benzeri cevaplarda mevcut exponential retry bütçesini kullanıyor; retryler tükendiğinde endpoint/status/content-type/body preview içeren daha açıklayıcı TefasProviderError üretiyor.
+- Bu davranış için iki provider testi eklendi: transient non-JSON sonrası başarı ve retry tükenince diagnostik hata.
+- Provider fix commit: eed2580e9ef1dc42972cb6a182bb3c00c6a21b84.
+- Provider test commit: 1622f43c949c43b8d8186f2632b4dc6e869a0c65.
+- Production target, model family/version contract, feature representation, signal weighting ve production linear sizing değiştirilmedi.
+
 ## Sıradaki İş
 
-1. Codespace'te yeni prediction service testlerini ve gerçek persistence smoke testini çalıştır; PostgreSQL read-back ile gerçekten kayıt oluştuğunu doğrula.
-2. Gerçek prediction üretim akışını API katmanına bağlamak için asset/prediction endpoint contractını tasarla; auth ve kullanıcı watchlist bağlamı ayrıca ele alınmalı.
-3. Prediction persistence doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
+1. TEFAS non-JSON resiliency düzeltmesinden sonra AFA prediction persistence smoke'unu yeniden çalıştır; PostgreSQL read-back ile fund kaydını doğrula.
+2. PostgreSQL sorgularını Codespace'te container içindeki psql ile doğrula; prediction_history kayıtlarının asset/date/provider bazında görünmesini kontrol et.
+3. Fund persistence doğrulandıktan sonra gerçek prediction üretim akışını API katmanına bağlamak için asset/prediction endpoint contractını tasarla; ardından fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
