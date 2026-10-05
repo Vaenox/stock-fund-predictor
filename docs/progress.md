@@ -587,6 +587,17 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Codespace'te gerçek backtest smoke sonucu henüz alınmadı; PostgreSQL container'ı artık çalışır durumda olduğundan sıradaki doğrulama gerçek THYAO backtest çalıştırmasıdır.
 
 
+
+### Faz 6 — Gerçek Backtest Smoke Veri-Yeterlilik Teşhisi
+
+- THYAO gerçek backtest smoke ilk çalıştırmada `ValueError: not enough observations for backtest` ile durdu.
+- Önceki `dataset < 140` kontrolü metodolojik olarak gereğinden keyfîydi ve kaldırıldı.
+- Runner artık raw row ve hazırlanmış dataset row sayılarını çalıştırma başında açıkça yazıyor.
+- Outer 3x40 / gap=5 için temel dataset yeterlilik kontrolü splitter sözleşmesine göre yapılıyor; inner tuning yetersizse hata mesajında ilgili outer training boyutu da raporlanıyor.
+- Sonraki Codespace çalıştırmasında THYAO'nun gerçek raw/dataset coverage'ı görünür olacak; gerekirse `--days` artırılarak daha uzun history ile yeniden denenebilir.
+- Düzeltme commit: `98a5d1846f666a54f92606dcb7e41e105e17618d`.
+- Production target ve walk-forward contract değiştirilmedi.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
