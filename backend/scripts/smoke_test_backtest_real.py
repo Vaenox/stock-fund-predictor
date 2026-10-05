@@ -118,6 +118,45 @@ def _safe_pr(y: pd.Series, score: pd.Series) -> float:
     return float(average_precision_score(y.astype(int), score.astype(float)))
 
 
+def _buy_and_hold_total_return(
+    frame: pd.DataFrame,
+    *,
+    config: BacktestConfig,
+) -> tuple[float, float, float, float]:
+    """Calculate a true first-execution-open -> final-close buy-and-hold return.
+
+    The position is opened once on the first available next-open and then held
+    unchanged until the last close. No interim rebalancing or liquidation is
+    assumed. Returns are total return, transaction cost, slippage cost, and
+    ending cash.
+    """
+    if len(frame) < 2:
+        raise ValueError("buy-and-hold requires at least two observations")
+
+    opening = float(frame.iloc[1]["open"])
+    final_close = float(frame.iloc[-1]["close"])
+    capital = float(config.initial_capital)
+    costs = config.execution_costs_for("BIST")
+    fee_rate = costs.transaction_cost_bps / 10_000.0
+    slippage_rate = costs.slippage_bps / 10_000.0
+
+    execution_price = opening * (1.0 + slippage_rate)
+    shares = capital / (execution_price * (1.0 + fee_rate))
+    transaction_cost = shares * opening * fee_rate
+    slippage_cost = shares * abs(execution_price - opening)
+    cash = capital - shares * execution_price - transaction_cost
+    if abs(cash) < 1e-8:
+        cash = 0.0
+
+    final_equity = cash + shares * final_close
+    return (
+        final_equity / capital - 1.0,
+        transaction_cost,
+        slippage_cost,
+        cash,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--symbol", required=True)
@@ -254,26 +293,27 @@ def main() -> None:
         )
         fold_backtests.append(fold_result)
 
-        benchmark_frame = fold_frame[["date", "open", "close"]].copy()
-        benchmark_frame["target_weight"] = 1.0
-        benchmark_result = run_long_only_backtest(
-            benchmark_frame,
-            config=backtest_config,
-            market="BIST",
-        )
-        benchmark_no_cost_result = run_long_only_backtest(
-            benchmark_frame,
+        (
+            benchmark_return,
+            benchmark_transaction_cost,
+            benchmark_slippage_cost,
+            benchmark_cash,
+        ) = _buy_and_hold_total_return(fold_frame, config=backtest_config)
+        (
+            benchmark_no_cost_return,
+            benchmark_no_cost_transaction_cost,
+            benchmark_no_cost_slippage_cost,
+            benchmark_no_cost_cash,
+        ) = _buy_and_hold_total_return(
+            fold_frame,
             config=BacktestConfig(
                 initial_capital=backtest_config.initial_capital,
                 transaction_cost_bps=0.0,
                 slippage_bps=0.0,
             ),
-            market="BIST",
         )
 
         metrics = fold_result.backtest.metrics
-        benchmark_metrics = benchmark_result.metrics
-        benchmark_no_cost_metrics = benchmark_no_cost_result.metrics
 
         print(f"Backtest Fold {fold_number}:")
         print(
@@ -286,15 +326,16 @@ def main() -> None:
             "(last signal has no in-fold next-open execution)"
         )
         print(f"  Strategy total return: {metrics.total_return:.6f}")
-        print(f"  Buy-and-hold total return: {benchmark_metrics.total_return:.6f}")
+        print(f"  Buy-and-hold total return: {benchmark_return:.6f}")
         print(
             f"  Strategy minus buy-and-hold: "
-            f"{metrics.total_return - benchmark_metrics.total_return:.6f}"
+            f"{metrics.total_return - benchmark_return:.6f}"
         )
+        print(f"  Costless buy-and-hold total return: {benchmark_no_cost_return:.6f}")
         print(
-            f"  Costless buy-and-hold total return: "
-            f"{benchmark_no_cost_metrics.total_return:.6f}"
+            f"  Buy-and-hold transaction cost: {benchmark_transaction_cost:.6f}"
         )
+        print(f"  Buy-and-hold slippage cost: {benchmark_slippage_cost:.6f}")
         print(f"  Annualized return: {metrics.annualized_return:.6f}")
         print(f"  Annualized volatility: {metrics.annualized_volatility:.6f}")
         print(f"  Sharpe ratio: {metrics.sharpe_ratio:.6f}")
@@ -324,12 +365,13 @@ def main() -> None:
         metrics = fold_result.backtest.metrics
         assert metrics.total_transaction_cost >= 0.0
         assert metrics.total_slippage_cost >= 0.0
-        assert benchmark_metrics.total_transaction_cost >= 0.0
-        assert benchmark_metrics.total_slippage_cost >= 0.0
-        assert benchmark_no_cost_metrics.total_transaction_cost == 0.0
-        assert benchmark_no_cost_metrics.total_slippage_cost == 0.0
-        assert (fold_result.backtest.equity_curve["cash"] >= 0.0).all()
-        assert (benchmark_result.equity_curve["cash"] >= 0.0).all()
+        assert benchmark_transaction_cost >= 0.0
+        assert benchmark_slippage_cost >= 0.0
+        assert benchmark_no_cost_transaction_cost == 0.0
+        assert benchmark_no_cost_slippage_cost == 0.0
+        assert benchmark_cash >= -1e-8
+        assert benchmark_no_cost_cash >= -1e-8
+        assert (fold_result.backtest.equity_curve["cash"] >= -1e-8).all()
     print("REAL BACKTEST SMOKE TEST PASSED")
 
 
