@@ -130,6 +130,10 @@ def main() -> None:
     args = parser.parse_args()
 
     raw, source = _load_stock(args.symbol.strip().upper(), args.days, args.min_db_rows)
+    raw["trading_date"] = pd.to_datetime(raw["trading_date"], errors="raise")
+    if raw["trading_date"].duplicated().any():
+        raise ValueError("historical stock data contains duplicate trading dates")
+    raw = raw.sort_values("trading_date").reset_index(drop=True)
     indicators = calculate_stock_indicators(raw)
     technical = calculate_stock_technical_score(indicators)
     dataset = build_ml_feature_dataset(
@@ -159,6 +163,8 @@ def main() -> None:
         market_lookup["trading_date"], errors="raise"
     )
     market_lookup = market_lookup.set_index("trading_date").sort_index()
+    if market_lookup.index.has_duplicates:
+        raise ValueError("market OHLCV data contains duplicate trading dates")
     rows: list[pd.DataFrame] = []
     ml_columns = list(feature_columns("stock"))
 
@@ -247,6 +253,10 @@ def main() -> None:
 
         metrics = fold_result.backtest.metrics
         print(f"Backtest Fold {fold_number}:")
+        print(
+            f"  Window: {fold_frame['date'].min().date()} -> "
+            f"{fold_frame['date'].max().date()}"
+        )
         print(f"  Signal rows: {len(fold_frame)}")
         print(
             f"  Executed periods: {len(fold_result.backtest.equity_curve)} "
