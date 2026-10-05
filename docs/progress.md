@@ -608,6 +608,18 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: `ee9ef83e902654a61480b35fc1ee4018201662de`.
 - Codespace gerçek backtest sonucu henüz tamamlanmadı; aynı smoke komutu yeniden çalıştırılmalı.
 
+
+### Faz 6 — Gerçek Backtest Runner OHLCV / Tarih Hizalama Düzeltmesi
+
+- THYAO gerçek backtest çalışmasında 685 raw / 481 dataset gözlemi başarıyla hazırlandı.
+- Sonraki `KeyError: 'open'` hatasının kök nedeni `build_ml_feature_dataset()` çıktısının yalnızca model için `close + feature columns + target` taşıması; `open` kolonunun dataset contract'ında bulunmamasıydı.
+- Backtest runner artık execution OHLCV'yi model dataset'inden beklemek yerine canonical raw market frame'den, OOS `trading_date` ile açıkça eşleştiriyor.
+- Raw/technical market tarihleri `pd.Timestamp` olarak normalize ediliyor; duplicate trading date'ler erken hata olarak reddediliyor.
+- Backtest stratejisi korunuyor: signal date t -> next available open t+1. Outer foldlar bağımsız çalıştırıldığı için her 40-sinyal foldunda son sinyal in-fold next-open olmadan doğal olarak execute edilmiyor; toplam 120 OOS signal row için 117 executable in-fold period bekleniyor.
+- Production ML feature contract ve target (h=5, +3%) değiştirilmedi.
+- Düzeltme commit: `5039d907a2c9077713c951bedc91cb2b8985c11d`.
+- Codespace gerçek backtest sonucu henüz tamamlanmadı; aynı smoke komutu tekrar çalıştırılmalı.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
