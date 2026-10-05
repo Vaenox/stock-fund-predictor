@@ -561,6 +561,18 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bu yapı market-specific tax, lot-size ve gerçek commission modelini henüz temsil etmez; onlar ayrı controlled task'lardır.
 - Local Python 3.14 doğrulaması: Phase 6 backtesting suite **18 passed, 1.40s**; full backend suite **158 passed, 13.35s**.
 
+
+### Codespace PostgreSQL Başlangıç Rutini
+
+- Codespaces yeniden açıldığında PostgreSQL container'ı otomatik olarak çalışan durumda olmayabilir.
+- Projede mevcut container adı sabittir: `stock-fund-predictor-postgres`.
+- Her açılışta repo kökünde mevcut container'ı başlatmak için `docker start stock-fund-predictor-postgres` kullanılmalıdır.
+- `docker compose up -d postgres` mevcut container durmuş haldeyken sabit `container_name` nedeniyle "container name ... is already in use" conflict hatası verebilir; bu durumda container silinmemeli, `docker start` kullanılmalıdır.
+- PostgreSQL'in veri klasörü `postgres_data` named volume üzerindedir; container/volume gereksiz yere silinmemelidir.
+- Ayrıntılı başlangıç talimatı: `docs/codespace-database-startup.md`.
+- 2026-10-05 Codespace durumunda mevcut PostgreSQL container'ı `Exited` durumundan `docker start stock-fund-predictor-postgres` ile başarıyla `running` durumuna getirildi. Alembic migration komutu da bağlantı kurarak hata vermeden tamamlandı.
+
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
