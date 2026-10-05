@@ -684,6 +684,19 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production kararı değişmedi: raw_all, h5/+3%, mevcut signal/risk contract ve continuous position-sizing mapping korunuyor. Bu backtest sonucu model veya threshold seçmek için kullanılmıyor.
 - Bir sonraki kontrollü çalışma: aynı pipeline'ı birden fazla stock/fund sembolünde çalıştırıp fold/asset bazında **strategy excess return, Sharpe, max drawdown, turnover ve benchmark farkı** dağılımını çıkarmak. Amaç genelleme kontrolüdür.
 
+
+### Faz 6 — Çoklu Hisse Genelleme Backtest Runner
+
+- `backend/scripts/smoke_test_backtest_multi_stock_real.py` eklendi.
+- Varsayılan semboller: THYAO, ASELS, TUPRS, BIMAS; her sembol aynı 3 x 40 OOS / gap=5 / h5+3% protokolünde bağımsız değerlendirilir.
+- Her fold için Phase 5 continuous signal strategy, true buy-and-hold benchmark ve costless buy-and-hold referansı kullanılır.
+- Strategy ve benchmark foldları bağımsızdır; foldlar arasında pozisyon taşınmaz veya gap gözlemleri execution'a katılmaz.
+- Her sembolde veri yetersizliği veya tuning failure diğer sembolleri gizlemez; failure listelenir ve script sonunda non-zero exit code verir.
+- Summary; ortalama/medyan strategy excess return, pozitif excess fold oranı, Sharpe, max drawdown ve turnover ile birlikte fold bazlı tablo üretir.
+- Fonlar bu runner'a dahil edilmedi. TEFAS fon history'sinde OHLCV `open` alanı bulunmadığı için Phase 6 next-open equity engine'i fonlara aynen uygulamak metodolojik olarak uygun görülmedi; fonlar için ayrı daily unit-price execution contract'ı sonraki controlled task'tır.
+- Kod commit: `e45268daf37500e05c90edf7a04883e32104778f`.
+- Codespace'te multi-stock runner henüz çalıştırılmadı; sonraki doğrulama 4 sembol / 12 fold gerçek backtest çalıştırmasıdır.
+
 ## Sıradaki İş
 
 1. Gerçek Phase 5 OOS output ve piyasa fiyatlarını kullanarak historical backtest çalıştır; uygun benchmark/portfolio risk metriklerini ayrı raporla.
