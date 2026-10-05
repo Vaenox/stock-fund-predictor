@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.models.base import Base
-from app.models import market_data  # noqa: F401
+from app.models import market_data, prediction_history  # noqa: F401
 
 config = context.config
 
