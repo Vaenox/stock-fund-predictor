@@ -137,8 +137,13 @@ def main() -> None:
         asset_type="stock",
         config=MLFeatureConfig(horizon=5, positive_return_threshold=0.03),
     )
-    if len(dataset) < 140:
-        raise ValueError("not enough observations for backtest")
+    print(f"Loaded raw rows: {len(raw)}")
+    print(f"Prepared dataset rows: {len(dataset)}")
+    if len(dataset) <= 3 * 40 + args.gap:
+        raise ValueError(
+            f"not enough dataset observations for 3x40 outer OOS with gap={args.gap}: "
+            f"got {len(dataset)}, need more than {3 * 40 + args.gap}"
+        )
 
     folds = build_walk_forward_splits(
         len(dataset), n_splits=3, test_size=40, gap=args.gap
@@ -151,7 +156,13 @@ def main() -> None:
         train = dataset.iloc[fold.train_start : fold.train_end].copy()
         test = dataset.iloc[fold.test_start : fold.test_end].copy()
 
-        candidate = _select_candidate(train, "stock")
+        try:
+            candidate = _select_candidate(train, "stock")
+        except ValueError as exc:
+            raise ValueError(
+                f"outer fold {fold_number} cannot produce a usable inner tuning candidate "
+                f"(outer training rows={len(train)}, dataset rows={len(dataset)}): {exc}"
+            ) from exc
         model = fit_baseline_model(
             train,
             asset_type="stock",
