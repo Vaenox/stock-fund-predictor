@@ -757,11 +757,22 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bir sonraki kontrollü adım: aynı 8 sembol / 24 fold nested policy değerlendirmesini **execution-cost sensitivity** (maliyetsizden yüksek maliyet varsayımlarına) karşılaştırmak ve concave avantajının turnover/maliyet etkisine ne kadar duyarlı olduğunu ölçmek. Bu da production seçimi değil, policy robustness deneyi olarak tutulacak.
 - Gerçek çalıştırma kaynağı: kullanıcı Codespace çıktısı; test komutunda aynı 8 sembol ve `--days 2000` kullanıldı.
 
+### Faz 6 — Execution-Cost Sensitivity Runner Hazırlığı
+
+- `backend/scripts/smoke_test_backtest_cost_sensitivity_real.py` eklendi.
+- Varsayılan maliyet grid'i: **0/0, 5/2.5, 10/5, 20/10 bps** (transaction/slippage).
+- Deney aynı 8 hisse / 24 outer fold / gap=5 / h5+3% protocolunu koruyor.
+- Leakage-safe nested mapping selection her cost scenario için ayrı yapılıyor: policy seçimi outer-training içindeki inner foldlarda net excess return ve mevcut deterministik tie-break düzeniyle gerçekleştiriliyor; outer OOS yalnızca son değerlendirmede kullanılıyor.
+- Model ve signal frame'leri maliyetten bağımsız olduğu için her sembol/fold için aynı inner ve outer signal frame'leri maliyet senaryoları arasında yeniden kullanılıyor. Böylece cost sensitivity yalnızca execution assumptions'ı değiştiriyor.
+- Runner her cost seviyesinde tüm policy'lerin outer OOS sonuçlarını ve nested-selected policy özetini; mean/median excess, positive fold rate, Sharpe, MaxDD, turnover ve policy selection frequency ile raporluyor.
+- Production mapping, model, target ve representation bu deneyde değiştirilmedi.
+- Runner commit: `41a4d79806906cd305756c481370168b435856af`.
+
 ## Sıradaki İş
 
-1. **Execution-cost sensitivity:** 8 sembol / 24 fold üzerinde aynı mapping policy'lerini farklı transaction-cost + slippage varsayımları altında karşılaştır ve concave avantajının maliyet karşısındaki dayanıklılığını ölç.
-2. Nested-selected policy stabilitesini ve excess-return değişimini maliyet seviyesi bazında raporla; post-hoc OOS winner seçme ve production mapping'i henüz değiştirme.
-3. Sizing policy robustness yeterli kanıt vermiyorsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
+1. Codespace'te `smoke_test_backtest_cost_sensitivity_real.py` çalıştır ve 8 hisse / 4 cost scenario sonuçlarını paylaş.
+2. Cost seviyesine göre concave avantajı, nested-selected policy frequency, excess return, Sharpe, MaxDD ve turnover değişimini değerlendir; production mapping'i henüz değiştirme.
+3. Cost robustness zayıfsa prediction history / strategy-level persistence ve fonlar için ayrı daily unit-price backtest contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
