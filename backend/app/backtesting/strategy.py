@@ -56,7 +56,10 @@ def map_signal_scores_to_target_weights(
             f"unsupported exposure mapping policy: {policy}; "
             f"expected one of {SUPPORTED_EXPOSURE_MAPPINGS}"
         )
-    if not np.isfinite(capped_weight) or not 0.0 < capped_weight <= config.maximum_weight:
+    if policy == "capped" and (
+        not np.isfinite(capped_weight)
+        or not 0.0 < capped_weight <= config.maximum_weight
+    ):
         raise ValueError("capped_weight must be finite and between 0 and maximum_weight")
 
     scores = pd.to_numeric(signal_scores, errors="raise")
