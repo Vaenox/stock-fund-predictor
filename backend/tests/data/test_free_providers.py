@@ -53,8 +53,13 @@ def test_yahoo_history_mapping_with_fake_ticker(monkeypatch):
     assert records[0].volume == Decimal("123456.0")
 
 
-def test_tefas_payload_mapping_with_fake_request():
+def test_tefas_history_v2_payload_and_mapping():
+    captured = {}
+
     class FakeResponse:
+        status_code = 200
+        headers = {"Content-Type": "application/json"}
+
         def raise_for_status(self):
             return None
 
@@ -62,25 +67,69 @@ def test_tefas_payload_mapping_with_fake_request():
             return {
                 "resultList": [
                     {
-                        "fonKod": "AAK",
-                        "fonUnvan": "ATA PORTFÖY ÇOKLU VARLIK DEĞİŞKEN FON",
-                        "tarih": "15.09.2026",
-                        "fonFiyat": "35,464180",
-                        "portfoyBuyuklugu": "35461839.75",
-                    }
+                        "tarih": "2026-09-15",
+                        "fiyat": "35.464180",
+                    },
+                    {
+                        "tarih": "2026-09-16",
+                        "fiyat": "35.700000",
+                    },
+                    {
+                        "tarih": "2026-09-30",
+                        "fiyat": "99.000000",
+                    },
                 ]
             }
 
-    def fake_request(*_args, **_kwargs):
+    def fake_request(method, url, **kwargs):
+        captured["method"] = method
+        captured["url"] = url
+        captured.update(kwargs)
         return FakeResponse()
 
-    provider = TefasProvider(request=fake_request)
+    provider = TefasProvider(
+        request=fake_request,
+        settings=TefasSettings(
+            history_timeout=7.0,
+            history_retries=1,
+            history_backoff_seconds=0.5,
+        ),
+    )
     records = provider.get_fund_history(
-        "AAK", date(2026, 9, 15), date(2026, 9, 15)
+        "aak",
+        date(2026, 9, 15),
+        date(2026, 9, 16),
     )
 
-    assert len(records) == 1
-    assert records[0].provider_symbol == "AAK"
-    assert records[0].pricing_date == date(2026, 9, 15)
-    assert records[0].unit_price == Decimal("35.464180")
-    assert records[0].total_net_assets == Decimal("35461839.75")
+    assert captured["method"] == "POST"
+    assert captured["url"].endswith("/fonFiyatBilgiGetir")
+    assert captured["timeout"] == 7.0
+    assert captured["content"] == (
+        b'{"fonKodu":"AAK","dil":"TR","periyod":13}'
+    )
+    assert [record.pricing_date for record in records] == [
+        date(2026, 9, 15),
+        date(2026, 9, 16),
+    ]
+    assert [record.unit_price for record in records] == [
+        Decimal("35.464180"),
+        Decimal("35.700000"),
+    ]
+    assert all(record.total_net_assets is None for record in records)
+
+
+def test_tefas_history_period_uses_smallest_covering_bucket():
+    assert TefasProvider._history_period(date(2026, 9, 1), date(2026, 9, 2)) == 13
+    assert TefasProvider._history_period(date(2026, 9, 1), date(2026, 9, 30)) == 1
+    assert TefasProvider._history_period(date(2026, 1, 1), date(2026, 12, 31)) == 12
+    assert TefasProvider._history_period(date(2024, 1, 1), date(2026, 10, 6)) == 36
+
+
+def test_tefas_history_period_rejects_ranges_over_five_years():
+    try:
+        TefasProvider._history_period(date(2020, 1, 1), date(2026, 10, 6))
+    except ValueError as exc:
+        assert "5-year API limit" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+
