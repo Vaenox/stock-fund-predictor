@@ -170,3 +170,42 @@ def test_tefas_post_serializes_payload_as_exact_utf8_bytes():
     assert result == {"resultList": []}
     assert isinstance(captured["content"], bytes)
     assert captured["content"] == b'{"fonKodu":"AFA","fonTipi":"YAT","aramaMetni":null}'
+
+def test_tefas_post_honors_per_call_transport_retry_controls(monkeypatch):
+    calls = []
+
+    def request(method, url, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.RemoteProtocolError(
+                "temporary transport failure",
+                request=httpx.Request(method, url),
+            )
+        return httpx.Response(
+            200,
+            json={"resultList": []},
+            request=httpx.Request(method, url),
+        )
+
+    sleeps = []
+    monkeypatch.setattr("app.data.providers.tefas.sleep", sleeps.append)
+
+    provider = TefasProvider(
+        settings=TefasSettings(
+            rate_limit_retries=6,
+            rate_limit_backoff_seconds=5.0,
+        ),
+        request=request,
+    )
+
+    result = provider._post(
+        "fonFiyatBilgiGetir",
+        {"fonKodu": "AFS", "dil": "TR", "periyod": 36},
+        timeout=15.0,
+        max_retries=1,
+        backoff_seconds=0.25,
+    )
+
+    assert result == {"resultList": []}
+    assert len(calls) == 2
+    assert sleeps == [0.25]
