@@ -1154,6 +1154,20 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 2. normalized_all veya stationary_core iki fonda da ve birden fazla outer fold'da daha iyi OOS ordering verirse representation ablation'ı daha geniş sembol/fon kapsamına çıkar; tek fondaki sonuca dayanarak production değişikliği yapma.
 3. Representation farkı küçük kalırsa model selection/calibration/regime drift tarafına geç; özellikle inner PR-AUC'nin outer OOS'a taşınma oranını incele.
 
+### Faz 6 — Nested Representation Threshold Sonuçları
+
+- Threshold **1%** nested representation smoke AFA ve AFT üzerinde PASSED oldu. AFA'da outer seçimler `raw_all -> stationary_core -> normalized_all`; outer Spearman sırasıyla **-0.1044, +0.1149, +0.3584**. AFT'de `normalized_all` **3/3** fold seçildi; outer Spearman **-0.1812, +0.5955, +0.2651**. fileciteturn852file0L17-L57
+- Threshold **2%** nested representation smoke AFA ve AFT üzerinde PASSED oldu. AFA'da `normalized_all` **3/3** fold seçildi ve outer Spearman **+0.4331, +0.2501, +0.2707**; outer ROC **0.7500, 0.6667, 0.7056**. AFT'de seçim `stationary_core -> raw_all -> normalized_all`; `stationary_core` Fold 1'de outer ROC **0.1604**, Spearman **-0.5877** ile belirgin başarısız olurken raw/normalized sonraki foldlarda güçlü sonuçlar verdi. fileciteturn852file0L61-L110
+- Bu sonuçlar `normalized_all` için önceki evidence'i güçlendiriyor: AFA `%2`'de tüm outer foldlarda seçilmesi ve pozitif Spearman vermesi, AFT `%1`'de tüm outer foldlarda seçilmesi önemli. Ancak AFT `%2` Fold 1 örneği, inner selection'ın yanlış representation'ı seçebileceğini ve selection riskinin hâlâ bulunduğunu gösteriyor.
+
+**Karar:** `normalized_all` artık güçlü deneysel aday; fakat production `raw_all` henüz değiştirilmedi. Nested selection sonucunu tek başına production kararına çevirmek yerine her representation'ın aynı outer foldlarda doğrudan karşılaştırıldığı fixed-representation ablation gerekiyor.
+
+### Faz 6 — Sıradaki İş
+
+1. `smoke_test_feature_ablation_real.py` ile AFA/AFT için threshold **1%** ve **2%** altında `raw_all / normalized_all / stationary_core` fixed-representation tuned OOS sonuçlarını karşılaştır.
+2. Özellikle aggregate Spearman/PR/ROC yanında fold bazında direction consistency ve OOS performansını kontrol et; nested winner'ın gerçekten non-winner'ları geçtiğini doğrula.
+3. `normalized_all` fixed OOS olarak iki fonda da belirgin üstün çıkarsa daha geniş fon örneklemine geç; production representation yine ancak daha geniş kanıtla değiştirilecek.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
