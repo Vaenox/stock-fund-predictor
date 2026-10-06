@@ -3,8 +3,10 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from app.backtesting.fund_engine import FundBacktestConfig
-from scripts.smoke_test_backtest_fund_real import _buy_and_hold_total_return
+from app.backtesting.fund_engine import (
+    FundBacktestConfig,
+    calculate_fund_buy_and_hold_total_return,
+)
 
 
 def _frame() -> pd.DataFrame:
@@ -18,7 +20,7 @@ def _frame() -> pd.DataFrame:
 
 
 def test_fund_buy_and_hold_uses_first_next_day_price_and_holds() -> None:
-    result = _buy_and_hold_total_return(
+    result = calculate_fund_buy_and_hold_total_return(
         _frame(),
         config=FundBacktestConfig(transaction_cost_bps=0.0),
     )
@@ -34,6 +36,9 @@ def test_fund_buy_and_hold_applies_one_entry_transaction_cost() -> None:
         config=FundBacktestConfig(transaction_cost_bps=10.0),
     )
 
-    assert result[0] == pytest.approx((100000.0 - 0.0) and result[0], rel=1e-12)
-    assert result[1] > 0.0
-    assert result[2] >= 0.0
+    expected_return = (121.0 / 100.0) / 1.001 - 1.0
+    expected_cost = 100_000.0 * 0.001 / 1.001
+
+    assert result[0] == pytest.approx(expected_return)
+    assert result[1] == pytest.approx(expected_cost)
+    assert result[2] == pytest.approx(0.0, abs=1e-8)
