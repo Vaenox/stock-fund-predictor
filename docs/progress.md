@@ -1097,6 +1097,22 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Kod mantığı değiştirilmeden `--thresholds` help metnindeki **+3% -> +3%%** olarak düzeltildi. Commit: **51d90945ee161bbb620cf9457f3aae9631a7e4c6**.
 - Bu fix için gerçek Codespace threshold diagnostic sonucu henüz alınmadı; sonraki çalıştırma threshold hesaplamasına devam etmeli.
 
+### Faz 6 — Real Fund Target Threshold Diagnostic Sonucu
+
+- Codespace doğrulaması: önce targeted suite **18 passed in 1.77s**, full backend suite **212 passed in 10.81s**; ardından gerçek threshold diagnostic **PASSED** oldu.
+- AFA genel target oranları: **0%=69.23%**, **1%=42.74%**, **2%=22.44%**, **3%=13.46%**. OOS ordering açısından aggregate Q5-Q1 spread sırasıyla **-1.1441%**, **-0.2648%**, **+0.0009%**, **-1.3497%**; OOS probability-to-forward-return Spearman **-0.0930**, **-0.0014**, **+0.0669**, **-0.1492**. Bu fund için threshold düşürmek tek başına yeterli sinyal üretmiyor.
+- AFT genel target oranları: **0%=61.57%**, **1%=48.62%**, **2%=37.58%**, **3%=28.03%**, **5%=9.77%**. En iyi aggregate ordering **1–2%** bandında: Q5-Q1 **+4.4028% / +4.1744%** ve Spearman **+0.3147 / +0.2764**; production `%3` seviyesinde bunlar **+1.1669% / +0.1887** oluyor. `%5` ise OOS ROC **0.3518**, PR **0.1282**, Spearman **-0.2513**, Q5-Q1 **-3.5399%** ile belirgin bozuluyor.
+- Cross-fund ortalamasında `%1` ve `%2` threshold'ları `%3`'ten daha iyi: mean OOS ROC **0.6098 / 0.5731 / 0.4665**, mean PR **0.6251 / 0.4261 / 0.3263**, mean Spearman **+0.1566 / +0.1717 / +0.0198**, mean Q5-Q1 **+2.0690% / +2.0876% / -0.0914%**.
+- `%5` yalnız AFT için geçerli kaldı; AFA'da inner validation iki-class fold koşulu sağlanamadı. Bu, yüksek threshold'da label sparsity'nin pratik olarak sorun haline geldiğini doğruluyor.
+
+**Karar:** Label sparsity ve threshold seçimi model ordering'i anlamlı biçimde etkiliyor, özellikle AFT'de. Ancak AFA'nın `%0–2` seviyelerinde bile tutarlı ordering üretememesi nedeniyle sorun **yalnızca +3% sparse target değil**. Production contract h5/+3% şimdilik değiştirilmedi.
+
+### Faz 6 — Güncel Sıradaki İş
+
+1. Aynı gerçek OOS backtest protokolüyle fund strategy'yi diagnostic olarak **threshold=1%, 2%, 3%** altında karşılaştır; execution, risk layer, linear mapping ve benchmark kontratını sabit tut. Amaç daha iyi score ordering'in gerçek excess return'a dönüşüp dönüşmediğini görmek.
+2. Bu backtest de AFA'da anlamlı iyileşme göstermiyorsa feature/model-regime istikrarsızlığına geç; özellikle aynı OOS pencerelerinde feature -> forward_return ilişkilerinin stabilitesini ölç.
+3. Threshold sonuçlarına bakarak production target'ı henüz değiştirme; önce P&L doğrulaması ve fund-specific davranış kanıtı gerekli.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
