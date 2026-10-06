@@ -93,6 +93,14 @@ def _safe_pr(
     )
 
 
+def _safe_spearman(
+    left: pd.Series,
+    right: pd.Series,
+) -> float | None:
+    if left.nunique() < 2 or right.nunique() < 2:
+        return None
+    value = left.corr(right, method="spearman")
+    return float(value) if pd.notna(value) else None
 def summarize_signal_relationships(
     frame: pd.DataFrame,
     *,
@@ -116,17 +124,13 @@ def summarize_signal_relationships(
         if not np.isfinite(score.to_numpy(dtype=float)).all():
             raise ValueError(f"{column} must be finite")
 
-        target_corr = score.corr(data["target"], method="spearman")
-        return_corr = score.corr(data["forward_return_5d"], method="spearman")
+        target_corr = _safe_spearman(score, data["target"])
+        return_corr = _safe_spearman(score, data["forward_return_5d"])
         rows.append(
             {
                 "score": column,
-                "spearman_target": (
-                    float(target_corr) if pd.notna(target_corr) else None
-                ),
-                "spearman_forward_return_5d": (
-                    float(return_corr) if pd.notna(return_corr) else None
-                ),
+                "spearman_target": target_corr,
+                "spearman_forward_return_5d": return_corr,
                 "roc_auc": _safe_auc(data["target"], score),
                 "pr_auc": _safe_pr(data["target"], score),
             }
