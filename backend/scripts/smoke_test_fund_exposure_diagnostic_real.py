@@ -110,6 +110,7 @@ def _build_oos_frame(
                 "technical_score": float(latest["technical_score"]),
                 "risk_score": float(risk.risk_score),
                 "risk_adjustment": float(risk.adjustment),
+                "pre_risk_signal": float(signal.signal_score - risk.adjustment),
                 "signal_score": float(signal.signal_score),
                 "target_weight": weight,
                 "target": int(test_row["target"]),
@@ -224,7 +225,8 @@ def _run_symbol(
                 f"mean_w={_fmt(row.mean_weight)}, "
                 f"mean_fwd5d={_fmt(row.mean_forward_return_5d, pct=True)}, "
                 f"median_fwd5d={_fmt(row.median_forward_return_5d, pct=True)}, "
-                f"positive_target={row.positive_target_rate:.2%}"
+                f"positive_target={row.positive_target_rate:.2%}, "
+                f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
             )
 
     combined = pd.concat(fold_frames, ignore_index=True)
