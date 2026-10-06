@@ -1000,6 +1000,17 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Bu ilk gerçek fund OOS coverage ile **fund mapping veya cost-sensitivity sweep'i production policy seçmek için henüz gerekli görülmüyor**; temel strateji zaten B&H karşısında negatif excess üretiyor. Öncelik, sinyalin exposure davranışını ve fund-specific prediction calibration/coverage sorunlarını incelemek.
 - Sonuç commit'i: bu progress kaydıyla birlikte güncellendi.
 
+### Faz 6 — Fund Exposure / Signal Diagnostic Altyapısı
+
+- İlk gerçek AFA/AFT OOS backtest sonucunda stratejinin B&H karşısında negatif excess üretmesi üzerine production contractı değiştirmeden diagnostic katmanı eklendi.
+- `backend/app/backtesting/fund_diagnostics.py` şu analizleri sağlar: realized target-weight dağılımı, sabit exposure bantları (<25%, 25-50%, 50-75%, >=75%) ve ML probability / Technical Score / final Signal Score için target ve 5 günlük forward-return ilişkileri (Spearman, ROC-AUC, PR-AUC).
+- Diagnostic frame contractı `target_weight` 0..1, binary `target` ve finite `forward_return_5d` alanlarını doğrular; veri/model üretimini veya execution'ı değiştirmez.
+- `backend/scripts/smoke_test_fund_exposure_diagnostic_real.py` mevcut fund real-runner'ın canonical DB loader ve sparse inner tuning helper'ını yeniden kullanarak aynı 3x40 outer OOS protokolünde fold bazlı detaylı diagnostic üretir.
+- Unit test dosyası `backend/tests/backtesting/test_fund_diagnostics.py` eklendi; diagnostic helperları ve invalid input davranışı kapsanıyor.
+- Backtesting package exportları güncellendi.
+- Son implementation commitleri: **44071ce440525391a3dce6081a418cbeeb6a2693**, **7aa1475d367baab7d42c8cb7c0eb93be3e59f24d**, **88341a30e8e2cdcacda5e5fbecf8cd61737d8286**, **61f8f97347d0435cdd9a54b0a81c1d9eec11207d**, **43a3fc172a3393b2094993033a8c3e884f241f75**.
+- Bu yeni diagnostic değişiklikleri için Codespace testleri henüz çalıştırılmadı; gerçek AFA/AFT diagnostic sonucu henüz yok.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
