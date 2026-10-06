@@ -1046,6 +1046,24 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Son code commits: **06778b82efdf397ebb6cde4ad04e542e50b0dae5**, **f5f4703cd249ae6f97702d5a97c24f025ddce9aa**, **63ee37bc073dca79d964f99c41fe1c710fdc612a**.
 - Bu yeni değişikliklerin Codespace test ve gerçek ablation sonucu henüz alınmadı.
 
+### Faz 6 — Real Fund Risk Ablation Sonucu
+
+- Codespace doğrulaması: fund diagnostic/risk ablation targeted suite **16 passed in 1.59s**; full backend suite **210 passed in 10.88s**. Önceki constant-correlation warning de bu çalışma ile artık görünmedi.
+- AFA risk ablation: Fold 1 production **+3.8667%** vs no-risk **+4.0482%** (risk contribution **-0.1814 pp**); Fold 2 **+1.0023%** vs **+1.1280%** (**-0.1257 pp**); Fold 3 risk score **0** olduğu için iki koşul aynı (**0.0000 pp**).
+- AFT risk ablation: Fold 1 production **+5.7710%** vs no-risk **+6.6887%** (**-0.9177 pp**); Fold 2 production **+0.5412%** vs no-risk **+0.0998%** (**+0.4414 pp**, risk faydalı); Fold 3 production **+0.1874%** vs no-risk **+0.7081%** (**-0.5207 pp**).
+- Cross-fund: mean production return **+2.2849%**, no-risk **+2.5023%**, B&H **+7.8261%**; production excess **-5.5412%**, no-risk excess **-5.3238%**; mean risk contribution **-0.2173 pp** ve yalnızca **1/6 fold** riskten pozitif katkı aldı.
+
+**Karar:** Risk adjustment production performansını ortalamada biraz bozuyor ancak ana alpha/excess problemi değil. Risk kaldırıldığında bile strateji B&H karşısında güçlü biçimde negatif kalıyor. Bu nedenle risk layer production'dan kaldırılmıyor ve ağırlıkları değiştirilmeden korunuyor; sonraki inceleme model score'unun gerçek getiriyi sıralama kabiliyetine odaklanıyor.
+
+### Faz 6 — Fund Score Quantile Monotonicity Diagnostic Hazırlığı
+
+- `summarize_score_quintiles()` eklendi. OOS score'ları eşit sayıda 5 gruba ayırarak ML probability ve final Signal Score için mean/median forward return, positive-return rate ve +3% target rate raporlanıyor.
+- Ranking, score tie'larında `rank(method="first")` ile deterministik hale getiriliyor; production code/training behavior değiştirilmez.
+- Real exposure diagnostic runner quintile raporunu fold ve aggregate seviyede gösterecek şekilde genişletildi.
+- Amaç: continuous score'un gerçekten monotonik ekonomik ordering üretip üretmediğini, exposure mapping'den bağımsız olarak ölçmek.
+- Kod commits: **1d2b2ff6e4d85df538bca87112bf52a6c287bbc5**, **c2bb524532c812c3f56bbaf5392a30adaf575694**, **2d57b32b15f28f88b8b60ba708ad41f6ed9c31ba**, **0f45fec7eb0d7ab7e7f50b8ba9f9bbad52e7303e**.
+- Bu son quintile değişiklikleri için Codespace doğrulaması henüz alınmadı.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
