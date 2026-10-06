@@ -118,11 +118,41 @@ def test_tefas_history_v2_payload_and_mapping():
     assert all(record.total_net_assets is None for record in records)
 
 
-def test_tefas_history_period_uses_smallest_covering_bucket():
-    assert TefasProvider._history_period(date(2026, 9, 1), date(2026, 9, 2)) == 13
-    assert TefasProvider._history_period(date(2026, 9, 1), date(2026, 9, 30)) == 1
-    assert TefasProvider._history_period(date(2026, 1, 1), date(2026, 12, 31)) == 12
-    assert TefasProvider._history_period(date(2024, 1, 1), date(2026, 10, 6)) == 36
+def test_tefas_history_period_uses_age_from_as_of_date():
+    as_of = date(2026, 10, 6)
+    assert (
+        TefasProvider._history_period(
+            date(2026, 10, 4),
+            date(2026, 10, 6),
+            as_of_date=as_of,
+        )
+        == 13
+    )
+    assert (
+        TefasProvider._history_period(
+            date(2026, 9, 6),
+            date(2026, 10, 6),
+            as_of_date=as_of,
+        )
+        == 1
+    )
+    assert (
+        TefasProvider._history_period(
+            date(2025, 10, 6),
+            date(2026, 10, 6),
+            as_of_date=as_of,
+        )
+        == 12
+    )
+    assert (
+        TefasProvider._history_period(
+            date(2024, 1, 10),
+            date(2024, 2, 6),
+            as_of_date=as_of,
+        )
+        == 36
+    )
+
 
 
 def test_tefas_history_period_rejects_ranges_over_five_years():
