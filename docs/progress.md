@@ -1131,6 +1131,13 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 2. Feature/regime diagnostic'te belirgin instability çıkarsa model/feature design'a kontrollü müdahale etmeden önce bunun hangi dönemlerde oluştuğunu ayır; production target/risk/mapping contractını koru.
 3. Feature stability zayıf değilse ancak score ordering zayıf kalıyorsa, model calibration/selection stability ve time-regime drift incelemesine geç.
 
+### Faz 6 — Fund Feature Regime Stability Diagnostic Hazırlığı
+
+- `backend/scripts/smoke_test_fund_feature_regime_stability_real.py` eklendi.
+- Script AFA/AFT için aynı 3x40 outer OOS + gap=5 protokolünde her fold'da feature -> `forward_return_5d` ve feature -> target Spearman ilişkilerini, ayrıca tuned XGBoost normalized gain importance'ı çıkarıyor.
+- Aggregate rapor feature yönü sign stability (`+/-` fold sayıları, std) ve gain stability (`mean normalized gain`, std, top-3 fold count) veriyor. Amaç production contractını değiştirmeden regime/feature instability'yi doğrudan kanıtlamak.
+- Code commit: **057ed19e4aeab8a7630761dbcc8c39e695a2e059**. Codespace test/real-run sonucu henüz alınmadı.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
