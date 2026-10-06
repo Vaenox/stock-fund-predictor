@@ -934,6 +934,9 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Contract docs commit: **4e2cd2911e3e7249a428330ae08312105ff8b743**.
 
 
+
+- Kullanıcı Codespace'te fund backtest targeted testini ve full backend suite'i çalıştırdı; her iki komut da **başarılı (passed)** olarak doğrulandı. Bu doğrulama benchmark helper eklenmeden önceki fund engine foundation commitleri içindi; son benchmark/runner değişiklikleri ayrıca yeniden test edilmelidir.
+
 ### Faz 6 — Real Fund OOS Backtest Runner Hazırlığı
 
 - `backend/scripts/smoke_test_backtest_fund_real.py` eklendi.
