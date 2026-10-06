@@ -1229,6 +1229,18 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 2. Full backend suite'i yeniden çalıştır.
 3. İkisi de geçerse AFS `%1` fixed feature ablation'ı tekrar çalıştır.
 
+### Faz 6 — TEFAS v2 Historical Range Regression Fix
+
+- AFS ablation tekrarında `No TEFAS fund history for AFS in requested range 2024-01-10..2024-02-06` görüldü. Kök neden `fonFiyatBilgiGetir` v2'nin `periyod` parametresinin tarih aralığı değil, bugünden geriye dönük sabit pencere seçmesi ve bizim loader'ın eski 28-gün chunk mantığını korumasıydı.
+- `TefasProvider._history_period()` artık requested `start_date` yaşını `as_of_date` karşısında ölçerek smallest covering v2 bucket'ı seçiyor; 2024-01 tarihli 1000 günlük geçmiş için `periyod=36` seçiliyor. Gelecek tarihleri açıkça reddediyor.
+- Regression test eklendi: 2024-01-10..2024-02-06 isteğinin `fonFiyatBilgiGetir` + `periyod=36` ile yapıldığı ve response'un client-side filtrelendiği doğrulanıyor.
+- `smoke_test_feature_ablation_real.py` ve `smoke_test_backtest_fund_real.py` TEFAS fallback helper'ları artık uzun geçmişi 28 günlük v2 çağrılarına bölmüyor; doğrudan `get_fund_history(start_date, end_date)` çağrısı yapıyor. `--chunk-delay` CLI geriye dönük uyumluluk için duruyor fakat tek history çağrısında sleep uygulanmıyor.
+- Provider retry branch'i per-call `effective_backoff` değerini kullanacak şekilde tamamlandı.
+- Kod/test commitleri: **71e6889b1b620812c4f0b7814a7b7be4b1ff43ba**, **9b2c77d008369379fe0d62154bd1de258a948555**, **b8f343367de057c2e540f3855f005f2ccecdeeb6**, **626cbbb54835990a09fe2440c8a49e6b456804f9**, **56b40136175c1a0555587901a6cc0d0773562b77**, **3b4feaa9ae8936b958f35d2a4c07db09e61539bb**.
+- Son Codespace sonucu bu düzeltmelerden önce **12 passed / 1 failed** targeted ve **214 passed / 1 failed** full suite idi; failure yalnızca eksik `TefasSettings` importuydu ve `4677b84d401029ad6607b301ca265ba492ef72ba` ile düzeltildi. Yeni provider/range fix sonrası yeniden Codespace testi henüz alınmadı.
+
+**Karar:** AFS `%1/%2` ablation'ı için yeniden uzun bekleme yapılmayacak. Önce provider targeted testleri + full suite, ardından AFS `%1` ve `%2` ablation çalıştırılacak. Production target/representation/model contractı değişmedi.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
