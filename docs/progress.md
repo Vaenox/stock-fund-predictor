@@ -844,11 +844,37 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Provider test commit: 1622f43c949c43b8d8186f2632b4dc6e869a0c65.
 - Production target, model family/version contract, feature representation, signal weighting ve production linear sizing değiştirilmedi.
 
+
+### Faz 6 — Fund Prediction Persistence Gerçek Smoke Doğrulaması
+
+- Codespace'te AFA için gerçek fund prediction persistence smoke testi başarıyla tamamlandı:
+  - Asset type: **fund**
+  - Symbol: **AFA**
+  - Asset ID: **cd43f75c-27b1-4e35-a544-a82bf4bcd756**
+  - Raw rows: **685**
+  - Training rows: **481**
+  - Prediction date / data as of: **2026-10-06**
+  - Model version: **xgboost-n200-d4-lr0.0500-mcw3-ss0.90-cs0.90-rl1-rs42**
+  - Inner PR-AUC: **0.200000**
+  - ML probability: **0.0096400**
+  - Technical Score: **70.0792**
+  - Risk Score: **0.0**
+  - Risk Adjustment: **-0.0**
+  - Final Signal Score: **26.8822**
+  - Target weight: **0.268822**
+  - Prediction kaydı PostgreSQL'e yazıldı ve read-back ile doğrulandı.
+  - Persisted prediction ID: **28993bf1-f5ce-4618-80b9-5ff117b5dfb7**
+  - Sonuç: **REAL PREDICTION PERSISTENCE SMOKE TEST PASSED**
+- Böylece prediction persistence için gerçek veriyle iki asset type doğrulandı: **THYAO stock** ve **AFA fund**.
+- AFA sonucundaki düşük inner PR-AUC ve çok düşük ML probability, persistence smoke'unun başarısızlığı değildir; bu testin amacı DB audit kaydının üretim prediction çıktısıyla birlikte doğru yazılıp okunmasıdır. Model performansı ayrı evaluation/backtest kapsamındadır.
+- Production target (horizon=5, forward_return_5d > +3%), raw_all representation, signal weighting ve production linear sizing değiştirilmedi.
+
+
 ## Sıradaki İş
 
-1. TEFAS request-body serialization düzeltmesinden sonra AFA prediction persistence smoke'unu yeniden çalıştır; PostgreSQL read-back ile fund kaydını doğrula.
-2. PostgreSQL sorgularını Codespace'te container içindeki psql ile doğrula; prediction_history kayıtlarının asset/date/provider bazında görünmesini kontrol et.
-3. Fund persistence doğrulandıktan sonra gerçek prediction üretim akışını API katmanına bağlamak için asset/prediction endpoint contractını tasarla; ardından fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
+1. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
+2. Prediction persistence foundation'ı API katmanına bağlamak için asset/prediction endpoint contractını tasarla; auth ve kullanıcı watchlist bağlamını persistence katmanından ayrı tut.
+3. API contractının ardından fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
