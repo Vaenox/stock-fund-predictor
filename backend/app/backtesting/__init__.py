@@ -4,6 +4,7 @@ from .fund_diagnostics import (
     summarize_exposure,
     summarize_exposure_bands,
     summarize_signal_relationships,
+    summarize_score_quintiles,
 )
 from .engine import (
     BacktestConfig,
@@ -29,6 +30,7 @@ __all__ = [
     "summarize_exposure",
     "summarize_exposure_bands",
     "summarize_signal_relationships",
+    "summarize_score_quintiles",
     "BacktestConfig",
     "BacktestResult",
     "ExecutionCostConfig",
