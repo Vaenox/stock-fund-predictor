@@ -67,11 +67,11 @@ def test_tefas_history_v2_payload_and_mapping():
             return {
                 "resultList": [
                     {
-                        "tarih": "2026-09-15",
+                        "tarih": "2024-01-15",
                         "fiyat": "35.464180",
                     },
                     {
-                        "tarih": "2026-09-16",
+                        "tarih": "2024-02-01",
                         "fiyat": "35.700000",
                     },
                     {
@@ -97,25 +97,26 @@ def test_tefas_history_v2_payload_and_mapping():
     )
     records = provider.get_fund_history(
         "aak",
-        date(2026, 9, 15),
-        date(2026, 9, 16),
+        date(2024, 1, 10),
+        date(2024, 2, 6),
     )
 
     assert captured["method"] == "POST"
     assert captured["url"].endswith("/fonFiyatBilgiGetir")
     assert captured["timeout"] == 7.0
     assert captured["content"] == (
-        b'{"fonKodu":"AAK","dil":"TR","periyod":13}'
+        b'{"fonKodu":"AAK","dil":"TR","periyod":36}'
     )
     assert [record.pricing_date for record in records] == [
-        date(2026, 9, 15),
-        date(2026, 9, 16),
+        date(2024, 1, 15),
+        date(2024, 2, 1),
     ]
     assert [record.unit_price for record in records] == [
         Decimal("35.464180"),
         Decimal("35.700000"),
     ]
     assert all(record.total_net_assets is None for record in records)
+
 
 
 def test_tefas_history_period_uses_age_from_as_of_date():
