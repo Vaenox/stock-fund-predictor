@@ -968,6 +968,38 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Düzeltme commit: **24876f3bdbcee88abc283cdfe988c0552c9991c1**.
 - Son kod kontrolünde runner'da eski çağrı satırı bulunmadı. Bu son düzeltme için Codespace smoke/test yeniden çalıştırılmadı.
 
+### Faz 6 — Real Fund OOS Backtest Sonuçları
+
+- Codespace gerçek fund OOS smoke başarıyla tamamlandı: **AFA + AFT, 6/6 outer fold**, her foldda **39 executable period**, PostgreSQL canonical history kullanıldı; TEFAS fallback'e ihtiyaç olmadı.
+- Test/runner altyapı doğrulaması: fund targeted suite **11 passed**, full backend suite **205 passed** ve runner `py_compile` başarılı.
+- Fund execution contract gerçek OOS'ta doğrulandı: signal t -> **t+1 published unit_price**, transaction cost **10 bps**, slippage **0 bps**.
+
+**AFA — 672 raw / 468 dataset rows**
+- Fold 1: strategy **+3.8667%**, B&H **+15.2811%**, excess **-11.4143%**, Sharpe **6.057**, MaxDD **-1.0798%**, turnover **0.6175**.
+- Fold 2: strategy **+1.0023%**, B&H **+4.0512%**, excess **-3.0489%**, Sharpe **1.038**, MaxDD **-2.6364%**, turnover **1.4490**.
+- Fold 3: strategy **+2.3410%**, B&H **+7.4188%**, excess **-5.0778%**, Sharpe **4.829**, MaxDD **-0.3890%**, turnover **1.0403**.
+- AFA aggregate: mean strategy **+2.4033%**, mean B&H **+8.9170%**, mean excess **-6.5137%**, positive excess **0/3**.
+
+**AFT — 675 raw / 471 dataset rows**
+- Fold 1: strategy **+5.7710%**, B&H **+22.0094%**, excess **-16.2385%**, Sharpe **4.347**, MaxDD **-1.5973%**, turnover **2.5248**.
+- Fold 2: strategy **+0.5412%**, B&H **-4.2177%**, excess **+4.7589%**, Sharpe **0.416**, MaxDD **-3.6969%**, turnover **1.6354**.
+- Fold 3: strategy **+0.1874%**, B&H **+2.4139%**, excess **-2.2265%**, Sharpe **0.218**, MaxDD **-1.7062%**, turnover **1.5305**.
+- AFT aggregate: mean strategy **+2.1665%**, mean B&H **+6.7352%**, mean excess **-4.5687%**, positive excess **1/3**.
+
+**Cross-fund summary**
+- Mean strategy **+2.2849%**, mean B&H **+7.8261%**, mean excess **-5.5412%**.
+- Median excess **-4.0634%**; positive excess fold rate **16.67% (1/6)**.
+- Mean Sharpe **2.817**, mean MaxDD **-1.8509%**, mean turnover **1.4662**.
+- Total strategy transaction cost **881.969488**.
+- Signal mean ROC-AUC **0.4684**, PR-AUC **0.3825**; fold direction/performance davranışı heterojen.
+- Costless B&H her foldda yalnızca tek giriş maliyeti kaldırılarak hesaplandı; strategy-vs-B&H negatif farkının ana açıklaması execution cost değil, benchmark'a göre düşük/yanlış zamanlanmış exposure olarak görülüyor. Özellikle AFT Fold 1'de **-16.2385 pp** excess varken Fold 2'de **+4.7589 pp** excess oluşması ciddi fold heterojenliği gösteriyor.
+
+**Karar**
+- Runner ve fund execution foundation **teknik olarak kabul edildi**; “REAL FUND BACKTEST SMOKE TEST PASSED” sonucu veri/engine/protocol doğrulamasıdır, alpha kanıtı değildir.
+- Mevcut production signal/mapping contractı **değiştirilmiyor**. Linear sizing korunuyor; global direction inversion, threshold veya representation değişikliği yapılmıyor.
+- Bu ilk gerçek fund OOS coverage ile **fund mapping veya cost-sensitivity sweep'i production policy seçmek için henüz gerekli görülmüyor**; temel strateji zaten B&H karşısında negatif excess üretiyor. Öncelik, sinyalin exposure davranışını ve fund-specific prediction calibration/coverage sorunlarını incelemek.
+- Sonuç commit'i: bu progress kaydıyla birlikte güncellendi.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
