@@ -19,6 +19,9 @@ def _frame() -> pd.DataFrame:
             "ml_probability": [0.1, 0.2, 0.4, 0.3, 0.8, 0.9],
             "technical_score": [10, 20, 40, 30, 80, 90],
             "signal_score": [5, 15, 35, 25, 75, 95],
+            "pre_risk_signal": [6, 16, 36, 26, 76, 96],
+            "risk_score": [10, 20, 30, 40, 50, 60],
+            "risk_adjustment": [-1, -1, -1, -1, -1, -1],
         }
     )
 
@@ -45,6 +48,7 @@ def test_summarize_exposure_bands_uses_fixed_non_overlapping_ranges() -> None:
     assert result.loc[0, "mean_forward_return_5d"] == pytest.approx(0.0)
     assert result.loc[2, "positive_target_rate"] == pytest.approx(0.0)
     assert result.loc[3, "positive_target_rate"] == pytest.approx(1.0)
+    assert result.loc[1, "positive_forward_return_rate"] == pytest.approx(1.0)
 
 
 def test_summarize_signal_relationships_reports_oos_associations() -> None:
@@ -54,6 +58,8 @@ def test_summarize_signal_relationships_reports_oos_associations() -> None:
     assert by_score.loc["ml_probability", "roc_auc"] > 0.5
     assert by_score.loc["technical_score", "pr_auc"] > 0.5
     assert by_score.loc["signal_score", "spearman_forward_return_5d"] > 0.5
+    assert by_score.loc["pre_risk_signal", "spearman_forward_return_5d"] > 0.5
+    assert by_score.loc["risk_score", "spearman_forward_return_5d"] < 0.0
     assert set(result.columns) == {
         "score",
         "spearman_target",
