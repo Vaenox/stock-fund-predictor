@@ -37,7 +37,6 @@ def _build_oos_frame(
     fold,
     fold_number: int,
     gap: int,
-    threshold: float,
     max_weight: float,
 ) -> pd.DataFrame:
     train = dataset.iloc[fold.train_start : fold.train_end].copy()
@@ -186,7 +185,6 @@ def _run_symbol(
             fold=fold,
             fold_number=fold_number,
             gap=gap,
-            threshold=threshold,
             max_weight=max_weight,
         )
         fold_frames.append(fold_frame)
