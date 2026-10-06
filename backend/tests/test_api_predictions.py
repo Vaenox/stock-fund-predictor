@@ -75,7 +75,23 @@ class FakeSession:
 
 
 def _client(asset=None, predictions=None):
-    fake = FakeSession(asset or _asset(), predictions if predictions is not None else [_prediction()])
+    fake = FakeSession(
+        _asset() if asset is None else asset,
+        predictions if predictions is not None else [_prediction()],
+    )
+
+    def override_get_db():
+        yield fake
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app)
+
+
+def _client_with_asset(asset, predictions=None):
+    fake = FakeSession(
+        asset,
+        predictions if predictions is not None else [_prediction()],
+    )
 
     def override_get_db():
         yield fake
@@ -133,13 +149,7 @@ def test_list_prediction_history_supports_date_filters_and_pagination():
 
 
 def test_asset_not_found_is_404():
-    client = _client(asset=None)
-    fake = FakeSession(None, [_prediction()])
-
-    def override_get_db():
-        yield fake
-
-    app.dependency_overrides[get_db] = override_get_db
+    client = _client_with_asset(None)
 
     response = client.get("/api/v1/assets/UNKNOWN")
     assert response.status_code == 404
