@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pandas as pd
 
-from app.data.providers.tefas import TefasProvider
+from app.data.providers.tefas import TefasProvider, TefasSettings
 from app.data.providers.yahoo import YahooFinanceProvider, YahooSymbolConfig
 
 
