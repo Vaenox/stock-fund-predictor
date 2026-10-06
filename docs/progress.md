@@ -870,11 +870,31 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Production target (horizon=5, forward_return_5d > +3%), raw_all representation, signal weighting ve production linear sizing değiştirilmedi.
 
 
+
+### Faz 6 — Prediction API Foundation
+
+- FastAPI API katmanı için temel DB session dependency eklendi: `backend/app/db.py`.
+- API router yapısı oluşturuldu:
+  - `GET /health`
+  - `GET /api/v1/assets/{symbol}`
+  - `GET /api/v1/assets/{symbol}/predictions/latest`
+  - `GET /api/v1/assets/{symbol}/predictions`
+- Asset lookup canonical symbol üzerinden yapılıyor ve path symbol uppercase normalize ediliyor.
+- Latest prediction endpointi `prediction_date DESC`, ardından `generated_at DESC` sıralamasıyla append-only audit kaydının son üretimini döndürüyor.
+- Prediction history endpointi `start_date`, `end_date`, `limit` ve `offset` filtrelerini destekliyor; limit 1..500 ile sınırlandırıldı.
+- API response schema'sında PostgreSQL Numeric alanları frontend kullanımına uygun JSON number olarak expose ediliyor; persistence/internal Decimal contractı değişmedi.
+- Asset ve prediction için 404; ters tarih aralığı için 400 contractı eklendi.
+- Prediction generation için POST endpointi bu aşamada bilerek eklenmedi. API provider çağrısı yapmıyor ve raw DataFrame taşımıyor; mevcut prediction service ile veri/orkestrasyon sınırı korunuyor.
+- Auth ve watchlist kullanıcı bağlamı bu read API contractına eklenmedi; ileride ayrı authorization dependency olarak ele alınacak.
+- API contract dokümanı: `docs/phase-6-prediction-api.md`.
+- API testleri: `backend/tests/test_api_predictions.py`; Codespace çalıştırma sonucu henüz bekleniyor.
+- API foundation commitleri: 5d2d7f5dc6df730b4576eb22e16c85bcce9ef4b1, e6ccf601a438be034661ade3aa25f5610db74712, 40b3837a348df811dccd338c5e209abf3215e35c, fe53c6d8e4b009e374d7713ae4af925fa8640b94, 89d291548cfda1a8868e607089f142de21649e7f, a6d21e094e8940333399c6505bd387f428a247cf, 4633f7616e127a717a0c6c0907f4f41187cab5f1, 21684672e430fedbcb25bbceb76598f01d61fe49, c3222b0f45ffa03e0086343868619290b8f104a2, 123bfd5669547ad55493bbcb612e8b6056482f9a.
+
 ## Sıradaki İş
 
-1. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
-2. Prediction persistence foundation'ı API katmanına bağlamak için asset/prediction endpoint contractını tasarla; auth ve kullanıcı watchlist bağlamını persistence katmanından ayrı tut.
-3. API contractının ardından fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
+1. Codespace'te API testlerini çalıştır; ardından full backend suite ile mevcut persistence/backtest contractlarının bozulmadığını doğrula.
+2. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
+3. API read contractı doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
