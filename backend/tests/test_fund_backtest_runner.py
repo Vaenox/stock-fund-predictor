@@ -20,7 +20,7 @@ def _frame() -> pd.DataFrame:
 
 
 def test_fund_buy_and_hold_uses_first_next_day_price_and_holds() -> None:
-    result = calculate_fund_buy_and_hold_total_return(
+    result = calculate_fundcalculate_fund_buy_and_hold_total_return(
         _frame(),
         config=FundBacktestConfig(transaction_cost_bps=0.0),
     )
@@ -31,7 +31,7 @@ def test_fund_buy_and_hold_uses_first_next_day_price_and_holds() -> None:
 
 
 def test_fund_buy_and_hold_applies_one_entry_transaction_cost() -> None:
-    result = _buy_and_hold_total_return(
+    result = calculate_fund_buy_and_hold_total_return(
         _frame(),
         config=FundBacktestConfig(transaction_cost_bps=10.0),
     )
