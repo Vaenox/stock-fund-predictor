@@ -184,7 +184,7 @@ class TefasProvider(MarketDataProvider):
                         and getattr(response, "status_code", 200) == 429
                         and attempt < effective_retries
                     ):
-                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                        sleep(effective_backoff * (2**attempt))
                         continue
                     raise TefasProviderError(
                         f"TEFAS request failed: {endpoint}"
