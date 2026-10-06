@@ -890,9 +890,19 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - API testleri: `backend/tests/test_api_predictions.py`; Codespace çalıştırma sonucu henüz bekleniyor.
 - API foundation commitleri: 5d2d7f5dc6df730b4576eb22e16c85bcce9ef4b1, e6ccf601a438be034661ade3aa25f5610db74712, 40b3837a348df811dccd338c5e209abf3215e35c, fe53c6d8e4b009e374d7713ae4af925fa8640b94, 89d291548cfda1a8868e607089f142de21649e7f, a6d21e094e8940333399c6505bd387f428a247cf, 4633f7616e127a717a0c6c0907f4f41187cab5f1, 21684672e430fedbcb25bbceb76598f01d61fe49, c3222b0f45ffa03e0086343868619290b8f104a2, 123bfd5669547ad55493bbcb612e8b6056482f9a.
 
+
+### Faz 6 — Prediction API Test Fixture Düzeltmesi
+
+- Codespace API test çalıştırması: **5 passed, 2 failed**.
+- Her iki failure da endpoint business logic kaynaklı değildi; FastAPI response validation aşamasında test fixture içindeki `PredictionHistory.created_at` alanı `None` olduğu için `datetime_type` hatası oluştu.
+- Response schema'da `created_at` zorunlu olduğu için API test fixture'ına timezone-aware `created_at=GENERATED_AT` eklendi.
+- Production API/router/database kodu değiştirilmedi.
+- Fixture fix commit: **bc846eaed5c720cac10c1390f268af64510d6d68**.
+- Bu düzeltmeden sonra targeted API testlerinin ve full backend suite'in yeniden çalıştırılması gerekiyor.
+
 ## Sıradaki İş
 
-1. Codespace'te API testlerini çalıştır; ardından full backend suite ile mevcut persistence/backtest contractlarının bozulmadığını doğrula.
+1. Fixture düzeltmesinden sonra Codespace'te API testlerini tekrar çalıştır; ardından full backend suite ile mevcut persistence/backtest contractlarının bozulmadığını doğrula.
 2. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
 3. API read contractı doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
