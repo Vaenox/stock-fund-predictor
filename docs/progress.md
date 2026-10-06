@@ -1138,6 +1138,22 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Aggregate rapor feature yönü sign stability (`+/-` fold sayıları, std) ve gain stability (`mean normalized gain`, std, top-3 fold count) veriyor. Amaç production contractını değiştirmeden regime/feature instability'yi doğrudan kanıtlamak.
 - Code commit: **057ed19e4aeab8a7630761dbcc8c39e695a2e059**. Codespace test/real-run sonucu henüz alınmadı.
 
+### Faz 6 — Real Fund Feature Regime Stability Sonucu
+
+- Codespace'te AFA/AFT feature-regime diagnostic PostgreSQL canonical history ile PASSED oldu; AFA 672 raw / 468 dataset, AFT 675 raw / 471 dataset, production h5/+3%, outer 3x40, gap=5.
+- AFA'da 63 fold-feature gözleminin 46'sı negatif / 17'si pozitif forward-return yönünde. sma_20, bb_mid, ema_20, macd, ema_50, rsi_14 gibi bazı feature'lar üç foldun tamamında negatif yönde. bb_width, bb_lower ve volatility_20 gibi yüksek gain alan feature'lar ise foldlar arasında daha karmaşık/kararsız yön taşıyor.
+- AFT'de durum daha da belirgin: 52 negatif / 11 pozitif fold-feature yönü. ema_20, sma_20, rsi_14, momentum_20, macd, ema_50, bb_position ve macd_hist üç fold boyunca negatif forward-return ilişkisine sahip.
+- Buna karşın XGBoost gain dağılımı tamamen rastgele değil. AFA'da ve AFT'de birçok feature üç outer foldun tamamında top-3 gain kapsamına giriyor. Bu, modelin feature kullanımının bütünüyle selection noise olmadığını gösteriyor.
+- Mevcut kanıt 'feature selection tamamen unstable' demeyi desteklemiyor. Daha güçlü bulgu, raw feature setinin bazı ekonomik ilişkileri sistematik biçimde ters yönde taşıması ve modelin bu ilişkileri OOS'ta güvenilir şekilde positive-return ordering'e çevirememesi. AFA'da problem belirgin; AFT'de ise 1-2% threshold ile ordering iyileşse bile production 3% threshold'da zayıflıyor.
+
+Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik korunuyor. Bir sonraki kontrollü deney repository'de hazır bulunan normalized_all ve stationary_core representation'larının daha yoğun event threshold'larında 1% ve 2% nested OOS davranışını karşılaştırmak olacak. Production representation bu deney sonucuna göre otomatik değiştirilmeyecek.
+
+### Faz 6 — Sıradaki İş
+
+1. AFA ve AFT için nested representation smoke'u threshold=1%, sonra threshold=2% ile çalıştır; raw_all / normalized_all / stationary_core seçimlerini ve outer ROC/PR/Spearman sonuçlarını karşılaştır.
+2. normalized_all veya stationary_core iki fonda da ve birden fazla outer fold'da daha iyi OOS ordering verirse representation ablation'ı daha geniş sembol/fon kapsamına çıkar; tek fondaki sonuca dayanarak production değişikliği yapma.
+3. Representation farkı küçük kalırsa model selection/calibration/regime drift tarafına geç; özellikle inner PR-AUC'nin outer OOS'a taşınma oranını incele.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
