@@ -1,5 +1,10 @@
 """Backtesting primitives for historical signal evaluation."""
 
+from .fund_diagnostics import (
+    summarize_exposure,
+    summarize_exposure_bands,
+    summarize_signal_relationships,
+)
 from .engine import (
     BacktestConfig,
     BacktestResult,
@@ -21,6 +26,9 @@ from .strategy import (
 )
 
 __all__ = [
+    "summarize_exposure",
+    "summarize_exposure_bands",
+    "summarize_signal_relationships",
     "BacktestConfig",
     "BacktestResult",
     "ExecutionCostConfig",
