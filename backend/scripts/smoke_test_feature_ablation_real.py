@@ -129,18 +129,7 @@ def _fund_frame_provider(
     provider = TefasProvider()
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
-    records = []
-    chunks = tuple(
-        provider._chunks(
-            start_date,
-            end_date,
-            provider._settings.max_days_per_request,
-        )
-    )
-    for index, (chunk_start, chunk_end) in enumerate(chunks):
-        records.extend(provider.get_fund_history(symbol, chunk_start, chunk_end))
-        if index < len(chunks) - 1 and chunk_delay > 0:
-            time.sleep(chunk_delay)
+    records = provider.get_fund_history(symbol, start_date, end_date)
 
     frame = (
         pd.DataFrame(
