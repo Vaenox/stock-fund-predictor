@@ -368,13 +368,25 @@ class TefasProvider(MarketDataProvider):
         raise NotImplementedError("TEFAS provider is fund-only")
 
     @classmethod
-    def _history_period(cls, start_date: date, end_date: date) -> int:
+    def _history_period(
+        cls,
+        start_date: date,
+        end_date: date,
+        *,
+        as_of_date: date | None = None,
+    ) -> int:
         if start_date > end_date:
             raise ValueError("start_date cannot be after end_date")
 
-        span_days = (end_date - start_date).days
+        reference_date = as_of_date or datetime.now(timezone.utc).date()
+        if end_date > reference_date:
+            raise ValueError(
+                f"end_date cannot be in the future: {end_date} > {reference_date}"
+            )
+
+        age_days = (reference_date - start_date).days
         for period_code, max_days in cls.history_period_buckets:
-            if span_days <= max_days:
+            if age_days <= max_days:
                 return period_code
 
         raise ValueError(
