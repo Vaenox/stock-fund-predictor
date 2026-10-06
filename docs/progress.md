@@ -937,9 +937,10 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 
 - Kullanıcı Codespace'te fund backtest targeted testini ve full backend suite'i çalıştırdı; her iki komut da **başarılı (passed)** olarak doğrulandı. Bu doğrulama benchmark helper eklenmeden önceki fund engine foundation commitleri içindi; son benchmark/runner değişiklikleri ayrıca yeniden test edilmelidir.
 
-- Fund benchmark targeted testinde tek failure tespit edildi: `test_fund_buy_and_hold_applies_one_entry_transaction_cost` eski helper adını çağırıyordu; helper engine katmanına taşındığı halde test referansı güncellenmemişti.
-- Düzeltme yalnızca test helper adını `calculate_fund_buy_and_hold_total_return` olarak güncelledi; production fund engine/benchmark hesabı değişmedi.
-- Test fix commit: **9f4af5ef1a7224efce60e4c2d9b0407e04d96a00**.
+- Fund benchmark testinde ilk düzeltme sonrası bir stale helper adı yeniden kontrol edildi ve önceki `replaceAll` yaklaşımının doğru `calculate_fund_buy_and_hold_total_return` çağrısını da `calculate_fundcalculate_fund_buy_and_hold_total_return` biçiminde bozduğu tespit edildi.
+- Gerçek kök neden yalnızca test dosyasındaki helper çağrılarıdır; `backend/app/backtesting/fund_engine.py` içindeki production benchmark helper doğru durumdadır.
+- `backend/tests/test_fund_backtest_runner.py` içindeki hatalı çağrı doğrudan `calculate_fund_buy_and_hold_total_return` olarak düzeltildi. Ayrıca repo genelinde `calculate_fundcalculate_fund_buy_and_hold_total_return` araması yapıldı ve başka occurrence bulunmadı.
+- Düzeltme commit: **9568151c15a34aa6e1b905354b2e9ab44d554754**. Codespace testleri henüz bu son commit üzerinde yeniden çalıştırılmadı.
 
 ### Faz 6 — Real Fund OOS Backtest Runner Hazırlığı
 
