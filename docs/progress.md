@@ -1184,6 +1184,19 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 2. AFS sonucu da normalized yönündeyse fon sayısını genişletip fund-specific/global representation kararını örneklem bazında ölç; AFA/AFT ile sınırlı kalma.
 3. AFS'te raw/normalized tekrar karışık çıkarsa universal representation yerine fund-level representation selection veya representation-ensemble tasarımını ancak daha geniş OOS kanıtından sonra değerlendir.
 
+### Faz 6 — AFS Feature Ablation Loader Fix
+
+- AFS fixed feature ablation çalıştırması `ValueError: no DB fund history found for AFS` ile durdu. İncelemede `smoke_test_feature_ablation_real.py` fund loader'ının DB'de kayıt yoksa TEFAS fallback'i olmadığı görüldü.
+- Loader, fund real-backtest'teki mevcut DB -> TEFAS fallback sözleşmesiyle hizalandı: yeterli canonical DB satırı varsa PostgreSQL kullanılıyor, aksi durumda chunked `TefasProvider` history yükleniyor, duplicate pricing dates temizleniyor ve `chunk-delay` CLI parametresi destekleniyor.
+- Stock ablation akışı ve representation/model hesaplaması değiştirilmedi. Production target, gap, feature representation seti ve tuning mantığı korunuyor.
+- Düzeltme commit: **34089f8fd1f43b555f99012bc212340f5b481034**.
+- Kod GitHub üzerinde tekrar okunarak fund SQL aliası, `_run` parametreleri ve CLI `chunk-delay` wiring'i doğrulandı. Gerçek AFS run sonucu bu düzeltmeden sonra henüz alınmadı.
+
+### Faz 6 — Güncel Sıradaki İş
+
+1. AFS fixed representation ablation'ı threshold **1%** ve **2%** için, TEFAS fallback'i kullanmasına izin vererek çalıştır.
+2. AFS sonucu AFA/AFT ile birlikte değerlendirilecek; normalized_all için global representation kararı henüz alınmayacak.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
