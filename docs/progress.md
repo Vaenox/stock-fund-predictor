@@ -1216,6 +1216,19 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 2. AFS `%1` fixed ablation'ı tekrar çalıştır; `Data source` ve dataset satır sayısını kontrol et.
 3. AFS `%2` fixed ablation'ı çalıştır ve AFA/AFT/AFS üçlü representation karşılaştırmasını tamamla.
 
+### Faz 6 — TEFAS v2 Test Import Fix
+
+- Codespace targeted TEFAS/provider suite sonucunda **12 passed, 1 failed**; full backend suite **214 passed, 1 failed**. Tek hata `test_tefas_history_v2_payload_and_mapping` içinde `TefasSettings` importunun eksik olmasıydı.
+- `backend/tests/data/test_free_providers.py` içindeki import `TefasProvider, TefasSettings` olacak şekilde düzeltildi. Provider mantığına dokunulmadı.
+- Düzeltme commit: **4677b84d401029ad6607b301ca265ba492ef72ba**.
+- Bu commit sonrası Codespace yeniden test sonucu henüz alınmadı.
+
+### Faz 6 — Güncel Sıradaki İş
+
+1. Targeted TEFAS/provider testini yeniden çalıştır.
+2. Full backend suite'i yeniden çalıştır.
+3. İkisi de geçerse AFS `%1` fixed feature ablation'ı tekrar çalıştır.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
