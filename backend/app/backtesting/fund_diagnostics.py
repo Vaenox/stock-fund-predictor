@@ -101,6 +101,8 @@ def _safe_spearman(
         return None
     value = left.corr(right, method="spearman")
     return float(value) if pd.notna(value) else None
+
+
 def summarize_signal_relationships(
     frame: pd.DataFrame,
     *,
@@ -179,6 +181,55 @@ def summarize_exposure_bands(frame: pd.DataFrame) -> pd.DataFrame:
                     float((bucket["forward_return_5d"] > 0.0).mean())
                     if not bucket.empty
                     else float("nan")
+                ),
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def summarize_score_quintiles(
+    frame: pd.DataFrame,
+    *,
+    score_column: str,
+    n_bins: int = 5,
+) -> pd.DataFrame:
+    """Summarize realized outcomes across equal-count OOS score quintiles."""
+    data = _validate_frame(frame)
+    if score_column not in data.columns:
+        raise ValueError(f"fund diagnostic frame is missing column: {score_column}")
+    if n_bins < 2:
+        raise ValueError("n_bins must be at least 2")
+
+    score = pd.to_numeric(data[score_column], errors="raise")
+    if not np.isfinite(score.to_numpy(dtype=float)).all():
+        raise ValueError(f"{score_column} must be finite")
+    if len(data) < n_bins:
+        raise ValueError("fund diagnostic frame is too small for requested bins")
+
+    ranks = score.rank(method="first")
+    buckets = pd.qcut(
+        ranks,
+        q=n_bins,
+        labels=False,
+    ).astype(int) + 1
+
+    rows: list[dict[str, float | int | str]] = []
+    for bucket_number in range(1, n_bins + 1):
+        bucket = data.loc[buckets == bucket_number]
+        rows.append(
+            {
+                "score": score_column,
+                "quintile": f"Q{bucket_number}",
+                "observations": int(len(bucket)),
+                "mean_score": float(score.loc[bucket.index].mean()),
+                "mean_forward_return_5d": float(bucket["forward_return_5d"].mean()),
+                "median_forward_return_5d": float(
+                    bucket["forward_return_5d"].median()
+                ),
+                "positive_target_rate": float(bucket["target"].mean()),
+                "positive_forward_return_rate": float(
+                    (bucket["forward_return_5d"] > 0.0).mean()
                 ),
             }
         )
