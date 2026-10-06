@@ -100,6 +100,9 @@ def summarize_signal_relationships(
         "ml_probability",
         "technical_score",
         "signal_score",
+        "pre_risk_signal",
+        "risk_score",
+        "risk_adjustment",
     ),
 ) -> pd.DataFrame:
     """Measure OOS score association with binary target and 5-day return."""
@@ -165,6 +168,11 @@ def summarize_exposure_bands(frame: pd.DataFrame) -> pd.DataFrame:
                 ),
                 "positive_target_rate": (
                     float(bucket["target"].mean())
+                    if not bucket.empty
+                    else float("nan")
+                ),
+                "positive_forward_return_rate": (
+                    float((bucket["forward_return_5d"] > 0.0).mean())
                     if not bucket.empty
                     else float("nan")
                 ),
