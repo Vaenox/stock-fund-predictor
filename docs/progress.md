@@ -1197,6 +1197,25 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 1. AFS fixed representation ablation'ı threshold **1%** ve **2%** için, TEFAS fallback'i kullanmasına izin vererek çalıştır.
 2. AFS sonucu AFA/AFT ile birlikte değerlendirilecek; normalized_all için global representation kararı henüz alınmayacak.
 
+### Faz 6 — TEFAS v2 Fund History Migration
+
+- AFS fixed ablation fallback'i 1000 günlük geçmiş için eski `fonGnlBlgSiraliGetir` endpoint'ini 28 günlük parçalara bölerek çağırdığı için Codespace'te TLS handshake sırasında yaklaşık 15 dakika takıldı ve kullanıcı işlemi durdurdu.
+- Güncel 2026 TEFAS istemci davranışı incelendi: tarihsel fon fiyatı için `fonFiyatBilgiGetir` v2 endpoint'i kullanılıyor ve sabit `periyod` kodlarıyla 5 yıla kadar geçmiş tek çağrıda alınabiliyor. Yeni endpoint'in request/period sözleşmesi güncel `borsapy` implementasyonu ile doğrulandı.
+- `TefasProvider.get_fund_history()` artık v2 history endpoint'ini kullanıyor; 1000 günlük istek `periyod=36` ile tek çağrıda karşılanıyor. Dönen seri istenen tarih aralığına client-side filtreleniyor.
+- History çağrıları için ayrı kontrollü timeout/retry ayarları eklendi: `history_timeout=15s`, `history_retries=2`, `history_backoff_seconds=1s`. Genel legacy provider retry davranışı korunuyor.
+- v2 payload/mapping, period bucket seçimi, 5-yıl sınırı ve per-call transport retry kontrolü için testler eklendi.
+- Provider migration commitleri: **5a0b2622677d3100a1a5f778e0ab60330f544f82**, **4f16ecd452921d7243745b8057c2c494c60e84c9**. Test commitleri: **81d128e37a17f7fb8ec3be693e92a74a262fb324**, **f28a589c020a7f35c47c3967ee1462ff717f57c0**.
+- Feature ablation scripti zaten DB -> TEFAS fallback kullanıyordu; loader bu yeni provider davranışıyla artık 1000 günlük AFS fallback'i için onlarca eski endpoint çağrısı yapmayacak.
+- Web doğrulaması: güncel `borsapy` TEFAS provider'ı `fonFiyatBilgiGetir` endpoint'ini ve 5 yıllık `periyod=60` üst sınırını kullanıyor. TEFAS resmi site de tarihsel fon verisi sağlıyor. citeturn607210view1turn607210view2
+
+**Karar:** AFS testini tekrar 15+ dakika beklemeyeceğiz. Önce Codespace'te targeted TEFAS/provider testleri ve full backend suite çalıştırılacak; ardından AFS `%1/%2` ablation yeniden denenecek. Gerçek provider erişimi başarısız olursa script artık kontrollü sürede hata vermeli.
+
+### Faz 6 — Sıradaki İş
+
+1. Codespace'te TEFAS targeted tests + full backend suite'i çalıştır.
+2. AFS `%1` fixed ablation'ı tekrar çalıştır; `Data source` ve dataset satır sayısını kontrol et.
+3. AFS `%2` fixed ablation'ı çalıştır ve AFA/AFT/AFS üçlü representation karşılaştırmasını tamamla.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
