@@ -227,7 +227,7 @@ def main() -> int:
     parser.add_argument(
         "--thresholds",
         default="0.00,0.01,0.02,0.03,0.05",
-        help="comma-separated diagnostic thresholds; production target remains +3%",
+        help="comma-separated diagnostic thresholds; production target remains +3%%",
     )
     parser.add_argument("--chunk-delay", type=float, default=3.0)
     args = parser.parse_args()
