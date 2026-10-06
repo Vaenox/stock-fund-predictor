@@ -70,7 +70,6 @@ class TefasProvider(MarketDataProvider):
         if self._settings.inter_chunk_delay_seconds < 0:
             raise ValueError("inter_chunk_delay_seconds cannot be negative")
 
-        response: httpx.Response | None = None
         payload_bytes = json.dumps(
             payload,
             ensure_ascii=False,
@@ -78,6 +77,7 @@ class TefasProvider(MarketDataProvider):
         ).encode("utf-8")
         owned_client = self._client is None
         client = self._client or httpx.Client(timeout=self._settings.timeout)
+        response: httpx.Response | None = None
 
         try:
             for attempt in range(self._settings.rate_limit_retries + 1):
@@ -97,55 +97,61 @@ class TefasProvider(MarketDataProvider):
                             headers=headers,
                         )
 
-                status_code = getattr(response, "status_code", None)
-                headers = getattr(response, "headers", {}) or {}
+                    status_code = getattr(response, "status_code", None)
+                    response_headers = getattr(response, "headers", {}) or {}
 
-                if status_code == 429 and attempt < self._settings.rate_limit_retries:
-                    retry_after = headers.get("Retry-After")
-                    try:
-                        delay = (
-                            float(retry_after)
-                            if retry_after is not None
-                            else self._settings.rate_limit_backoff_seconds * (2**attempt)
-                        )
-                    except ValueError:
-                        delay = self._settings.rate_limit_backoff_seconds * (2**attempt)
-                    sleep(delay)
-                    continue
+                    if status_code == 429 and attempt < self._settings.rate_limit_retries:
+                        retry_after = response_headers.get("Retry-After")
+                        try:
+                            delay = (
+                                float(retry_after)
+                                if retry_after is not None
+                                else self._settings.rate_limit_backoff_seconds * (2**attempt)
+                            )
+                        except (TypeError, ValueError):
+                            delay = self._settings.rate_limit_backoff_seconds * (2**attempt)
+                        sleep(delay)
+                        continue
 
-                response.raise_for_status()
-                data = response.json()
-                break
-            except json.JSONDecodeError as exc:
-                if attempt < self._settings.rate_limit_retries:
-                    sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
-                    continue
-                status = getattr(response, "status_code", "unknown")
-                content_type = (getattr(response, "headers", {}) or {}).get(
-                    "Content-Type", "unknown"
-                )
-                body = getattr(response, "text", "")
-                preview = " ".join(str(body).split())[:200]
-                raise TefasProviderError(
-                    "TEFAS returned a non-JSON response: "
-                    f"endpoint={endpoint}, status={status}, "
-                    f"content_type={content_type}, body={preview!r}"
-                ) from exc
-            except httpx.TransportError as exc:
-                if attempt < self._settings.rate_limit_retries:
-                    sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
-                    continue
-                raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
-            except (httpx.HTTPError, ValueError) as exc:
-                if (
-                    response is not None
-                    and getattr(response, "status_code", 200) == 429
-                    and attempt < self._settings.rate_limit_retries
-                ):
-                    continue
-                raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
-            else:
-                raise TefasProviderError(f"TEFAS request failed: {endpoint}")
+                    response.raise_for_status()
+                    data = response.json()
+                    break
+
+                except json.JSONDecodeError as exc:
+                    if attempt < self._settings.rate_limit_retries:
+                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                        continue
+                    status = getattr(response, "status_code", "unknown")
+                    content_type = (getattr(response, "headers", {}) or {}).get(
+                        "Content-Type", "unknown"
+                    )
+                    body = getattr(response, "text", "")
+                    preview = " ".join(str(body).split())[:200]
+                    raise TefasProviderError(
+                        "TEFAS returned a non-JSON response: "
+                        f"endpoint={endpoint}, status={status}, "
+                        f"content_type={content_type}, body={preview!r}"
+                    ) from exc
+
+                except httpx.TransportError as exc:
+                    if attempt < self._settings.rate_limit_retries:
+                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                        continue
+                    raise TefasProviderError(
+                        f"TEFAS request failed: {endpoint}"
+                    ) from exc
+
+                except (httpx.HTTPError, ValueError) as exc:
+                    if (
+                        response is not None
+                        and getattr(response, "status_code", 200) == 429
+                        and attempt < self._settings.rate_limit_retries
+                    ):
+                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                        continue
+                    raise TefasProviderError(
+                        f"TEFAS request failed: {endpoint}"
+                    ) from exc
         finally:
             if owned_client:
                 client.close()
