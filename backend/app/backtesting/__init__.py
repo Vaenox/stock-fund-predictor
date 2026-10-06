@@ -6,6 +6,7 @@ from .engine import (
     ExecutionCostConfig,
     run_long_only_backtest,
 )
+from .fund_engine import FundBacktestConfig, run_long_only_fund_backtest
 from .metrics import BacktestMetrics, calculate_backtest_metrics
 from .strategy import (
     SignalScoreBacktestResult,
@@ -20,6 +21,8 @@ __all__ = [
     "BacktestResult",
     "ExecutionCostConfig",
     "run_long_only_backtest",
+    "FundBacktestConfig",
+    "run_long_only_fund_backtest",
     "BacktestMetrics",
     "calculate_backtest_metrics",
     "SignalScoreBacktestResult",
