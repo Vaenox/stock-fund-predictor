@@ -49,6 +49,7 @@ def _prediction() -> PredictionHistory:
         stale_days=0,
         source_provider="borsapy",
         reasons=["Trend olumlu"],
+        created_at=GENERATED_AT,
     )
 
 
