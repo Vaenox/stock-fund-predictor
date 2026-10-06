@@ -916,11 +916,28 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Böylece Faz 6 prediction persistence + read API zinciri gerçek stock ve fund verileriyle doğrulandı: **PostgreSQL -> PredictionHistory -> FastAPI -> JSON**.
 - API test fixture düzeltmesi ve mevcut endpoint contractı sonrasında production target/model/representation/sizing contractları değiştirilmedi.
 
+
+### Faz 6 — Fund Daily Unit-Price Backtest Foundation
+
+- Stock next-open engine'den ayrı `backend/app/backtesting/fund_engine.py` eklendi.
+- Fund execution contract: t tarihindeki target weight, en erken t+1 günün published `unit_price` değeriyle uygulanır; aynı gün unit price execution yoktur.
+- Fund engine fractional unit kullanır ve target weight'i 0.0..1.0 sınırında tutar.
+- Buy sizing transaction cost dahil affordability ile sınırlandırılır; cash negatif olamaz.
+- Bu foundation'da stock-style slippage modellenmez; fund `slippage_cost=0` ve reported execution slippage **0 bps** olarak tutulur.
+- Forced final liquidation yoktur. Son sinyal için sonraki unit price yoksa execution yapılmaz.
+- `FundBacktestConfig` başlangıçta 100,000 capital ve 10 bps transaction cost varsayımını kullanır; market sonuçta `TEFAS` olarak audit edilir.
+- Test dosyası `backend/tests/backtesting/test_fund_engine.py` oluşturuldu. Codespace test sonucu henüz alınmadı.
+- Contract dokümanı: `docs/phase-6-fund-backtesting.md`.
+- Implementation commit: **f4c1d5e6daabea8fabd17b1847140be594fa7b37**.
+- Test commit: **55ea4a397f48bf37b70f07502bcb0eb17f50fa86**.
+- Export commit: **a8fa8a3827b70f84ad48b5b7f61a4033ea439056**.
+- Contract docs commit: **4e2cd2911e3e7249a428330ae08312105ff8b743**.
+
 ## Sıradaki İş
 
-1. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
-2. API read contractı doğrulandı; sıradaki controlled task olarak fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractını tasarla ve unit testlerle sabitle.
-3. Fund backtest execution contractı doğrulandıktan sonra gerçek fund OOS backtest smoke'una geç.
+1. Codespace'te fund backtest testlerini çalıştır; ardından full backend suite ile yeni engine'in mevcut backtest/persistence/API contractlarını bozmadığını doğrula.
+2. Prediction history kayıtlarını container içindeki psql ile stock/fund/provider bazında son bir kez sorgula.
+3. Fund engine unit contractı doğrulandıktan sonra gerçek AFA/AFT fund OOS backtest runner'ını, daily unit-price execution ve açıkça tanımlı benchmark ile tasarla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
