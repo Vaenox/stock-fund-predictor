@@ -933,11 +933,28 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Export commit: **a8fa8a3827b70f84ad48b5b7f61a4033ea439056**.
 - Contract docs commit: **4e2cd2911e3e7249a428330ae08312105ff8b743**.
 
+
+### Faz 6 — Real Fund OOS Backtest Runner Hazırlığı
+
+- `backend/scripts/smoke_test_backtest_fund_real.py` eklendi.
+- Runner gerçek TEFAS fund history'yi önce PostgreSQL canonical `fund_daily_prices` tablosundan yükler; DB coverage yetersizse TEFAS provider fallback kullanır.
+- Protocol stock deneyleriyle uyumlu tutuldu: outer **3 x 40 observations**, **gap=5**, production target **h5/+3%**, inner tuning için mevcut sparse-event smoke helper kullanılır.
+- Her OOS fold için mevcut production signal chain uygulanır: XGBoost probability + Fund Technical Score + Fund Risk Adjustment -> final Signal Score -> production **linear** score-to-weight mapping.
+- Fund execution artık ayrı engine üzerinden yapılır: target t -> t+1 daily unit price; fractional units; transaction cost; slippage=0.
+- Gerçek benchmark `calculate_fund_buy_and_hold_total_return()` olarak engine katmanına alındı: ilk executable t+1 unit price'da tek alım, son unit price'a kadar pozisyonu değiştirmeden tutma, forced final liquidation yok.
+- Runner fold bazında strategy return, B&H return, excess return, Sharpe, MaxDD, turnover, transaction cost ve signal ROC/PR metriklerini raporlar; ayrıca costless B&H referansı verir.
+- Cross-fund summary AFA/AFT varsayılan kapsamıyla mean/median excess, positive excess rate, Sharpe, MaxDD, turnover ve signal metrics raporlar.
+- Benchmark helper için unit test eklendi; initial test dosyası gerçek entry-cost hesabını deterministik olarak doğrulayacak şekilde düzeltildi.
+- Codespace'te yeni benchmark/runner kodunun güncel commitleri henüz çalıştırılmadı.
+- Implementation commits: **10e4f3a1d7e6280cde34b575a12f439473398e63**, **51849756be1eeef84d95cb95f7fb5818a9d49491**, **70500d9557318196484ac5728b669ab3b5cad013**, **20f48d2956d1e66188937018b08cfe5841536f92**, **dd17e1fe96a12301dff1a31e20bf2202633c701a**.
+- Contract docs: **4e2cd2911e3e7249a428330ae08312105ff8b743**.
+
+
 ## Sıradaki İş
 
-1. Codespace'te fund backtest testlerini çalıştır; ardından full backend suite ile yeni engine'in mevcut backtest/persistence/API contractlarını bozmadığını doğrula.
-2. Prediction history kayıtlarını container içindeki psql ile stock/fund/provider bazında son bir kez sorgula.
-3. Fund engine unit contractı doğrulandıktan sonra gerçek AFA/AFT fund OOS backtest runner'ını, daily unit-price execution ve açıkça tanımlı benchmark ile tasarla.
+1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
+2. Real AFA/AFT fund OOS backtest runner'ını çalıştır; PostgreSQL canonical history kullanılıyorsa TEFAS fallback'e gerek kalmadığını, fold başına 39 executable period oluştuğunu ve benchmark/strategy metriklerini doğrula.
+3. Gerçek fund OOS sonuçlarını kaydettikten sonra fund mapping/cost sensitivity gerekip gerekmediğine karar ver ve ardından Faz 6 API/prediction katmanıyla backtest sonuçlarını nasıl expose edeceğimizi tasarla.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
