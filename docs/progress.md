@@ -1241,6 +1241,24 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 
 **Karar:** AFS `%1/%2` ablation'ı için yeniden uzun bekleme yapılmayacak. Önce provider targeted testleri + full suite, ardından AFS `%1` ve `%2` ablation çalıştırılacak. Production target/representation/model contractı değişmedi.
 
+### Faz 6 — AFS Fixed Representation Ablation — Threshold 1% Gerçek Sonucu
+
+- Codespace'te AFS fixed representation ablation **threshold=1%** ile PASSED oldu.
+- Veri kaynağı **TEFAS provider fallback**, çünkü canonical PostgreSQL history minimum satır şartını karşılamadı. **685 raw rows**, **481 dataset rows**, target contract diagnostic olarak **h5 / >1%**, gap=5, outer 3-fold / 40 OOS protokolü.
+- raw_all tuned aggregate: ROC **0.5036**, PR **0.4457**, Spearman **+0.0062**. Fold Spearman: **+0.3088 / -0.1915 / +0.0559**.
+- normalized_all tuned aggregate: ROC **0.5232**, PR **0.4515**, Spearman **+0.0392**. Fold Spearman: **-0.1090 / +0.1045 / +0.1096**.
+- stationary_core tuned aggregate: ROC **0.5509**, PR **0.4355**, Spearman **+0.0860**. Fold Spearman: **-0.2043 / +0.1828 / +0.3064**.
+- Bu runın **en yüksek tuned PR-AUC değeri normalized_all (0.4515)** olsa da aggregate ROC ve Spearman'da **stationary_core** önde. Hiçbir representation 3 outer fold boyunca kusursuz/stabil üstünlük göstermiyor.
+- AFA/AFT ile birlikte değerlendirildiğinde AFS sonucu da universal bir winner üretmiyor: AFA'da normalized_all güçlüydü, AFT'de raw_all daha güçlüydü, AFS'de ROC/Spearman açısından stationary_core öne çıkarken PR'da normalized_all önde.
+- TEFAS v2 migration + historical range fix'in pratik sonucu doğrulandı: AFS fallback 1000 günlük veri setini başarıyla oluşturdu ve eski uzun chunk/28-gün endpoint zincirine takılmadan ablation tamamlandı.
+
+**Karar:** raw_all production representation olarak korunuyor. normalized_all AFA ağırlıklı güçlü deneysel aday olmaya devam ediyor; stationary_core AFS'te iyi görünse de fundlar arasında universal üstünlük kanıtı yok. Representation değişikliği yapılmıyor.
+
+### Faz 6 — Sıradaki İş
+
+1. AFS fixed representation ablation'ı threshold **2%** ile çalıştır.
+2. AFA + AFT + AFS için %1/%2 fixed OOS sonuçlarını tek tabloda karşılaştır; representation başına hangi fonlarda ve hangi metrikte üstünlük olduğunu ölç.
+3. Universal representation winner çıkmazsa fund-level representation selection/ensemble fikrini hemen production'a taşımadan önce daha geniş gerçek fon örneklemiyle doğrula.
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
