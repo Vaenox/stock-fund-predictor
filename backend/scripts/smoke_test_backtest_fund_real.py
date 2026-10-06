@@ -11,7 +11,11 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from app.analysis.features import MLFeatureConfig, build_ml_feature_dataset, feature_columns
 from app.analysis.indicators import calculate_fund_indicators
 from app.analysis.scoring import calculate_fund_technical_score
-from app.backtesting.fund_engine import FundBacktestConfig, run_long_only_fund_backtest
+from app.backtesting.fund_engine import (
+    FundBacktestConfig,
+    calculate_fund_buy_and_hold_total_return,
+    run_long_only_fund_backtest,
+)
 from app.backtesting.strategy import SignalScoreWeightConfig, map_signal_scores_to_target_weights
 from app.core.settings import get_settings
 from app.data.providers.tefas import TefasProvider
@@ -109,38 +113,6 @@ def _safe_pr(y: pd.Series, score: pd.Series) -> float:
     if y.nunique() < 2:
         return float("nan")
     return float(average_precision_score(y.astype(int), score.astype(float)))
-
-
-def _buy_and_hold_total_return(
-    frame: pd.DataFrame,
-    *,
-    config: FundBacktestConfig,
-) -> tuple[float, float, float]:
-    """True first-execution-next-day-price -> final-price buy-and-hold."""
-    if len(frame) < 2:
-        raise ValueError("fund buy-and-hold requires at least two observations")
-
-    opening = float(frame.iloc[1]["unit_price"])
-    final_price = float(frame.iloc[-1]["unit_price"])
-    capital = float(config.initial_capital)
-    fee_rate = config.transaction_cost_bps / 10_000.0
-
-    units = capital / (opening * (1.0 + fee_rate))
-    trade_notional = units * opening
-    transaction_cost = trade_notional * fee_rate
-    cash = capital - trade_notional - transaction_cost
-
-    if abs(cash) < 1e-8:
-        cash = 0.0
-    if cash < -1e-8:
-        raise AssertionError("fund buy-and-hold produced negative cash")
-
-    final_equity = cash + units * final_price
-    return (
-        final_equity / capital - 1.0,
-        transaction_cost,
-        cash,
-    )
 
 
 def _run_symbol(
@@ -288,7 +260,7 @@ def _run_symbol(
             target_column="target_weight",
         )
 
-        benchmark_return, benchmark_cost, benchmark_cash = _buy_and_hold_total_return(
+        benchmark_return, benchmark_cost, benchmark_cash = calculate_fund_buy_and_hold_total_return(
             fold_frame,
             config=backtest_config,
         )
