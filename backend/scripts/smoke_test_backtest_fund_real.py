@@ -265,7 +265,7 @@ def _run_symbol(
             config=backtest_config,
         )
         costless_benchmark_return, costless_benchmark_cost, costless_benchmark_cash = (
-            _buy_and_hold_total_return(
+            calculate_fund_buy_and_hold_total_return(
                 fold_frame,
                 config=FundBacktestConfig(
                     initial_capital=backtest_config.initial_capital,
