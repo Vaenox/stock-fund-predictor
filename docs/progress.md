@@ -836,12 +836,17 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - TEFAS resiliency düzeltmesi yapıldı: TefasProvider._post() artık transient non-JSON 200/HTML benzeri cevaplarda mevcut exponential retry bütçesini kullanıyor; retryler tükendiğinde endpoint/status/content-type/body preview içeren daha açıklayıcı TefasProviderError üretiyor.
 - Bu davranış için iki provider testi eklendi: transient non-JSON sonrası başarı ve retry tükenince diagnostik hata.
 - Provider fix commit: eed2580e9ef1dc42972cb6a182bb3c00c6a21b84.
+- AFA tekrar çalıştırmasında non-JSON retry düzeltmesinden sonra farklı bir istemci tarafı hata görüldü: h11 LocalProtocolError, "Too little data for declared Content-Length". Traceback request body gönderilirken oluştu; TEFAS response parsing aşamasına ulaşmadı.
+- HTTPX/h11 kaynaklarında bu hata, gönderilen body ile ilan edilen Content-Length'in uyuşmazlığıyla ilişkilendiriliyor. Bu nedenle TEFAS POST gövdesi artık httpx `json=` parametresi yerine deterministik UTF-8 bytes olarak `content=` ile gönderiliyor. HTTP client da retry döngüsü boyunca tek bir owned client kullanacak ve işlem sonunda kapatılacak.
+- Bu değişikliğin request body contractını doğrulamak için exact UTF-8 payload testi eklendi. Gerçek AFA smoke sonucu bu düzeltmeden sonra henüz alınmadı.
+- Exact request-body fix commit: a46fbce433282e8a2fac7e5bb85eeb2c4c384e03.
+- Exact request-body test commit: eda7c074808012a76fde56660f92a8a350d3ece8.
 - Provider test commit: 1622f43c949c43b8d8186f2632b4dc6e869a0c65.
 - Production target, model family/version contract, feature representation, signal weighting ve production linear sizing değiştirilmedi.
 
 ## Sıradaki İş
 
-1. TEFAS non-JSON resiliency düzeltmesinden sonra AFA prediction persistence smoke'unu yeniden çalıştır; PostgreSQL read-back ile fund kaydını doğrula.
+1. TEFAS request-body serialization düzeltmesinden sonra AFA prediction persistence smoke'unu yeniden çalıştır; PostgreSQL read-back ile fund kaydını doğrula.
 2. PostgreSQL sorgularını Codespace'te container içindeki psql ile doğrula; prediction_history kayıtlarının asset/date/provider bazında görünmesini kontrol et.
 3. Fund persistence doğrulandıktan sonra gerçek prediction üretim akışını API katmanına bağlamak için asset/prediction endpoint contractını tasarla; ardından fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
 
