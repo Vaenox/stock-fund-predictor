@@ -1036,6 +1036,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Son code commits: **39ed13833bdc3d0bf3a031e4a642305c97d4aca6**, **02e34efa49439e22da0db268da372c86a25b8cd2**, **57b2810a968228ba42dd48b303ea928c1f68963a**, **6f69911f8aaaaab5d6fb41158f499e53ca42a8ba**.
 - Bu son değişiklikler için Codespace test sonucu henüz yok.
 
+### Faz 6 — Fund Risk Ablation Hazırlığı
+
+- Diagnostic v2 sonucu risk layer'ın rejime bağlı davranışı görüldüğü için risk'i üretimde kapatmak veya yeniden ağırlıklandırmak yerine counterfactual OOS ablation hazırlanıyor.
+- Yeni `backend/scripts/smoke_test_fund_risk_ablation_real.py`: aynı 3x40 outer OOS fold ve aynı tuned XGBoost prediction üzerinde **production risk adjustment** ile **risk_adjustment=0** koşullarını karşılaştırır; B&H, excess return, turnover ve risk contribution raporlar.
+- Bu karşılaştırmada no-risk signal, final signal'dan risk cezasını çıkarmak yerine `calculate_signal_score(..., risk_adjustment=0)` ile yeniden hesaplanıyor; böylece clipping sınırlarında da counterfactual doğru tanımlanıyor.
+- Diagnostic correlation helper constant input durumunda artık `None` döndürüyor; böylece AFA Fold 3'te görülen pandas `ConstantInputWarning` temizleniyor. Unit test ile sabit score davranışı kapsandı.
+- Production target, signal weighting, risk config veya sizing policy değiştirilmedi; bu task yalnızca OOS evaluation/ablation.
+- Son code commits: **06778b82efdf397ebb6cde4ad04e542e50b0dae5**, **f5f4703cd249ae6f97702d5a97c24f025ddce9aa**, **63ee37bc073dca79d964f99c41fe1c710fdc612a**.
+- Bu yeni değişikliklerin Codespace test ve gerçek ablation sonucu henüz alınmadı.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
