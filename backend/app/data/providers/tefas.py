@@ -71,15 +71,31 @@ class TefasProvider(MarketDataProvider):
             raise ValueError("inter_chunk_delay_seconds cannot be negative")
 
         response: httpx.Response | None = None
-        for attempt in range(self._settings.rate_limit_retries + 1):
-            try:
-                if self._request is not None:
-                    response = self._request(
-                        "POST", url, json=payload, headers=headers, timeout=self._settings.timeout
-                    )
-                else:
-                    client = self._client or httpx.Client(timeout=self._settings.timeout)
-                    response = client.post(url, json=payload, headers=headers)
+        payload_bytes = json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        owned_client = self._client is None
+        client = self._client or httpx.Client(timeout=self._settings.timeout)
+
+        try:
+            for attempt in range(self._settings.rate_limit_retries + 1):
+                try:
+                    if self._request is not None:
+                        response = self._request(
+                            "POST",
+                            url,
+                            content=payload_bytes,
+                            headers=headers,
+                            timeout=self._settings.timeout,
+                        )
+                    else:
+                        response = client.post(
+                            url,
+                            content=payload_bytes,
+                            headers=headers,
+                        )
 
                 status_code = getattr(response, "status_code", None)
                 headers = getattr(response, "headers", {}) or {}
@@ -128,8 +144,11 @@ class TefasProvider(MarketDataProvider):
                 ):
                     continue
                 raise TefasProviderError(f"TEFAS request failed: {endpoint}") from exc
-        else:
-            raise TefasProviderError(f"TEFAS request failed: {endpoint}")
+            else:
+                raise TefasProviderError(f"TEFAS request failed: {endpoint}")
+        finally:
+            if owned_client:
+                client.close()
 
         if not isinstance(data, dict):
             raise TefasProviderError("TEFAS response is not a JSON object")
