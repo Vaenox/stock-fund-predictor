@@ -1011,6 +1011,21 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Son implementation commitleri: **44071ce440525391a3dce6081a418cbeeb6a2693**, **7aa1475d367baab7d42c8cb7c0eb93be3e59f24d**, **88341a30e8e2cdcacda5e5fbecf8cd61737d8286**, **61f8f97347d0435cdd9a54b0a81c1d9eec11207d**, **43a3fc172a3393b2094993033a8c3e884f241f75**.
 - Bu yeni diagnostic değişiklikleri için Codespace testleri henüz çalıştırılmadı; gerçek AFA/AFT diagnostic sonucu henüz yok.
 
+### Faz 6 — Real Fund Exposure / Signal Diagnostic Sonuçları
+
+- Codespace doğrulaması: diagnostic targeted suite **4 passed in 1.28s**, full backend suite **209 passed in 10.73s**. Real diagnostic smoke da **PASSED** oldu; AFA/AFT için toplam **240 OOS gözlem**, 3x40 dış fold protokolü kullanıldı.- AFA: OOS mean target weight **0.3154**, median **0.3087**, max **0.5267**; gözlemlerin %68.3'ü 25% üzerindeyken yalnızca **3/120** gözlem 50% üzerindeydi ve 75% üzeri hiç yoktu. Aggregate ML ROC **0.3453**, Technical ROC **0.3301**, Signal ROC **0.2897**; signal'ın 5 günlük forward return Spearman ilişkisi **-0.1876**.
+- AFA Fold 1'de yüksek exposure bandı (25-50%) target rate yalnızca **26.32%** iken <25% bandında **52.38%**; buna rağmen mean forward return bantlar arasında **+2.1593% vs +1.9455%** idi. Fold 2'de 50-75% bandı yalnızca **3 gözlem** olmasına rağmen **66.67%** positive target verdi. Fold 3'te tüm 40 gözlem 25-50% bandında ve positive target rate **12.50%** kaldı. Bu, exposure seviyesinin tek başına performans açıklaması olmadığını ve score sıralamasının fold/regime bazında bozulabildiğini gösteriyor.
+- AFT: OOS mean target weight **0.2656**, median **0.2553**, max **0.5067**; 75% üzeri hiç gözlem yok, yalnızca **1/120** gözlem 50% üzerindeydi. Aggregate ML ROC **0.5878**, Technical ROC **0.4249**, Signal ROC **0.5197**; signal'ın forward return Spearman ilişkisi **+0.0807**.
+- AFT Fold 2'de Signal ROC **0.9314** ve forward-return Spearman **+0.3979**; <25% bandı mean forward return **-1.5384% / 0% positive target**, 25-50% bandı **+0.3337% / 30% positive target**. Bu fold model/signal'ın işe yaradığı örnektir.
+- AFT Fold 3'te Signal ROC **0.1111** ve forward-return Spearman **-0.6507**; <25% bandı **+1.9533% mean forward return / 41.94% positive target**, 25-50% bandı **-2.5189% / 0% positive target**. Bu, aynı production signal zincirinin rejim değişiminde tersine dönebildiğini gösteren güçlü OOS kanıtıdır.
+- Cross-fund exposure dağılımı: mean weight **0.2905**, median **0.2950**, max **0.5267**; %31.67 <25%, %66.67 25-50%, %1.67 50-75%, **0% >=75%**. Aggregate ML ROC **0.4828**, Technical ROC **0.3752**, Signal ROC **0.4088** ve signal-forward-return Spearman **+0.0149**.
+- Cross-fund exposure bantlarında <25% mean forward return **+1.0771%**, 25-50% **+1.0130%**, 50-75% **+2.0267%** (yalnızca 4 gözlem). Bu nedenle mevcut lineer score-to-weight mapping için OOS'ta monotonic outcome ilişkisi gösterilemedi.
+
+**Teşhis / karar**
+- İlk hypothesis olan “sorun yalnızca düşük exposure” desteklenmedi. Ortalama exposure gerçekten düşüktü (**0.2905**) ve yüksek exposure neredeyse hiç kullanılmadı; ancak score'un gerçekleşen forward return ile cross-fund korelasyonu yalnızca **+0.0149**, signal ROC **0.4088** idi.
+- Dolayısıyla bir sonraki task mapping optimizasyonu değil; **regime-stability / score monotonicity diagnostic** olmalı. Özellikle AFT Fold 2 -> Fold 3 yön değişimi ve AFA Fold 1 -> Fold 3 bozulması ayrıştırılmalı.
+- Production contractlar değiştirilmedi: target h5/+3%, raw_all, signal weighting, production linear sizing ve fund t+1 unit-price execution korunuyor.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
