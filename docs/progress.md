@@ -937,6 +937,10 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 
 - Kullanıcı Codespace'te fund backtest targeted testini ve full backend suite'i çalıştırdı; her iki komut da **başarılı (passed)** olarak doğrulandı. Bu doğrulama benchmark helper eklenmeden önceki fund engine foundation commitleri içindi; son benchmark/runner değişiklikleri ayrıca yeniden test edilmelidir.
 
+- Fund benchmark targeted testinde tek failure tespit edildi: `test_fund_buy_and_hold_applies_one_entry_transaction_cost` eski helper adını çağırıyordu; helper engine katmanına taşındığı halde test referansı güncellenmemişti.
+- Düzeltme yalnızca test helper adını `calculate_fund_buy_and_hold_total_return` olarak güncelledi; production fund engine/benchmark hesabı değişmedi.
+- Test fix commit: **9f4af5ef1a7224efce60e4c2d9b0407e04d96a00**.
+
 ### Faz 6 — Real Fund OOS Backtest Runner Hazırlığı
 
 - `backend/scripts/smoke_test_backtest_fund_real.py` eklendi.
