@@ -26,6 +26,38 @@ class FundBacktestConfig:
             raise ValueError("periods_per_year must be positive")
 
 
+def calculate_fund_buy_and_hold_total_return(
+    frame: pd.DataFrame,
+    *,
+    config: FundBacktestConfig,
+) -> tuple[float, float, float]:
+    """Calculate true first-next-day-price to final-price fund buy-and-hold."""
+    if len(frame) < 2:
+        raise ValueError("fund buy-and-hold requires at least two observations")
+
+    opening = float(frame.iloc[1]["unit_price"])
+    final_price = float(frame.iloc[-1]["unit_price"])
+    capital = float(config.initial_capital)
+    fee_rate = config.transaction_cost_bps / 10_000.0
+
+    units = capital / (opening * (1.0 + fee_rate))
+    trade_notional = units * opening
+    transaction_cost = trade_notional * fee_rate
+    cash = capital - trade_notional - transaction_cost
+
+    if abs(cash) < 1e-8:
+        cash = 0.0
+    if cash < -1e-8:
+        raise AssertionError("fund buy-and-hold produced negative cash")
+
+    final_equity = cash + units * final_price
+    return (
+        final_equity / capital - 1.0,
+        transaction_cost,
+        cash,
+    )
+
+
 def _validate_fund_input(
     frame: pd.DataFrame,
     date_column: str,
