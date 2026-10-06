@@ -1091,6 +1091,12 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 2. Real AFA/AFT fund OOS backtest runner'ını çalıştır; PostgreSQL canonical history kullanılıyorsa TEFAS fallback'e gerek kalmadığını, fold başına 39 executable period oluştuğunu ve benchmark/strategy metriklerini doğrula.
 3. Gerçek fund OOS sonuçlarını kaydettikten sonra fund mapping/cost sensitivity gerekip gerekmediğine karar ver ve ardından Faz 6 API/prediction katmanıyla backtest sonuçlarını nasıl expose edeceğimizi tasarla.
 
+### Faz 6 — Fund Target Threshold Diagnostic Argparse Fix
+
+- Real threshold diagnostic çalıştırmasında argparse help metnindeki literal **%** karakteri `%` formatting olarak yorumlandığı için `ValueError: incomplete format` oluştu.
+- Kod mantığı değiştirilmeden `--thresholds` help metnindeki **+3% -> +3%%** olarak düzeltildi. Commit: **51d90945ee161bbb620cf9457f3aae9631a7e4c6**.
+- Bu fix için gerçek Codespace threshold diagnostic sonucu henüz alınmadı; sonraki çalıştırma threshold hesaplamasına devam etmeli.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
