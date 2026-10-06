@@ -79,3 +79,16 @@ def test_diagnostics_reject_missing_columns() -> None:
                 }
             )
         )
+
+
+def test_summarize_signal_relationships_handles_constant_scores() -> None:
+    frame = _frame()
+    frame["risk_score"] = 50.0
+    frame["risk_adjustment"] = -10.0
+
+    result = summarize_signal_relationships(frame)
+    by_score = result.set_index("score")
+
+    assert pd.isna(by_score.loc["risk_score", "spearman_target"])
+    assert pd.isna(by_score.loc["risk_score", "spearman_forward_return_5d"])
+    assert pd.isna(by_score.loc["risk_adjustment", "spearman_target"])
