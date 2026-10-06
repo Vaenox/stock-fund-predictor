@@ -958,6 +958,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Contract docs: **4e2cd2911e3e7249a428330ae08312105ff8b743**.
 
 
+
+### Faz 6 — Real Fund OOS Runner Benchmark Helper Düzeltmesi
+
+- Codespace doğrulaması: fund targeted suite **11 passed**; full backend suite **205 passed** (iki ayrı çalıştırmada da aynı sonuç).
+- Gerçek AFA/AFT fund OOS smoke'u PostgreSQL canonical history'den sırasıyla **672 / 675 raw rows** ve **468 / 471 dataset rows** ile başladı; ancak iki fonda da benchmark aşamasında `NameError: name '_buy_and_hold_total_return' is not defined` nedeniyle durdu.
+- Kök neden `backend/scripts/smoke_test_backtest_fund_real.py` içinde costless B&H hesabının, engine'e taşınmış helper yerine eski stock-runner özel `_buy_and_hold_total_return` adını çağırmasıydı. İlk normal benchmark çağrısı zaten doğru `calculate_fund_buy_and_hold_total_return` kullanıyordu.
+- Runner içindeki yalnızca stale çağrı `calculate_fund_buy_and_hold_total_return` olarak düzeltildi. Production fund engine, execution contract veya benchmark hesabının kendisi değiştirilmedi.
+- Düzeltme commit: **24876f3bdbcee88abc283cdfe988c0552c9991c1**.
+- Son kod kontrolünde runner'da eski çağrı satırı bulunmadı. Bu son düzeltme için Codespace smoke/test yeniden çalıştırılmadı.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
