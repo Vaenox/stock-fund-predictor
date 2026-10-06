@@ -7,6 +7,7 @@ from app.backtesting.fund_diagnostics import (
     summarize_exposure,
     summarize_exposure_bands,
     summarize_signal_relationships,
+    summarize_score_quintiles,
 )
 
 
@@ -92,3 +93,21 @@ def test_summarize_signal_relationships_handles_constant_scores() -> None:
     assert pd.isna(by_score.loc["risk_score", "spearman_target"])
     assert pd.isna(by_score.loc["risk_score", "spearman_forward_return_5d"])
     assert pd.isna(by_score.loc["risk_adjustment", "spearman_target"])
+
+
+def test_summarize_score_quintiles_creates_equal_count_buckets() -> None:
+    result = summarize_score_quintiles(_frame(), score_column="signal_score")
+
+    assert result["quintile"].tolist() == ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    assert result["observations"].tolist() == [2, 1, 1, 1, 1]
+    assert result.loc[0, "mean_score"] == pytest.approx(10.0)
+    assert result.loc[4, "mean_score"] == pytest.approx(95.0)
+
+
+def test_summarize_score_quintiles_rejects_small_frames() -> None:
+    with pytest.raises(ValueError, match="too small"):
+        summarize_score_quintiles(
+            _frame().head(4),
+            score_column="signal_score",
+            n_bins=5,
+        )
