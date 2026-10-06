@@ -12,6 +12,7 @@ from app.backtesting.fund_diagnostics import (
     summarize_exposure,
     summarize_exposure_bands,
     summarize_signal_relationships,
+    summarize_score_quintiles,
 )
 from app.backtesting.strategy import SignalScoreWeightConfig, map_signal_scores_to_target_weights
 from app.ml.risk_adjustment import calculate_fund_risk_adjustment
@@ -228,6 +229,22 @@ def _run_symbol(
                 f"positive_target={row.positive_target_rate:.2%}, "
                 f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
             )
+        print("  Signal quintiles:")
+        for score_column in ("ml_probability", "signal_score"):
+            quintiles = summarize_score_quintiles(
+                fold_frame,
+                score_column=score_column,
+            )
+            print(f"    {score_column}:")
+            for row in quintiles.itertuples(index=False):
+                print(
+                    f"      {row.quintile}: n={row.observations}, "
+                    f"mean_score={_fmt(row.mean_score)}, "
+                    f"mean_fwd5d={_fmt(row.mean_forward_return_5d, pct=True)}, "
+                    f"median_fwd5d={_fmt(row.median_forward_return_5d, pct=True)}, "
+                    f"positive_target={row.positive_target_rate:.2%}, "
+                    f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
+                )
 
     combined = pd.concat(fold_frames, ignore_index=True)
     exposure = summarize_exposure(combined)
@@ -367,6 +384,22 @@ def main() -> int:
             f"positive_target={row.positive_target_rate:.2%}, "
             f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
         )
+    print("Overall signal quintiles:")
+    for score_column in ("ml_probability", "signal_score"):
+        quintiles = summarize_score_quintiles(
+            combined,
+            score_column=score_column,
+        )
+        print(f"  {score_column}:")
+        for row in quintiles.itertuples(index=False):
+            print(
+                f"    {row.quintile}: n={row.observations}, "
+                f"mean_score={_fmt(row.mean_score)}, "
+                f"mean_fwd5d={_fmt(row.mean_forward_return_5d, pct=True)}, "
+                f"median_fwd5d={_fmt(row.median_forward_return_5d, pct=True)}, "
+                f"positive_target={row.positive_target_rate:.2%}, "
+                f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
+            )
 
     assert len(all_frames) == len(symbols)
     assert len(combined) == len(symbols) * 3 * 40
