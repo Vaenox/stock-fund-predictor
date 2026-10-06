@@ -20,7 +20,7 @@ def _frame() -> pd.DataFrame:
             "technical_score": [10, 20, 40, 30, 80, 90],
             "signal_score": [5, 15, 35, 25, 75, 95],
             "pre_risk_signal": [6, 16, 36, 26, 76, 96],
-            "risk_score": [10, 20, 30, 40, 50, 60],
+            "risk_score": [60, 50, 40, 30, 20, 10],
             "risk_adjustment": [-1, -1, -1, -1, -1, -1],
         }
     )
