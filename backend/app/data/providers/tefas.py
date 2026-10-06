@@ -28,12 +28,25 @@ class TefasSettings:
     rate_limit_retries: int = 6
     rate_limit_backoff_seconds: float = 5.0
     inter_chunk_delay_seconds: float = 3.0
+    history_timeout: float = 15.0
+    history_retries: int = 2
+    history_backoff_seconds: float = 1.0
 
 
 class TefasProvider(MarketDataProvider):
     """Public TEFAS fund-data adapter using the current JSON endpoints."""
 
     info_endpoint = "fonGnlBlgSiraliGetir"
+    history_endpoint = "fonFiyatBilgiGetir"
+    history_period_buckets = (
+        (13, 7),
+        (1, 31),
+        (3, 95),
+        (6, 190),
+        (12, 380),
+        (36, 365 * 3 + 5),
+        (60, 365 * 5 + 5),
+    )
 
     def __init__(
         self,
@@ -50,7 +63,15 @@ class TefasProvider(MarketDataProvider):
     def name(self) -> str:
         return "tefas"
 
-    def _post(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _post(
+        self,
+        endpoint: str,
+        payload: dict[str, Any],
+        *,
+        timeout: float | None = None,
+        max_retries: int | None = None,
+        backoff_seconds: float | None = None,
+    ) -> dict[str, Any]:
         url = f"{self._settings.base_url.rstrip('/')}/{endpoint}"
         headers = {
             "Accept": "*/*",
@@ -63,6 +84,22 @@ class TefasProvider(MarketDataProvider):
                 "Chrome/146.0.0.0 Safari/537.36"
             ),
         }
+        effective_timeout = self._settings.timeout if timeout is None else timeout
+        effective_retries = (
+            self._settings.rate_limit_retries if max_retries is None else max_retries
+        )
+        effective_backoff = (
+            self._settings.rate_limit_backoff_seconds
+            if backoff_seconds is None
+            else backoff_seconds
+        )
+        if effective_timeout <= 0:
+            raise ValueError("timeout must be positive")
+        if effective_retries < 0:
+            raise ValueError("max_retries cannot be negative")
+        if effective_backoff < 0:
+            raise ValueError("backoff_seconds cannot be negative")
+
         if self._settings.rate_limit_retries < 0:
             raise ValueError("rate_limit_retries cannot be negative")
         if self._settings.rate_limit_backoff_seconds < 0:
@@ -76,11 +113,11 @@ class TefasProvider(MarketDataProvider):
             separators=(",", ":"),
         ).encode("utf-8")
         owned_client = self._client is None
-        client = self._client or httpx.Client(timeout=self._settings.timeout)
+        client = self._client or httpx.Client(timeout=effective_timeout)
         response: httpx.Response | None = None
 
         try:
-            for attempt in range(self._settings.rate_limit_retries + 1):
+            for attempt in range(effective_retries + 1):
                 try:
                     if self._request is not None:
                         response = self._request(
@@ -88,7 +125,7 @@ class TefasProvider(MarketDataProvider):
                             url,
                             content=payload_bytes,
                             headers=headers,
-                            timeout=self._settings.timeout,
+                            timeout=effective_timeout,
                         )
                     else:
                         response = client.post(
@@ -100,16 +137,16 @@ class TefasProvider(MarketDataProvider):
                     status_code = getattr(response, "status_code", None)
                     response_headers = getattr(response, "headers", {}) or {}
 
-                    if status_code == 429 and attempt < self._settings.rate_limit_retries:
+                    if status_code == 429 and attempt < effective_retries:
                         retry_after = response_headers.get("Retry-After")
                         try:
                             delay = (
                                 float(retry_after)
                                 if retry_after is not None
-                                else self._settings.rate_limit_backoff_seconds * (2**attempt)
+                                else effective_backoff * (2**attempt)
                             )
                         except (TypeError, ValueError):
-                            delay = self._settings.rate_limit_backoff_seconds * (2**attempt)
+                            delay = effective_backoff * (2**attempt)
                         sleep(delay)
                         continue
 
@@ -118,8 +155,8 @@ class TefasProvider(MarketDataProvider):
                     break
 
                 except json.JSONDecodeError as exc:
-                    if attempt < self._settings.rate_limit_retries:
-                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                    if attempt < effective_retries:
+                        sleep(effective_backoff * (2**attempt))
                         continue
                     status = getattr(response, "status_code", "unknown")
                     content_type = (getattr(response, "headers", {}) or {}).get(
@@ -145,7 +182,7 @@ class TefasProvider(MarketDataProvider):
                     if (
                         response is not None
                         and getattr(response, "status_code", 200) == 429
-                        and attempt < self._settings.rate_limit_retries
+                        and attempt < effective_retries
                     ):
                         sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
                         continue
@@ -330,9 +367,46 @@ class TefasProvider(MarketDataProvider):
     def get_latest_price(self, provider_symbol: str) -> ProviderStockBar:
         raise NotImplementedError("TEFAS provider is fund-only")
 
-    def get_fund_history(self, provider_symbol: str, start_date: date, end_date: date) -> list[ProviderFundPrice]:
+    @classmethod
+    def _history_period(cls, start_date: date, end_date: date) -> int:
+        if start_date > end_date:
+            raise ValueError("start_date cannot be after end_date")
+
+        span_days = (end_date - start_date).days
+        for period_code, max_days in cls.history_period_buckets:
+            if span_days <= max_days:
+                return period_code
+
+        raise ValueError(
+            "TEFAS history range exceeds the 5-year API limit: "
+            f"{start_date}..{end_date}"
+        )
+
+    def get_fund_history(
+        self,
+        provider_symbol: str,
+        start_date: date,
+        end_date: date,
+    ) -> list[ProviderFundPrice]:
+        period = self._history_period(start_date, end_date)
+        code = provider_symbol.strip().upper()
+        data = self._post(
+            self.history_endpoint,
+            {
+                "fonKodu": code,
+                "dil": "TR",
+                "periyod": period,
+            },
+            timeout=self._settings.history_timeout,
+            max_retries=self._settings.history_retries,
+            backoff_seconds=self._settings.history_backoff_seconds,
+        )
+
         records: list[ProviderFundPrice] = []
-        for row in self._fetch_range(provider_symbol, start_date, end_date):
+        for row in (data.get("resultList") or []):
+            if not isinstance(row, dict):
+                continue
+
             price = row.get("fiyat")
             if price in (None, ""):
                 price = row.get("fonFiyat")
@@ -345,19 +419,26 @@ class TefasProvider(MarketDataProvider):
             if pricing_value in (None, ""):
                 continue
 
-            portfolio_size = row.get("portfoyBuyukluk")
-            if portfolio_size in (None, ""):
-                portfolio_size = row.get("portfoyBuyuklugu")
+            pricing_date = self._date(pricing_value)
+            if not start_date <= pricing_date <= end_date:
+                continue
 
             records.append(
                 ProviderFundPrice(
-                    provider_symbol=provider_symbol.strip().upper(),
-                    pricing_date=self._date(pricing_value),
+                    provider_symbol=code,
+                    pricing_date=pricing_date,
                     unit_price=self._decimal(price),
-                    total_net_assets=(self._decimal(portfolio_size) if portfolio_size not in (None, "") else None),
+                    total_net_assets=None,
                     source_timestamp=datetime.now(timezone.utc),
                     raw=row,
                 )
+            )
+
+        records.sort(key=lambda record: record.pricing_date)
+        if not records:
+            raise TefasProviderError(
+                f"No TEFAS fund history for {code} "
+                f"in requested range {start_date}..{end_date}"
             )
         return records
 
