@@ -1113,6 +1113,24 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 2. Bu backtest de AFA'da anlamlı iyileşme göstermiyorsa feature/model-regime istikrarsızlığına geç; özellikle aynı OOS pencerelerinde feature -> forward_return ilişkilerinin stabilitesini ölç.
 3. Threshold sonuçlarına bakarak production target'ı henüz değiştirme; önce P&L doğrulaması ve fund-specific davranış kanıtı gerekli.
 
+### Faz 6 — Fund Threshold Backtest Sonuçları
+
+- Real AFA/AFT fund OOS backtest, aynı execution/risk/mapping kontratı ve aynı 3x40 gap=5 protokolü ile threshold **1%, 2%, 3%** için çalıştırıldı. Üç koşul da `REAL FUND BACKTEST SMOKE TEST PASSED`; data source her iki fonda da **PostgreSQL canonical history** ve fold başına **39 executable period**.
+- Threshold **1%**: cross-fund mean strategy **+3.6052%**, mean B&H **+7.8261%**, mean excess **-4.2210%**, positive excess **16.67%**, mean Sharpe **+2.473**, mean turnover **2.2990**, transaction cost **1392.578462**. AFA mean excess **-5.5503%**, AFT **-2.8916%**.
+- Threshold **2%**: cross-fund mean strategy **+2.9692%**, mean B&H **+7.8261%**, mean excess **-4.8569%**, positive excess **16.67%**, mean Sharpe **+2.758**, mean turnover **1.9647**, transaction cost **1188.334957**. AFA mean excess **-6.5091%**, AFT **-3.2048%**.
+- Threshold **3% (production)**: cross-fund mean strategy **+2.2849%**, mean B&H **+7.8261%**, mean excess **-5.5412%**, positive excess **16.67%**, mean Sharpe **+2.817**, mean turnover **1.4662**, transaction cost **881.969488**. AFA mean excess **-6.5137%**, AFT **-4.5687%**.
+- `%1` target, `%3`'e göre mean excess'i **+1.3202 pp** iyileştiriyor ve mean strategy return'ü **+1.3203 pp** artırıyor; buna rağmen benchmark karşısında hâlâ belirgin negatif ve fold bazında yalnız **1/6** positive excess görülüyor. `%2` ise `%3`'ten daha kötü.
+- Threshold diagnostic'teki daha iyi `%1–2` score ordering, özellikle AFT'de, gerçek P&L'de sınırlı iyileşmeye dönüşüyor; AFA'da `%1–2` dahi B&H'a karşı kalıcı alpha üretmiyor.
+- İşletim notu: ilk `%1` komutundaki `cd .../backendd` yazım hatası shell'in mevcut dizini koruması nedeniyle script çalışmasını engellemedi; sonraki komutlar doğru `/backend` dizininde çalıştı.
+
+**Karar:** Production target **h5/+3% şimdilik korunuyor**. `%1` diagnostic olarak en iyi üç aday arasında olsa da 3-fold/2-fund OOS'ta negatif excess problemi çözülmedi; threshold tek başına production değişikliği için yeterli kanıt değil.
+
+### Faz 6 — Güncel Sıradaki İş
+
+1. AFA ve AFT için outer fold bazında feature -> `forward_return_5d` Spearman/direction ve XGBoost gain importance istikrarını ölç; aynı OOS pencerelerinde feature yönünün ve model kullandığı feature'ların ne kadar değiştiğini raporla.
+2. Feature/regime diagnostic'te belirgin instability çıkarsa model/feature design'a kontrollü müdahale etmeden önce bunun hangi dönemlerde oluştuğunu ayır; production target/risk/mapping contractını koru.
+3. Feature stability zayıf değilse ancak score ordering zayıf kalıyorsa, model calibration/selection stability ve time-regime drift incelemesine geç.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
