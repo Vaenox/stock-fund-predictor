@@ -1026,6 +1026,16 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Dolayısıyla bir sonraki task mapping optimizasyonu değil; **regime-stability / score monotonicity diagnostic** olmalı. Özellikle AFT Fold 2 -> Fold 3 yön değişimi ve AFA Fold 1 -> Fold 3 bozulması ayrıştırılmalı.
 - Production contractlar değiştirilmedi: target h5/+3%, raw_all, signal weighting, production linear sizing ve fund t+1 unit-price execution korunuyor.
 
+### Faz 6 — Fund Diagnostic v2: Risk ve Pozitif Getiri Ayrıştırması
+
+- Exposure diagnostic bir sonraki iterasyona genişletildi; production signal/output değiştirilmedi.
+- Score relationship analizi artık **ML probability, Technical Score, pre-risk Signal Score, final Signal Score, Risk Score ve Risk Adjustment** için OOS target / 5-day forward-return ilişkilerini raporluyor.
+- Exposure band çıktısına `forward_return_5d > 0` gerçekleşme oranı eklendi. Böylece production target olan `forward_return_5d > +3%` ile sıradan pozitif forward return birbirinden ayrıştırılabiliyor.
+- Bu ayrım önemli çünkü ilk AFA/AFT backtestinde fon B&H getirileri pozitif olurken +3% classification target seyrek kalabiliyor; bu nedenle classification hedefinin exposure/risk davranışıyla ne kadar uyumlu olduğu ayrıca ölçülmeli.
+- Unit testler risk-score yönü ve positive-forward-return-rate alanını kapsayacak şekilde genişletildi.
+- Son code commits: **39ed13833bdc3d0bf3a031e4a642305c97d4aca6**, **02e34efa49439e22da0db268da372c86a25b8cd2**, **57b2810a968228ba42dd48b303ea928c1f68963a**, **6f69911f8aaaaab5d6fb41158f499e53ca42a8ba**.
+- Bu son değişiklikler için Codespace test sonucu henüz yok.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
