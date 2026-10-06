@@ -364,7 +364,8 @@ def main() -> int:
             f"mean_w={_fmt(row.mean_weight)}, "
             f"mean_fwd5d={_fmt(row.mean_forward_return_5d, pct=True)}, "
             f"median_fwd5d={_fmt(row.median_forward_return_5d, pct=True)}, "
-            f"positive_target={row.positive_target_rate:.2%}"
+            f"positive_target={row.positive_target_rate:.2%}, "
+            f"positive_fwd5d={row.positive_forward_return_rate:.2%}"
         )
 
     assert len(all_frames) == len(symbols)
