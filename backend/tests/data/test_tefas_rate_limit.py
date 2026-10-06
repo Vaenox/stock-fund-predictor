@@ -148,3 +148,25 @@ def test_tefas_post_reports_non_json_response_after_retries(monkeypatch):
         raise AssertionError("expected TefasProviderError")
 
     assert sleeps == [1.0]
+
+
+def test_tefas_post_serializes_payload_as_exact_utf8_bytes():
+    captured = {}
+
+    def request(method, url, **kwargs):
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            json={"resultList": []},
+            request=httpx.Request(method, url),
+        )
+
+    provider = TefasProvider(request=request)
+    result = provider._post(
+        "fonGnlBlgSiraliGetir",
+        {"fonKodu": "AFA", "fonTipi": "YAT", "aramaMetni": None},
+    )
+
+    assert result == {"resultList": []}
+    assert isinstance(captured["content"], bytes)
+    assert captured["content"] == b'{"fonKodu":"AFA","fonTipi":"YAT","aramaMetni":null}'
