@@ -171,8 +171,8 @@ class TefasProvider(MarketDataProvider):
                     ) from exc
 
                 except httpx.TransportError as exc:
-                    if attempt < self._settings.rate_limit_retries:
-                        sleep(self._settings.rate_limit_backoff_seconds * (2**attempt))
+                    if attempt < effective_retries:
+                        sleep(effective_backoff * (2**attempt))
                         continue
                     raise TefasProviderError(
                         f"TEFAS request failed: {endpoint}"
