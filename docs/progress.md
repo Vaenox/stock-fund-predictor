@@ -1064,6 +1064,27 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Kod commits: **1d2b2ff6e4d85df538bca87112bf52a6c287bbc5**, **c2bb524532c812c3f56bbaf5392a30adaf575694**, **2d57b32b15f28f88b8b60ba708ad41f6ed9c31ba**, **0f45fec7eb0d7ab7e7f50b8ba9f9bbad52e7303e**.
 - Bu son quintile değişiklikleri için Codespace doğrulaması henüz alınmadı.
 
+### Faz 6 — Real Fund Score Quintile Sonuçları
+
+- Codespace doğrulaması: targeted diagnostic/backtest suite **18 passed in 1.48s**, full backend suite **212 passed in 11.29s**. Real exposure diagnostic **PASSED** oldu.
+- AFA Fold 1 Signal Score quintileleri monotonik değil: Q1 **+2.0293%**, Q2 **-0.4009%**, Q3 **+4.1370%**, Q4 **+2.6746%**, Q5 **+1.7953%** mean 5-day forward return. fileciteturn818file0L61-L73
+- AFA Fold 2: Signal Score Q1 **+0.7445%**, Q2 **+2.0453%**, Q3 **+0.3539%**, Q4 **-0.5164%**, Q5 **+0.0444%**. Higher score clearly monotonic değil. fileciteturn818file0L89-L101
+- AFA Fold 3 daha belirgin terslik gösteriyor: Q1 **+5.0053%**, Q5 **-2.6564%**. fileciteturn818file0L117-L129
+- AFT Fold 2'de Q5 **+4.4111%** ile açık ara en iyi bucket olsa da Fold 3'te Q1 **+3.8652%**, Q5 **-2.6564%**; rejim stabilitesi yok. fileciteturn818file0L189-L201 fileciteturn818file0L217-L229
+- Cross-fund aggregate Signal Score quintiles: Q1 **+1.2095%**, Q2 **+0.7919%**, Q3 **+1.1780%**, Q4 **+0.8234%**, Q5 **+1.2482%**. Q5 yalnızca marjinal olarak Q1'in üzerinde ve sıra boyunca monoton artış yok. fileciteturn818file0L257-L270
+- Cross-fund ML probability quintiles de tam monotonik değil: Q1 **+1.1283%**, Q2 **-0.3145%**, Q3 **+1.5202%**, Q4 **+1.6473%**, Q5 **+1.2697%**. Bu nedenle sorun yalnızca final signal composition değil; model probability ordering de istikrarlı değil. fileciteturn818file0L257-L263
+
+**Karar:** Fund score-to-return ordering production OOS'ta yeterince monotonic olmadığı için exposure mapping veya risk ayarı ile doğrudan optimize edilmeyecek. Bir sonraki kontrollü diagnostic, +3% classification target'ın event sparsity / label noise etkisini ayırmak olacak.
+
+### Faz 6 — Fund Target Threshold Diagnostic Hazırlığı
+
+- Yeni `backend/scripts/smoke_test_fund_target_threshold_real.py` eklendi.
+- Diagnostic threshold seti varsayılan olarak **0%, 1%, 2%, 3%, 5%**. Her threshold ayrı supervised label üretir; aynı 3x40 outer walk-forward ve gap=5 korunur.
+- Her threshold için dataset target rate, fold/OOS ROC-AUC, PR-AUC, probability -> forward-return Spearman ve Q5-Q1 forward-return spread raporlanır.
+- Bu çalışma threshold'u production'da seçmez; yalnızca +3% target'ın seyrek/kararsız label üretiminin model ordering üzerindeki etkisini ölçer. Production target h5/+3% değişmeden kalır.
+- Son code commits: **82f134154705d778e689e872e38c5c891419978b**, **fece860cc52e5fdcdb3515c183188598e4e9ff1e**.
+- Bu yeni threshold diagnostic için Codespace test/real run sonucu henüz alınmadı.
+
 ## Sıradaki İş
 
 1. Codespace'te güncel fund engine + benchmark testlerini ve full backend suite'i tekrar çalıştır.
