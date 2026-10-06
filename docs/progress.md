@@ -900,11 +900,27 @@ Production-compatible signal chain gerçek 3-fold / 120 OOS gözleminde AFA, AFT
 - Fixture fix commit: **bc846eaed5c720cac10c1390f268af64510d6d68**.
 - Bu düzeltmeden sonra targeted API testlerinin ve full backend suite'in yeniden çalıştırılması gerekiyor.
 
+
+### Faz 6 — Prediction API Gerçek HTTP Doğrulaması
+
+- Codespace'te API testleri başarıyla tamamlandı: **7 passed in 1.38s**.
+- Full backend suite güncel API değişiklikleriyle başarıyla tamamlandı: **194 passed in 10.76s**.
+- Uvicorn gerçek Codespace ortamında başlatıldı: `http://0.0.0.0:8000`.
+- Gerçek PostgreSQL read-back üzerinden HTTP doğrulaması başarıyla yapıldı:
+  - `GET /health` -> **200 OK**
+  - `GET /api/v1/assets/THYAO` -> **200 OK**
+  - `GET /api/v1/assets/THYAO/predictions/latest` -> **200 OK**
+  - `GET /api/v1/assets/AFA/predictions/latest` -> **200 OK**
+- THYAO latest prediction API response'u persisted prediction ID `7f8c9d63-1502-46f5-abe9-8d7bbacff06b` kaydını ve production metadata/scores/target weight alanlarını doğru expose etti.
+- AFA latest prediction API response'u persisted prediction ID `28993bf1-f5ce-4618-80b9-5ff117b5dfb7` kaydını `source_provider=tefas`, h5/+3%, raw_all ve final target weight ile doğru expose etti.
+- Böylece Faz 6 prediction persistence + read API zinciri gerçek stock ve fund verileriyle doğrulandı: **PostgreSQL -> PredictionHistory -> FastAPI -> JSON**.
+- API test fixture düzeltmesi ve mevcut endpoint contractı sonrasında production target/model/representation/sizing contractları değiştirilmedi.
+
 ## Sıradaki İş
 
-1. Fixture düzeltmesinden sonra Codespace'te API testlerini tekrar çalıştır; ardından full backend suite ile mevcut persistence/backtest contractlarının bozulmadığını doğrula.
-2. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
-3. API read contractı doğrulandıktan sonra fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractına geç.
+1. PostgreSQL container içindeki psql ile prediction_history kayıtlarını stock/fund/provider bazında son bir kez sorgula ve audit persistence görünürlüğünü doğrula.
+2. API read contractı doğrulandı; sıradaki controlled task olarak fonlar için stock next-open engine'inden ayrı daily unit-price backtest execution contractını tasarla ve unit testlerle sabitle.
+3. Fund backtest execution contractı doğrulandıktan sonra gerçek fund OOS backtest smoke'una geç.
 
 ## Yeni Sohbette Devam Etme Kuralı
 
