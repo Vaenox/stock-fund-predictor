@@ -1168,6 +1168,22 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 2. Özellikle aggregate Spearman/PR/ROC yanında fold bazında direction consistency ve OOS performansını kontrol et; nested winner'ın gerçekten non-winner'ları geçtiğini doğrula.
 3. `normalized_all` fixed OOS olarak iki fonda da belirgin üstün çıkarsa daha geniş fon örneklemine geç; production representation yine ancak daha geniş kanıtla değiştirilecek.
 
+### Faz 6 — Fixed Representation Ablation Threshold Sonuçları
+
+- AFA `%1` fixed ablation: `normalized_all` tuned aggregate ROC **0.5882**, PR **0.5869**, Spearman **+0.1526** ile `raw_all` (**0.5356 / 0.5389 / +0.0616**) ve `stationary_core` (**0.5231 / 0.5480 / +0.0400**) karşısında üstün. Fold bazında normalized Spearman **+0.1498 / +0.0716 / +0.3584**.
+- AFT `%1` fixed ablation: `raw_all` tuned aggregate ROC **0.6841**, PR **0.7112**, Spearman **+0.3172** ile `normalized_all` (**0.5920 / 0.5901 / +0.1586**) ve `stationary_core` (**0.5738 / 0.6213 / +0.1272**) üzerinde. Normalized Fold 1'de negatif Spearman **-0.1812** üretirken Fold 2/3 pozitif.
+- AFA `%2` fixed ablation: `normalized_all` yine açık ara üstün; tuned ROC **0.6848**, PR **0.4696**, Spearman **+0.2956**. `raw_all` **0.5099 / 0.3259 / +0.0159**, `stationary_core` **0.5353 / 0.3461 / +0.0565**.
+- AFT `%2` fixed ablation: `raw_all` tuned ROC **0.6364** ve Spearman **+0.2276** ile normalized'ın (**0.5964 / +0.1610**) üzerinde; normalized PR **0.5418** ile raw PR **0.5262**'den az farkla yüksek. `stationary_core` daha zayıf (**0.5619 / 0.5074 / +0.1033**).
+- Bu dört fixed OOS deney birlikte, `normalized_all`'ın AFA için güçlü ve threshold'a dayanıklı bir iyileştirme olduğunu; ancak AFT için universal olarak üstün olmadığını gösteriyor. `stationary_core` bu örnekte production adayı olarak desteklenmiyor.
+
+**Karar:** Production representation **raw_all** korunuyor. Representation seçimini global olarak `normalized_all`'a çevirmek için evidence henüz yetersiz; sonuçlar fund-specific davranışa işaret ediyor. Sonraki kanıt adımı üçüncü gerçek fon olan **AFS** üzerinde `%1` ve `%2` fixed ablation yapmak.
+
+### Faz 6 — Sıradaki İş
+
+1. AFS için fixed representation ablation'ı threshold **1%** ve **2%** çalıştır.
+2. AFS sonucu da normalized yönündeyse fon sayısını genişletip fund-specific/global representation kararını örneklem bazında ölç; AFA/AFT ile sınırlı kalma.
+3. AFS'te raw/normalized tekrar karışık çıkarsa universal representation yerine fund-level representation selection veya representation-ensemble tasarımını ancak daha geniş OOS kanıtından sonra değerlendir.
+
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
