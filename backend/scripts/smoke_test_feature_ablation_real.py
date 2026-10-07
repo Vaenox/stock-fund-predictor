@@ -312,6 +312,7 @@ def _evaluate_variant(
     asset_type: str,
     variant: str,
     gap: int,
+    inner_test_size: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, tuple[str, ...]]:
     prepared, columns = _prepare_variant(
         dataset,
@@ -328,7 +329,7 @@ def _evaluate_variant(
     baseline_config = XGBoostBaselineConfig()
     tuning_config = TuningConfig(
         n_inner_splits=2,
-        inner_test_size=20,
+        inner_test_size=inner_test_size,
         gap=gap,
     )
 
@@ -451,6 +452,7 @@ def _run(
     threshold: float,
     min_db_rows: int,
     chunk_delay: float,
+    inner_test_size: int,
 ) -> None:
     if asset_type == "stock":
         raw, source = _load_stock(symbol, days, min_db_rows)
@@ -484,6 +486,7 @@ def _run(
             asset_type=asset_type,
             variant=variant,
             gap=gap,
+            inner_test_size=inner_test_size,
         )
         _print_fold_results(fold_rows, variant=variant)
         print(f"  Feature count: {len(columns)}")
@@ -521,6 +524,12 @@ def main() -> None:
     parser.add_argument("--threshold", type=float, default=0.03)
     parser.add_argument("--min-db-rows", type=int, default=365)
     parser.add_argument("--chunk-delay", type=float, default=3.0)
+    parser.add_argument(
+        "--inner-test-size",
+        type=int,
+        default=20,
+        help="chronological inner validation window used for tuning; default 20",
+    )
     args = parser.parse_args()
 
     if args.days < 260:
@@ -533,6 +542,8 @@ def main() -> None:
         raise SystemExit("min-db-rows must be positive")
     if args.chunk_delay < 0:
         raise SystemExit("chunk-delay cannot be negative")
+    if args.inner_test_size <= 0:
+        raise SystemExit("inner-test-size must be positive")
 
     _run(
         args.asset_type,
@@ -542,6 +553,7 @@ def main() -> None:
         args.threshold,
         args.min_db_rows,
         args.chunk_delay,
+        args.inner_test_size,
     )
 
 
