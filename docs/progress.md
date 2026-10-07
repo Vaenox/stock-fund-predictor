@@ -1259,6 +1259,21 @@ Karar: Production target h5/+3%, risk layer ve raw_all representation şimdilik 
 1. AFS fixed representation ablation'ı threshold **2%** ile çalıştır.
 2. AFA + AFT + AFS için %1/%2 fixed OOS sonuçlarını tek tabloda karşılaştır; representation başına hangi fonlarda ve hangi metrikte üstünlük olduğunu ölç.
 3. Universal representation winner çıkmazsa fund-level representation selection/ensemble fikrini hemen production'a taşımadan önce daha geniş gerçek fon örneklemiyle doğrula.
+### Faz 6 — AFS Fixed Representation Ablation — Threshold 2% Inner Validation Sorunu
+
+- AFS `%2` fixed representation ablation veri hazırlama aşamasını başarıyla geçti: **TEFAS provider fallback**, **685 raw rows**, **481 dataset rows**, h5 / >2% target.
+- Çalışma ilk outer fold tuning aşamasında `ValueError: inner validation has no two-class fold` ile durdu. PostgreSQL bağlantısı önceki çalıştırmada kapalıydı; container yeniden başlatıldıktan sonra DB bağlantısı sorunsuz hale geldi ve gerçek hata tuning validation tarafında ortaya çıktı.
+- Kök neden: fixed ablation scriptinin mevcut inner tuning validation window'u **20 gözlem**. AFS `%2` target'ında bu kronolojik inner validation pencerelerinin her ikisi de tek sınıf kalabildiği için 12 candidate'ın hiçbirinde valid PR-AUC oluşmuyor. Bu, outer test/leakage protokolünün bozulduğu anlamına gelmiyor; yalnızca tuning için seçilen küçük validation penceresinin bu fon/threshold kombinasyonunda yetersiz kaldığını gösteriyor.
+- Production tuning sözleşmesi sessizce değiştirilmedi. Bunun yerine `smoke_test_feature_ablation_real.py` içine açık bir `--inner-test-size` CLI parametresi eklendi; varsayılan **20** olarak korundu. Böylece diagnostic deneyi daha geniş validation penceresiyle çalıştırmak bilinçli ve tekrarlanabilir hale geldi.
+- Kod commit: **5fc02a20b85b156360f2e74f556775112b2d7eb5**.
+
+**Karar:** AFS `%2` sonucu henüz alınmış kabul edilmiyor. Önce aynı 3-fold outer / gap=5 protokolünü koruyarak inner validation window'u açıkça **40** yapıp deneyi tekrar çalıştıracağız. Sonuç alınırsa AFA/AFT ile karşılaştırmada bu validation-size farkı ayrıca not edilecek; mevcut `%1` sonuçları 20'lik inner window ile elde edildiği için yüzde bazlı sonuçlar sessizce birbirine eşdeğer kabul edilmeyecek.
+
+### Faz 6 — Sıradaki İş
+
+1. AFS `%2` fixed ablation'ı `--inner-test-size 40` ile çalıştır.
+2. 40 da iki-sınıflı inner validation üretmezse önce validation event dağılımını incele; otomatik fallback veya stratification ekleme.
+3. AFS `%2` sonucu alındıktan sonra AFA/AFT/AFS `%1/%2` fixed representation sonuçlarını aynı metodolojik çerçevede karşılaştır.
 ## Yeni Sohbette Devam Etme Kuralı
 
 Yeni bir sohbette projeye devam ederken bu dosya önce okunmalı. Özellikle **Güncel Durum**, **Tamamlananlar**, **aktif fazın taskları** ve **Sıradaki İş** bölümleri esas alınmalı.
